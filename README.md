@@ -26,4 +26,4 @@ TODO
 
 ## License
 [AGPL-3.0-or-later](LICENSE) <br/>
-Copyright (C) 2025 Michail Zeipekki, Daniel Wildsmith, Mathew Alangadan, Grayson Kornberg
+Copyright (C) 2025 Michail Zeipekki, Daniel Wildsmith, Mathew Alangadan, Grayson Kornberg, Anton Salvador
