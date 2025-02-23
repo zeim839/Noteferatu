@@ -51,7 +51,7 @@ export default function ChatOverlay({
     //Dummy AI response, replace with actual later going to AI
     const aiMessage: Message = {
       role: "assistant",
-      content: "This is a dummy response from AI help help help help help."
+      content: "I vant to help you vith your orgo!"
     };
 
     // Update messages (append new messages)
@@ -104,7 +104,7 @@ export default function ChatOverlay({
         <div ref={chatContainerRef} className="flex-1 overflow-auto bg-gradient-to-l from-[#fdf7f4] to-[#ffffff] p-4 flex flex-col gap-3">
           {/* ALL CHATBOT UI is here */}
           {messages.length === 0 ? (
-            /* If no messages, show the "Chat with your Notes" text from the screenshot */
+            /* Default message when no messages */
             <div className="flex-1 flex flex-col justify-center items-center text-center text-gray-700">
               <h2 className="text-xl font-bold">Chat with your Notes</h2>
               <p className="mt-2">
