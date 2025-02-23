@@ -42,7 +42,7 @@ export default function ChatOverlay({
     //Dummy AI response, replace with actual later going to AI
     const aiMessage: Message = {
       role: "assistant",
-      content: "This is a dummy response from AI."
+      content: "This is a dummy response from AI help help help help help."
     };
 
     // Update messages (append new messages)
@@ -94,20 +94,31 @@ export default function ChatOverlay({
 
         <div className="flex-1 overflow-auto bg-gradient-to-l from-[#fdf7f4] to-[#ffffff] p-4 flex flex-col gap-3">
           {/* ALL CHATBOT UI is here */}
-          {messages.map((msg, index) => {
-            const isUser = msg.role === "user";
-            return (
-              <div
-                key={index}
-                className={`
-                  max-w-[75%] rounded-md p-3 text-sm
-                  ${isUser ? "self-end bg-black text-white" : "self-start bg-gray-100 text-black"}
-                `}
-              >
-                {msg.content}
-              </div>
-            );
-          })}
+          {messages.length === 0 ? (
+            /* If no messages, show the "Chat with your Notes" text from the screenshot */
+            <div className="flex-1 flex flex-col justify-center items-center text-center text-gray-700">
+              <h2 className="text-xl font-bold">Chat with your Notes</h2>
+              <p className="mt-2">
+                Enter a message to start chatting with Notefaratu
+              </p>
+            </div>
+          ) : (
+            /* Otherwise, show the chat bubbles */
+            messages.map((msg, index) => {
+              const isUser = msg.role === "user";
+              return (
+                <div
+                  key={index}
+                  className={`
+                    max-w-[75%] rounded-md p-3 text-sm
+                    ${isUser ? "self-end bg-black text-white" : "self-start bg-gray-100 text-black"}
+                  `}
+                >
+                  {msg.content}
+                </div>
+              );
+            })
+          )}
         </div>
 
         {/* Input bar */}
