@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 
@@ -29,6 +29,15 @@ export default function ChatOverlay({
   const handleSelectSource = (event: React.ChangeEvent<HTMLSelectElement>) => {
     onSourceChange(event.target.value);
   };
+
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  //auto scrolling on message send
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
@@ -92,7 +101,7 @@ export default function ChatOverlay({
           </Button>
         </div>
 
-        <div className="flex-1 overflow-auto bg-gradient-to-l from-[#fdf7f4] to-[#ffffff] p-4 flex flex-col gap-3">
+        <div ref={chatContainerRef} className="flex-1 overflow-auto bg-gradient-to-l from-[#fdf7f4] to-[#ffffff] p-4 flex flex-col gap-3">
           {/* ALL CHATBOT UI is here */}
           {messages.length === 0 ? (
             /* If no messages, show the "Chat with your Notes" text from the screenshot */
