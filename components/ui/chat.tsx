@@ -5,7 +5,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
-
 interface ChatOverlayProps {
   isOpen: boolean;
   source: string;
@@ -14,18 +13,19 @@ interface ChatOverlayProps {
 }
 
 interface Message {
-    role: "user" | "assistant";
-    content: string;
-  }
+  role: "user" | "assistant";
+  content: string;
+}
 
 export default function ChatOverlay({
   isOpen,
   source,
   onClose,
   onSourceChange
-}: ChatOverlayProps) {
+  }: ChatOverlayProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+
   const handleSelectSource = (event: React.ChangeEvent<HTMLSelectElement>) => {
     onSourceChange(event.target.value);
   };
@@ -39,28 +39,40 @@ export default function ChatOverlay({
     }
   }, [messages]);
 
-  const handleSend = () => {
+  async function callChatAPI(userMessage: string) {
+    // Send userMessage to your Next.js API route
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userMessage })
+    });
+
+    if (!response.ok) {
+      console.error("API error:", await response.text());
+      return { text: "Sorry, something went wrong." };
+    }
+
+    const data = await response.json();
+    return data;
+  }
+
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
-    //user message set
-    const userMessage: Message = {
-      role: "user",
-      content: inputValue
-    };
-
-    //Dummy AI response, replace with actual later going to AI
-    const aiMessage: Message = {
-      role: "assistant",
-      content: "I vant to help you vith your orgo!"
-    };
-
-    // Update messages (append new messages)
-    setMessages((prev) => [...prev, userMessage, aiMessage]);
-    // Clear input
+    // Show user's message immediately
+    const userMessage: Message = { role: "user", content: inputValue };
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
+
+    // Call server route to get AI response
+    const { text } = await callChatAPI(userMessage.content);
+
+    // Add AI response
+    const aiMessage: Message = { role: "assistant", content: text };
+    setMessages((prev) => [...prev, aiMessage]);
   };
 
-  // Pressing "Enter" in the input triggers handleSend
+  // Pressing "Enter" triggers handleSend
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
       event.preventDefault();
@@ -96,7 +108,7 @@ export default function ChatOverlay({
               <option value="Claude">Claude</option>
             </select>
           </div>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={() => onClose()}>
             Close
           </Button>
         </div>
@@ -140,7 +152,7 @@ export default function ChatOverlay({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <Button className="ml-2 text-sm">Send</Button>
+          <Button onClick={() => callChatAPI(inputValue)} className="ml-2 text-sm">Send</Button>
         </div>
       </div>
     </div>

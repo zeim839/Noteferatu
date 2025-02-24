@@ -40,7 +40,7 @@ export default function Home() {
       </div>
 
       <div className='flex flex-row gap-1'>
-        <Button onClick={toggleChat} size='icon'><MessageSquare /></Button>
+        <Button onClick={() => {toggleChat(); console.log("hello");}} size='icon'><MessageSquare /></Button>
         <Button size='icon'><Settings /></Button>
       </div>
 
