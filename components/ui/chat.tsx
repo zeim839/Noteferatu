@@ -25,6 +25,7 @@ export default function ChatOverlay({
   }: ChatOverlayProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
 
   const handleSelectSource = (event: React.ChangeEvent<HTMLSelectElement>) => {
     onSourceChange(event.target.value);
@@ -64,12 +65,15 @@ export default function ChatOverlay({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
 
+    setIsTyping(true);
+
     // Call server route to get AI response
     const { text } = await callChatAPI(userMessage.content, source);
 
     // Add AI response
     const aiMessage: Message = { role: "assistant", content: text };
     setMessages((prev) => [...prev, aiMessage]);
+    setIsTyping(false);
   };
 
   // Pressing "Enter" triggers handleSend
@@ -90,7 +94,7 @@ export default function ChatOverlay({
       `}
     >
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between p-3 border-b">
+        <div className="flex items-center justify-between p-3 border-b bg-white">
           <div className="flex items-center gap-2">
             <label htmlFor="source" className="font-semibold">
               Select Model:
@@ -139,6 +143,15 @@ export default function ChatOverlay({
                 </div>
               );
             })
+          )}
+
+          {isTyping && (
+            <div className="self-start bg-gray-200 text-black rounded-md p-3 text-sm">
+              <div className="">
+                <span className="animate-pulse">Typing</span>
+                <span className="animate-pulse">...</span>
+              </div>
+            </div>
           )}
         </div>
 
