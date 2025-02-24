@@ -1,26 +1,66 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {basicSetup} from "codemirror"
 import { EditorView, keymap } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
-import { defaultKeymap } from "@codemirror/commands";
+import { defaultKeymap, indentWithTab } from "@codemirror/commands";
+import {markdown} from "@codemirror/lang-markdown"
+import {defaultHighlightStyle, syntaxHighlighting, HighlightStyle} from "@codemirror/language"
+import {tags} from "@lezer/highlight"  
+
+
 
 export default function CodeEditor() {
   const editorRef = useRef(null);
+  const [text, setText] = useState('')
+
+  const onUpdate = EditorView.updateListener.of((v) => {
+    setText(v.state.doc.toString())
+  })
 
   useEffect(() => {
     if (!editorRef.current) return;
 
+    const markdownHighlightStyle = HighlightStyle.define([
+      // Headings
+      { tag: tags.heading1, fontSize: "150%", fontWeight: "bold", color: "#2a9d8f", textDecoration: 'none' },
+      { tag: tags.heading2, fontSize: "140%", fontWeight: "bold", color: "#2a9d8f" },
+      { tag: tags.heading3, fontSize: "130%", fontWeight: "bold", color: "#2a9d8f" },
+      { tag: tags.heading4, fontSize: "120%", fontWeight: "bold", color: "#2a9d8f" },
+      { tag: tags.heading5, fontSize: "110%", fontWeight: "bold", color: "#2a9d8f" },
+      { tag: tags.heading6, fontSize: "100%", fontWeight: "bold", color: "#2a9d8f" },
+      
+      // Emphasis and strong (italic and bold)
+      { tag: tags.emphasis, fontStyle: "italic", color: "#e76f51" },
+      { tag: tags.strong, fontWeight: "bold", color: "#e76f51" },
+      
+      // Links
+      { tag: tags.link, textDecoration: "underline", color: "#264653" },
+      
+      // Blockquotes
+      { tag: tags.quote, fontStyle: "italic", borderLeft: "3px solid #a8dadc", paddingLeft: "4px", color: "#555" },
+      
+      // Inline code and code blocks
+      { tag: tags.monospace, backgroundColor: "#f4f4f4", fontFamily: "monospace", padding: "0 2px", borderRadius: "3px" },
+      
+      // Strikethrough (if your Markdown supports it)
+      { tag: tags.deleted, textDecoration: "line-through", color: "#6c757d" },
+      
+      { tag: tags.list, color: "#457b9d" },
+      { tag: tags.punctuation, color: "#999" },
+    ]);
+
     // Create a new CodeMirror 6 EditorState
-    const startState = EditorState.create({
+    const state = EditorState.create({
       doc: 'Hello World',
-      extensions: [basicSetup, keymap.of(defaultKeymap)],
+      extensions: [basicSetup, keymap.of([...defaultKeymap, indentWithTab]), markdown(), onUpdate,
+      syntaxHighlighting(markdownHighlightStyle)],
     });
 
     // Attach the editor to the div
     const view = new EditorView({
-      state: startState,
+      state,
       parent: editorRef.current,
     });
 

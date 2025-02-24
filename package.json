@@ -12,6 +12,7 @@
   "dependencies": {
     "@codemirror/commands": "^6.8.0",
     "@codemirror/lang-javascript": "^6.2.3",
+    "@codemirror/lang-markdown": "^6.3.2",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.36.3",
     "@radix-ui/react-dialog": "^1.1.6",
