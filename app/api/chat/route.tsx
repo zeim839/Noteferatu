@@ -11,6 +11,13 @@ const openai = new OpenAI({
   // dangerouslyAllowBrowser: false (default)
 })
 
+const MODEL_MAP: Record<string, string> = {
+  GPT: "openai/gpt-3.5-turbo",
+  // Gemini: "google/palm-2-chat-bison", // idk real one
+  DeepSeek: "deepseek/deepseek-r1:free",
+  Claude: "anthropic/claude-instant:free",
+};
+
 /**
  * POST /api/chat
  * Expects { userMessage: string } in JSON body.
@@ -39,12 +46,14 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { userMessage } = await request.json()
+    const { userMessage, source } = await request.json()
+
+    const chosenModel = MODEL_MAP[source] || "openai/gpt-3.5-turbo";
 
     // The model name, per the Medium article: "deepseek/deepseek-r1:free"
     // If you want to pass extra headers for analytics, see below.
     const completion = await openai.chat.completions.create({
-      model: "deepseek/deepseek-r1:free",
+      model: chosenModel,
       messages: [
         { role: "system", content: "You are a helpful assistant." },
         { role: "user", content: userMessage }

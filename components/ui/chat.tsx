@@ -39,12 +39,12 @@ export default function ChatOverlay({
     }
   }, [messages]);
 
-  async function callChatAPI(userMessage: string) {
+  async function callChatAPI(userMessage: string, source: string) {
     // Send userMessage to your Next.js API route
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userMessage })
+      body: JSON.stringify({ userMessage, source })
     });
 
     if (!response.ok) {
@@ -65,7 +65,7 @@ export default function ChatOverlay({
     setInputValue("");
 
     // Call server route to get AI response
-    const { text } = await callChatAPI(userMessage.content);
+    const { text } = await callChatAPI(userMessage.content, source);
 
     // Add AI response
     const aiMessage: Message = { role: "assistant", content: text };
@@ -152,7 +152,7 @@ export default function ChatOverlay({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <Button onClick={() => callChatAPI(inputValue)} className="ml-2 text-sm">Send</Button>
+          <Button onClick={() => callChatAPI(inputValue, source)} className="ml-2 text-sm">Send</Button>
         </div>
       </div>
     </div>
