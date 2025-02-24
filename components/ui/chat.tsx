@@ -143,7 +143,7 @@ export default function ChatOverlay({
         </div>
 
         {/* Input bar */}
-        <div className="flex items-center border-t p-3">
+        <div className="flex items-center border-t p-3 bg-white">
           <input
             type="text"
             placeholder={`Message ${source}`}
