@@ -10,10 +10,14 @@ import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
+interface CommandProps extends React.ComponentPropsWithoutRef<typeof CommandPrimitive> {
+  children?: React.ReactNode;
+}
+
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive>
->(({ className, ...props }, ref) => (
+  CommandProps
+>(({ className, children, ...props }, ref) => (
   <CommandPrimitive
     ref={ref}
     className={cn(
@@ -21,9 +25,11 @@ const Command = React.forwardRef<
       className
     )}
     {...props}
-  />
+  >
+    {children}
+  </CommandPrimitive>
 ))
-Command.displayName = CommandPrimitive.displayName
+Command.displayName = "Command"
 
 const CommandDialog = ({ children, ...props }: DialogProps) => {
   return (
@@ -37,14 +43,20 @@ const CommandDialog = ({ children, ...props }: DialogProps) => {
   )
 }
 
+interface CommandInputProps
+  extends React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> {
+  placeholder?: string
+}
+
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
->(({ className, ...props }, ref) => (
+  CommandInputProps
+>(({ className, placeholder, ...props }, ref) => (
   <div className="flex items-center border-b px-3" cmdk-input-wrapper="">
     <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
     <CommandPrimitive.Input
       ref={ref}
+      placeholder={placeholder} // pass it explicitly
       className={cn(
         "flex h-7 w-full rounded-md bg-transparent py-3 text-md outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className
@@ -54,30 +66,46 @@ const CommandInput = React.forwardRef<
   </div>
 ))
 
+
 CommandInput.displayName = CommandPrimitive.Input.displayName
+
+interface CommandListProps
+  extends React.ComponentPropsWithoutRef<typeof CommandPrimitive.List> {
+  children?: React.ReactNode
+}
 
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
->(({ className, ...props }, ref) => (
+  CommandListProps
+>(({ className, children, ...props }, ref) => (
   <CommandPrimitive.List
     ref={ref}
     className={cn("max-h-[300px] overflow-y-auto overflow-x-hidden", className)}
     {...props}
-  />
+  >
+    {children}
+  </CommandPrimitive.List>
 ))
+
 
 CommandList.displayName = CommandPrimitive.List.displayName
 
+interface CommandEmptyProps
+  extends React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> {
+  children?: React.ReactNode
+}
+
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
-  React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
->((props, ref) => (
+  CommandEmptyProps
+>(({ children, ...props }, ref) => (
   <CommandPrimitive.Empty
     ref={ref}
     className="py-6 text-center text-sm"
     {...props}
-  />
+  >
+    {children}
+  </CommandPrimitive.Empty>
 ))
 
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName
