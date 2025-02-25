@@ -2,14 +2,28 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import {basicSetup} from "codemirror"
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap, MatchDecorator, Decoration, WidgetType, DecorationSet, ViewPlugin, ViewUpdate } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import {markdown} from "@codemirror/lang-markdown"
-import {defaultHighlightStyle, syntaxHighlighting, HighlightStyle} from "@codemirror/language"
+import {syntaxHighlighting, HighlightStyle} from "@codemirror/language"
 import {tags} from "@lezer/highlight"  
 
 
+class RenderedMarkdownWidget extends WidgetType {
+  text: string;
+  constructor(text: string) {
+      super();
+      this.text = text;
+  }
+  toDOM(view: EditorView): HTMLElement {
+    let element = document.createElement('span');
+    element.className = 'rendered-markdown-widget';
+    element.textContent = this.text;
+
+    return element;
+  }
+}
 
 export default function CodeEditor() {
   const editorRef = useRef(null);
@@ -18,6 +32,13 @@ export default function CodeEditor() {
   const onUpdate = EditorView.updateListener.of((v) => {
     setText(v.state.doc.toString())
   })
+
+  const placeholderMatcher = new MatchDecorator({
+    regexp: /^# (.*)/g,
+    decoration: match => Decoration.replace({
+      widget: new RenderedMarkdownWidget(match[1]),
+    })
+  });
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -51,11 +72,26 @@ export default function CodeEditor() {
       { tag: tags.punctuation, color: "#999" },
     ]);
 
+    const placeholders = ViewPlugin.fromClass(class {
+      placeholders: DecorationSet
+      constructor(view: EditorView) {
+        this.placeholders = placeholderMatcher.createDeco(view)
+      }
+      update(update: ViewUpdate) {
+        this.placeholders = placeholderMatcher.updateDeco(update, this.placeholders)
+      }
+    }, {
+      decorations: instance => instance.placeholders,
+      provide: plugin => EditorView.atomicRanges.of(view => {
+        return view.plugin(plugin)?.placeholders || Decoration.none
+      })
+    })
+
     // Create a new CodeMirror 6 EditorState
     const state = EditorState.create({
-      doc: 'Hello World',
+      doc: 'Hello [[pattern1]]',
       extensions: [basicSetup, keymap.of([...defaultKeymap, indentWithTab]), markdown(), onUpdate,
-      syntaxHighlighting(markdownHighlightStyle)],
+      syntaxHighlighting(markdownHighlightStyle), EditorView.lineWrapping, placeholders],
     });
 
     // Attach the editor to the div
