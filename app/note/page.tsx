@@ -11,7 +11,7 @@ import { tags } from "@lezer/highlight";
 
 
 const headerTheme = EditorView.theme({
-  ".cm-hidden-hash": { 
+  ".cm-hidden-hash": {
     fontSize: "0",
     color: "transparent",
     width: "0",
@@ -55,8 +55,8 @@ const headerDecorations = ViewPlugin.fromClass(
 
           const isSelectedOrActive = view.state.selection.ranges.some(range => {
             const selectionOverlaps = range.from <= lineRange.to && range.to >= lineRange.from;
-            const cursorOnLine = range.from === range.to && 
-                                range.from >= lineRange.from && 
+            const cursorOnLine = range.from === range.to &&
+                                range.from >= lineRange.from &&
                                 range.from <= lineRange.to;
             return selectionOverlaps || cursorOnLine;
           });
@@ -137,7 +137,7 @@ export default function CodeEditor() {
     });
 
     return () => view.destroy();
-  }, []);
+  });
 
   return <div ref={editorRef} style={{ border: "1px solid #ddd", padding: "10px" }} />;
 }
