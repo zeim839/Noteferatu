@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { basicSetup } from "codemirror";
-import { EditorView, keymap, Decoration, ViewPlugin, ViewUpdate, highlightActiveLine } from "@codemirror/view";
+import { EditorView, keymap, Decoration, DecorationSet, ViewPlugin, ViewUpdate, highlightActiveLine } from "@codemirror/view";
 import { EditorState, RangeSetBuilder } from "@codemirror/state";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
@@ -32,7 +32,7 @@ const headerTheme = EditorView.theme({
 
 const headerDecorations = ViewPlugin.fromClass(
   class {
-    decorations: any;
+    decorations: DecorationSet;
 
     constructor(view: EditorView) {
       this.decorations = this.createDecorations(view);
@@ -107,6 +107,7 @@ const markdownHighlightStyle = HighlightStyle.define([
 export default function CodeEditor() {
   const editorRef = useRef(null);
   const [text, setText] = useState('');
+  console.log(text)
 
   const onUpdate = EditorView.updateListener.of((v) => {
     setText(v.state.doc.toString());
