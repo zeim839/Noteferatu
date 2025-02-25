@@ -68,7 +68,11 @@ export async function POST(request: Request) {
     const text = completion.choices[0]?.message?.content || ""
     console.log("helloooooo")
     return NextResponse.json({ text })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+    // fallback if it’s not an Error instance
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
