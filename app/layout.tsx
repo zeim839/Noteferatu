@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { LayoutProvider, Layout, LayoutContent } from "@/components/ui/layout"
+import { LayoutProvider, Layout } from "@/components/layout"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -16,10 +16,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <LayoutProvider>
-          <Layout/>
-          <LayoutContent>
+          <Layout>
             {children}
-          </LayoutContent>
+          </Layout>
         </LayoutProvider>
       </body>
     </html>

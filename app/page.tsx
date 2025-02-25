@@ -1,21 +1,11 @@
 "use client"
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-import { Button } from "@/components/ui/button"
-import { AlignJustify, MessageSquare, Settings } from 'lucide-react'
+import { useRouter } from "next/navigation"
+import ChatOverlay from "@/components/ui/chat"
 import { useState } from "react"
 
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty
-} from "@/components/ui/command"
-
-import ChatOverlay from "@/components/ui/chat"
-
 export default function Home() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false);
   const [source, setSource] = useState("GPT");
 
@@ -25,25 +15,15 @@ export default function Home() {
 
   const handleSourceChange = (newSource: string) => {
     setSource(newSource);
-  };
+    };
 
   return (
-    <div className='w-full flex flex-row p-3 justify-between'>
-      <div className='flex flex-row gap-2'>
-        <Button size='icon'><AlignJustify /></Button>
-        <Command>
-          <CommandInput placeholder='Search Notes' />
-          <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-          </CommandList>
-        </Command>
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="flex gap-1 flex-col items-center justify-center"
+        onClick={() => router.push("/note") }>
+        <div className="rounded-full w-12 h-12 bg-[#4C8EDA]" />
+        <p>Click me!</p>
       </div>
-
-      <div className='flex flex-row gap-1'>
-        <Button onClick={() => {toggleChat(); console.log("hello");}} size='icon'><MessageSquare /></Button>
-        <Button size='icon'><Settings /></Button>
-      </div>
-
       {/* Chat Overlay */}
       <ChatOverlay
         isOpen={isOpen}
@@ -51,7 +31,6 @@ export default function Home() {
         onClose={toggleChat}
         onSourceChange={handleSourceChange}
       />
-
     </div>
   )
 }
