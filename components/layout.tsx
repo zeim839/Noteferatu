@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { AlignJustify, MessageSquare, Settings } from "lucide-react"
 import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
+import Chat from "@/components/chat"
 
 // Handles layout state.
 type LayoutContext = {
@@ -76,16 +77,14 @@ const RightNavigation = () => {
 // sidebar is open.
 const LeftSidebar = () => {
   const {isRecentsOpen} = useLayout()
+  if (!isRecentsOpen) {
+    return null
+  }
   return (
-    <div>
-      { (isRecentsOpen) ? (
-        <div className="min-w-[372px] w-[372px] h-screen bg-background p-3">
-          <div className="fixed z-101">
-            <LeftNavigation />
-          </div>
-        </div>
-      ) : null
-      }
+    <div className="min-w-[372px] w-[372px] h-screen bg-background p-3">
+      <div className="fixed z-101">
+        <LeftNavigation />
+      </div>
     </div>
   )
 }
@@ -94,17 +93,16 @@ const LeftSidebar = () => {
 // own RightNavigation, which appears only when the sidebar is open.
 const RightSidebar = () => {
   const {isChatOpen} = useLayout()
+  if (!isChatOpen) {
+    return null
+  }
   return (
-    <>
-      { (isChatOpen) ? (
-        <div className="min-w-[370px] w-[370px] h-screen bg-background p-3">
-          <div className="fixed z-101 right-3">
-            <RightNavigation />
-          </div>
-        </div>
-      ) : null
-      }
-    </>
+    <div className="min-w-[420px] w-[420px] h-screen bg-background p-3">
+      <div className="fixed z-101 right-3">
+        <RightNavigation />
+      </div>
+      <Chat />
+    </div>
   )
 }
 

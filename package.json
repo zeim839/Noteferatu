@@ -24,6 +24,7 @@
     "codemirror": "^6.0.1",
     "lucide-react": "^0.475.0",
     "next": "15.1.6",
+    "openai": "^4.85.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sqlite": "^5.1.1",
