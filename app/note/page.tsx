@@ -137,7 +137,7 @@ export default function CodeEditor() {
     });
 
     return () => view.destroy();
-  });
+  }, []);
 
-  return <div ref={editorRef} style={{ border: "1px solid #ddd", padding: "10px" }} />;
+  return <div ref={editorRef} style={{ border: "1px solid #ddd", padding: "10px"}} />;
 }
