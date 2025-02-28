@@ -8,6 +8,7 @@ import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
+import build from "next/dist/build";
 
 
 const headerTheme = EditorView.theme({
@@ -28,6 +29,17 @@ const headerTheme = EditorView.theme({
   ".cm-styled-header.level-4": { fontSize: "120%", margin: "5px 0" },
   ".cm-styled-header.level-5": { fontSize: "110%", margin: "5px 0" },
   ".cm-styled-header.level-6": { fontSize: "100%", margin: "5px 0" },
+  
+  ".cm-hidden-bold": {
+    fontSize: "0",
+    color: "transparent",
+    width: "0",
+    padding: "0",
+    margin: "0",
+  },
+  ".cm-styled-bold": {
+    fontWeight: "bold",
+  },
 });
 
 const headerDecorations = ViewPlugin.fromClass(
@@ -51,36 +63,63 @@ const headerDecorations = ViewPlugin.fromClass(
         let pos = from;
         while (pos < to) {
           const line = view.state.doc.lineAt(pos);
+
           const lineRange = { from: line.from, to: line.to };
-
-          const isSelectedOrActive = view.state.selection.ranges.some(range => {
-            const selectionOverlaps = range.from <= lineRange.to && range.to >= lineRange.from;
-            const cursorOnLine = range.from === range.to &&
-                                range.from >= lineRange.from &&
-                                range.from <= lineRange.to;
-            return selectionOverlaps || cursorOnLine;
-          });
-
-          if (!isSelectedOrActive) {
-            const match = line.text.match(/^(#{1,6})(\s)(.*)/);
-            if (match) {
-              const hashLevel = match[1].length;
-              const hashStart = line.from + match.index!;
-              const spaceEnd = hashStart + match[1].length + 1;
-
-              builder.add(
-                hashStart,
-                spaceEnd,
-                Decoration.mark({ class: "cm-hidden-hash" })
+          const selectionOverlaps = view.state.selection.ranges.some(range => range.from <= lineRange.to && range.to >= lineRange.from);
+          const cursorOnLine = view.state.selection.ranges.some(range => range.from === range.to && range.from >= lineRange.from && range.from <= lineRange.to);
+          const isSelectedOrActive = selectionOverlaps || cursorOnLine;
+          const cursorPositionInLine = selectionOverlaps ? view.state.selection.main.head - line.from : null;
+          const headerMatch = line.text.match(/^(#{1,6})(\s)(.*)/);
+          const boldMatch = line.text.match(/(\*\*|__)(.*?)(\*\*|__)/);
+          if (boldMatch) {
+            const start = line.from + boldMatch.index!;
+            const end = start + boldMatch[0].length;
+            builder.add(
+                start,
+                end,
+                Decoration.mark({ class: "cm-styled-bold" })
               );
-
+            if (!(cursorPositionInLine && cursorPositionInLine >= boldMatch.index! && cursorPositionInLine <= boldMatch.index! + boldMatch[0].length)) {
+              // hide the asterisks
+              const firstAsteriskSet = boldMatch.index! + line.from;
+              const secondAsteriskSet = line.from + boldMatch.index! + boldMatch[0].length - 2;
               builder.add(
-                spaceEnd,
-                line.to,
-                Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+                firstAsteriskSet,
+                firstAsteriskSet + 2,
+                Decoration.mark({ class: "cm-hidden-bold" })
+              );
+              builder.add(
+                secondAsteriskSet,
+                secondAsteriskSet + 2,
+                Decoration.mark({ class: "cm-hidden-bold" })
               );
             }
           }
+          if (headerMatch) {
+            const hashLevel = headerMatch[1].length;
+            const hashStart = line.from + headerMatch.index!;
+            const spaceEnd = hashStart + headerMatch[1].length + 1;
+            if (!isSelectedOrActive) {
+                builder.add(
+                  hashStart,
+                  spaceEnd,
+                  Decoration.mark({ class: "cm-hidden-hash" })
+                );
+
+                builder.add(
+                  spaceEnd,
+                  line.to,
+                  Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+                );
+              }
+              else {
+                builder.add(
+                  hashStart,
+                  line.to,
+                  Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+                );
+              }
+            }
           pos = line.to + 1;
         }
       }
@@ -95,7 +134,6 @@ const headerDecorations = ViewPlugin.fromClass(
 
 const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.emphasis, fontStyle: "italic", color: "#e76f51" },
-  { tag: tags.strong, fontWeight: "bold", color: "#e76f51" },
   { tag: tags.link, textDecoration: "underline", color: "#264653" },
   { tag: tags.quote, fontStyle: "italic", borderLeft: "3px solid #a8dadc", paddingLeft: "4px", color: "#555" },
   { tag: tags.monospace, backgroundColor: "#f4f4f4", fontFamily: "monospace", padding: "0 2px", borderRadius: "3px" },
