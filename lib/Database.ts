@@ -1,0 +1,79 @@
+import sqlite from '@tauri-apps/plugin-sql'
+import path from 'path'
+import os from 'os'
+
+// SETUP_QUERY is an SQL statement that sets up the database schema.
+const SETUP_QUERY = `
+CREATE TABLE IF NOT EXISTS Notes (
+  id      INTEGER  PRIMARY KEY AUTOINCREMENT,
+  title   TEXT     NOT NULL,
+  content TEXT     NOT NULL,
+  atime   DATETIME DEFAULT CURRENT_TIMESTAMP,
+  mtime   DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS Edges (
+  id  INTEGER PRIMARY KEY AUTOINCREMENT,
+  src INTEGER NOT NULL,
+  dst INTEGER NOT NULL,
+
+  FOREIGN KEY(src) REFERENCES Notes(id) ON DELETE CASCADE,
+  FOREIGN KEY(dst) REFERENCES Notes(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS Keys (
+  id         INTEGER  PRIMARY KEY AUTOINCREMENT,
+  key_hash   TEXT     NOT NULL UNIQUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+`
+
+// DEFAULT_PATH is the default SQLite database filepath, which varies
+// depending on the user's platform.
+export const DEFAULT_PATH = (os.platform() === 'win32') ?
+  path.join(process.env.LOCALAPPDATA || path.resolve(), 'db.sqlite') :
+  path.join('~/.noteferatu', 'db.sqlite')
+
+// Database wraps the Tauri SQLite database API into a class. It can be
+// used to interface with the database directly, or as a superclass for
+// ORMs.
+class Database {
+
+  private driver : sqlite | null = null
+  private path : string = ""
+
+  // Creates a new database object which will connect to the SQLite
+  // instance at the given path, creating a new SQLite database if
+  // a file is not found at the path.
+  constructor(path: string) {
+    this.path = path
+  }
+
+  // connect to the database by opening the SQLite file path specified
+  // in the constructor and creating necessary tables (if they don't
+  // already exist).
+  async connect() {
+    this.driver = await sqlite.load(this.path)
+    await this.driver.execute(SETUP_QUERY)
+  }
+
+  // Passes an SQL expression to the database for execution. An error is
+  // thrown if the database instance has not been connected.
+  async execute(query: string, bindValues?: unknown[]) {
+    if (this.driver === null) {
+      throw new Error("cannot execute query while database is disconnected")
+    }
+    return await this.driver.execute(query, bindValues)
+  }
+
+  // Passes in a SELECT query to the database for execution. An error is
+  // throw if the database instance has not been connected.
+  async select(query: string, bindValues?: unknown[]) {
+    if (this.driver === null) {
+      throw new Error("cannot execute select query while database is disconnected")
+    }
+    return await this.driver.select(query, bindValues)
+  }
+}
+
+export default Database
