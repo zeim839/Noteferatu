@@ -1,9 +1,15 @@
 "use client"
 
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
+import Database from "@/lib/Database"
 
 export default function Home() {
   const router = useRouter()
+  useEffect(() => {
+    const db = new Database('db.sqlite')
+    db.connect()
+  }, [])
   return (
     <div className="w-full h-full flex items-center justify-center">
       <div className="flex gap-1 flex-col items-center justify-center"
