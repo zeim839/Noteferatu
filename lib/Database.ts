@@ -1,6 +1,4 @@
 import sqlite from '@tauri-apps/plugin-sql'
-import path from 'path'
-import os from 'os'
 
 // SETUP_QUERY is an SQL statement that sets up the database schema.
 const SETUP_QUERY = `
@@ -28,12 +26,6 @@ CREATE TABLE IF NOT EXISTS Keys (
 );
 `
 
-// DEFAULT_PATH is the default SQLite database filepath, which varies
-// depending on the user's platform.
-export const DEFAULT_PATH = (os.platform() === 'win32') ?
-  path.join(process.env.LOCALAPPDATA || path.resolve(), 'db.sqlite') :
-  path.join('~/.noteferatu', 'db.sqlite')
-
 // Database wraps the Tauri SQLite database API into a class. It can be
 // used to interface with the database directly, or as a superclass for
 // ORMs.
@@ -46,7 +38,7 @@ class Database {
   // instance at the given path, creating a new SQLite database if
   // a file is not found at the path.
   constructor(path: string) {
-    this.path = path
+    this.path = `sqlite:${path}`
   }
 
   // connect to the database by opening the SQLite file path specified
