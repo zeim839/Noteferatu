@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { AlignJustify, MessageSquare, Settings } from "lucide-react"
 import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
-import Chat from "@/components/chat"
+import Chat from "@/components/chat/chat"
 
 // Handles layout state.
 type LayoutContext = {
