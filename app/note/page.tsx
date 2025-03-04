@@ -3,12 +3,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { basicSetup } from "codemirror";
 import { EditorView, keymap, Decoration, DecorationSet, ViewPlugin, ViewUpdate, highlightActiveLine } from "@codemirror/view";
-import { EditorState, RangeSetBuilder } from "@codemirror/state";
+import { EditorState, Line, RangeSetBuilder } from "@codemirror/state";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
-import build from "next/dist/build";
 
 
 const headerTheme = EditorView.theme({
@@ -42,6 +41,102 @@ const headerTheme = EditorView.theme({
   },
 });
 
+type DecorationContext = {
+  view: EditorView;
+  line: Line;
+  lineRange: { from: number; to: number };
+  selectionOverlaps: boolean;
+  cursorOnLine: boolean;
+  cursorPositionInLine: number | null;
+  builder: RangeSetBuilder<Decoration>;
+}
+
+const createDecorationContext = (view: EditorView, line: Line, builder: RangeSetBuilder<Decoration>): DecorationContext => {
+  const lineRange = { from: line.from, to: line.to };
+  const selectionOverlaps = view.state.selection.ranges.some(
+    range => range.from <= lineRange.to && range.to >= lineRange.from
+  );
+  const cursorOnLine = view.state.selection.ranges.some(
+    range => range.from === range.to && 
+             range.from >= lineRange.from && 
+             range.from <= lineRange.to
+  );
+  const cursorPositionInLine = selectionOverlaps 
+    ? view.state.selection.main.head - line.from 
+    : null;
+
+  return {
+    view,
+    line,
+    lineRange,
+    selectionOverlaps,
+    cursorOnLine,
+    cursorPositionInLine,
+    builder
+  };
+};
+
+const decorateHeaders = (context: DecorationContext) => {
+  const { line, selectionOverlaps, cursorOnLine, builder } = context;
+  const headerMatch = line.text.match(/^(#{1,6})(\s)(.*)/);
+
+  if (headerMatch) {
+    const hashLevel = headerMatch[1].length;
+    const hashStart = line.from + headerMatch.index!;
+    const spaceEnd = hashStart + headerMatch[1].length + 1;
+    if (!(selectionOverlaps || cursorOnLine)) {
+        builder.add(
+          hashStart,
+          spaceEnd,
+          Decoration.mark({ class: "cm-hidden-hash" })
+        );
+
+        builder.add(
+          spaceEnd,
+          line.to,
+          Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+        );
+      }
+      else {
+        builder.add(
+          hashStart,
+          line.to,
+          Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+        );
+      }
+    }
+}
+
+const decorateBold = (context: DecorationContext) => {
+  const { line, cursorPositionInLine, builder } = context;
+  const boldMatch = line.text.match(/(\*\*|__)(.*?)(\*\*|__)/);
+
+  if (boldMatch) {
+    const start = line.from + boldMatch.index!;
+    const end = start + boldMatch[0].length;
+    builder.add(
+        start,
+        end,
+        Decoration.mark({ class: "cm-styled-bold" })
+      );
+    if (!(cursorPositionInLine && cursorPositionInLine >= boldMatch.index! && cursorPositionInLine <= boldMatch.index! + boldMatch[0].length)) {
+      // hide the asterisks
+      const firstAsteriskSet = boldMatch.index! + line.from;
+      const secondAsteriskSet = line.from + boldMatch.index! + boldMatch[0].length - 2;
+      builder.add(
+        firstAsteriskSet,
+        firstAsteriskSet + 2,
+        Decoration.mark({ class: "cm-hidden-bold" })
+      );
+      builder.add(
+        secondAsteriskSet,
+        secondAsteriskSet + 2,
+        Decoration.mark({ class: "cm-hidden-bold" })
+      );
+    }
+  }
+}
+
 const headerDecorations = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
@@ -63,63 +158,11 @@ const headerDecorations = ViewPlugin.fromClass(
         let pos = from;
         while (pos < to) {
           const line = view.state.doc.lineAt(pos);
+          const context = createDecorationContext(view, line, builder);
 
-          const lineRange = { from: line.from, to: line.to };
-          const selectionOverlaps = view.state.selection.ranges.some(range => range.from <= lineRange.to && range.to >= lineRange.from);
-          const cursorOnLine = view.state.selection.ranges.some(range => range.from === range.to && range.from >= lineRange.from && range.from <= lineRange.to);
-          const isSelectedOrActive = selectionOverlaps || cursorOnLine;
-          const cursorPositionInLine = selectionOverlaps ? view.state.selection.main.head - line.from : null;
-          const headerMatch = line.text.match(/^(#{1,6})(\s)(.*)/);
-          const boldMatch = line.text.match(/(\*\*|__)(.*?)(\*\*|__)/);
-          if (boldMatch) {
-            const start = line.from + boldMatch.index!;
-            const end = start + boldMatch[0].length;
-            builder.add(
-                start,
-                end,
-                Decoration.mark({ class: "cm-styled-bold" })
-              );
-            if (!(cursorPositionInLine && cursorPositionInLine >= boldMatch.index! && cursorPositionInLine <= boldMatch.index! + boldMatch[0].length)) {
-              // hide the asterisks
-              const firstAsteriskSet = boldMatch.index! + line.from;
-              const secondAsteriskSet = line.from + boldMatch.index! + boldMatch[0].length - 2;
-              builder.add(
-                firstAsteriskSet,
-                firstAsteriskSet + 2,
-                Decoration.mark({ class: "cm-hidden-bold" })
-              );
-              builder.add(
-                secondAsteriskSet,
-                secondAsteriskSet + 2,
-                Decoration.mark({ class: "cm-hidden-bold" })
-              );
-            }
-          }
-          if (headerMatch) {
-            const hashLevel = headerMatch[1].length;
-            const hashStart = line.from + headerMatch.index!;
-            const spaceEnd = hashStart + headerMatch[1].length + 1;
-            if (!isSelectedOrActive) {
-                builder.add(
-                  hashStart,
-                  spaceEnd,
-                  Decoration.mark({ class: "cm-hidden-hash" })
-                );
+          decorateHeaders(context);
+          decorateBold(context);
 
-                builder.add(
-                  spaceEnd,
-                  line.to,
-                  Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
-                );
-              }
-              else {
-                builder.add(
-                  hashStart,
-                  line.to,
-                  Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
-                );
-              }
-            }
           pos = line.to + 1;
         }
       }
