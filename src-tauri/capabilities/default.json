@@ -8,6 +8,6 @@
   "permissions": [
     "core:default",
     "sql:default",
-    "sql:default"
+    "sql:allow-execute"
   ]
 }
