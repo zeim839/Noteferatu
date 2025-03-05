@@ -1,35 +1,36 @@
 "use client"
 
 import { DefaultNode, Graph } from '@visx/network'
+import { Text } from "@visx/text"
 import { useRouter } from "next/navigation"
 
 export type NetworkProps = {
-  width: number
-  height: number
+  width  : number
+  height : number
 }
 
 interface CustomNode {
-  x: number
-  y: number
-  color?: string
+  x          : number
+  y          : number
+  title      : string
+  isSelected : boolean
 }
 
 interface CustomLink {
-  source: CustomNode
-  target: CustomNode
-  dashed?: boolean
+  source : CustomNode
+  target : CustomNode
 }
 
 const nodes: CustomNode[] = [
-  { x: 50, y: 20 },
-  { x: 200, y: 250 },
-  { x: 300, y: 40, color: '#26deb0' },
+  { x: 70, y: 20, title: 'Roman Republic', isSelected: false },
+  { x: 200, y: 250, title: 'Second Punic War', isSelected: false },
+  { x: 300, y: 40, title: 'Hamilcar Barca', isSelected: true },
 ]
 
 const links: CustomLink[] = [
   { source: nodes[0], target: nodes[1] },
   { source: nodes[1], target: nodes[2] },
-  { source: nodes[2], target: nodes[0], dashed: true },
+  { source: nodes[2], target: nodes[0] },
 ]
 
 const graph = {
@@ -37,27 +38,33 @@ const graph = {
   links,
 }
 
-export default function GraphView({ width, height }: NetworkProps) {
+const Node = ({node} : { node: CustomNode }) => {
   const router = useRouter()
-  return width < 10 ? null : (
+  return (
+    <>
+      { (node.isSelected) ? (<DefaultNode r={20} fill='#CE2E8C' />) : null }
+      <DefaultNode r={ (node.isSelected) ? 16 : 20 }
+        fill='#4C8EDA' onClick={() => router.push('/note')} />
+      <Text dy={40} verticalAnchor="middle" textAnchor="middle">{node.title}</Text>
+    </>
+  )
+}
+
+export default function GraphView({ width, height }: NetworkProps) {
+  return (
     <svg width={width} height={height}>
       <Graph<CustomLink, CustomNode>
         graph={graph}
-        top={20}
-        left={100}
-        nodeComponent={({ node: { color } }) =>
-          color ? <DefaultNode onClick={() => router.push('/note')} fill={color} /> : <DefaultNode onClick={() => router.push('/note')} />
-        }
-        linkComponent={({ link: { source, target, dashed } }) => (
+        nodeComponent={Node}
+        linkComponent={({ link: { source, target } }) => (
           <line
             x1={source.x}
             y1={source.y}
             x2={target.x}
             y2={target.y}
-            strokeWidth={2}
-            stroke="#999"
+            strokeWidth={1}
+            stroke="#979797"
             strokeOpacity={0.6}
-            strokeDasharray={dashed ? '8,4' : undefined}
           />
         )}
       />
