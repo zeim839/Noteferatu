@@ -47,7 +47,6 @@ type DecorationContext = {
   lineRange: { from: number; to: number };
   selection: { start: number; end: number } | null;
   cursorOnLine: boolean;
-  cursorPositionInLine: number | null;
   builder: RangeSetBuilder<Decoration>;
 }
 
@@ -67,9 +66,6 @@ const createDecorationContext = (view: EditorView, line: Line, builder: RangeSet
              range.from <= lineRange.to
     }
   );
-  const cursorPositionInLine = cursorOnLine 
-    ? view.state.selection.main.head - line.from 
-    : null;
 
   return {
     view,
@@ -77,7 +73,6 @@ const createDecorationContext = (view: EditorView, line: Line, builder: RangeSet
     lineRange,
     selection,
     cursorOnLine,
-    cursorPositionInLine,
     builder
   };
 };
@@ -114,18 +109,18 @@ const decorateHeaders = (context: DecorationContext) => {
 }
 
 const decorateBold = (context: DecorationContext) => {
-  const { line, cursorPositionInLine, builder } = context;
+  const { line, selection, builder } = context;
   const boldMatches = line.text.matchAll(/\*\*(.*?)\*\*/g);
   for (const boldMatch of boldMatches) {
     const start = line.from + boldMatch.index!;
     const end = start + boldMatch[0].length;
-    const intersectingSelection = context.selection && context.selection.start < end - line.from && context.selection.end > start - line.from;
+    const intersectingSelection = selection && selection.start < end - line.from && selection.end > start - line.from;
     builder.add(
         start,
         end,
         Decoration.mark({ class: "cm-styled-bold" })
       );
-    if (!intersectingSelection && !(cursorPositionInLine && cursorPositionInLine >= boldMatch.index! && cursorPositionInLine <= boldMatch.index! + boldMatch[0].length)) {
+    if (!intersectingSelection) {
       // hide the asterisks
       const firstAsteriskSet = boldMatch.index! + line.from;
       const secondAsteriskSet = line.from + boldMatch.index! + boldMatch[0].length - 2;
