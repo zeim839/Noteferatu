@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { basicSetup } from "codemirror";
-import { EditorView, keymap, Decoration, DecorationSet, ViewPlugin, ViewUpdate, highlightActiveLine } from "@codemirror/view";
+import { EditorView, keymap, Decoration, DecorationSet, ViewPlugin, ViewUpdate, WidgetType } from "@codemirror/view";
 import { EditorState, Line, RangeSetBuilder } from "@codemirror/state";
 import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
@@ -11,7 +11,7 @@ import { tags } from "@lezer/highlight";
 
 
 const headerTheme = EditorView.theme({
-  ".cm-hidden-hash": {
+  ".cm-hidden-characters": {
     fontSize: "0",
     color: "transparent",
     width: "0",
@@ -28,17 +28,18 @@ const headerTheme = EditorView.theme({
   ".cm-styled-header.level-4": { fontSize: "120%", margin: "5px 0" },
   ".cm-styled-header.level-5": { fontSize: "110%", margin: "5px 0" },
   ".cm-styled-header.level-6": { fontSize: "100%", margin: "5px 0" },
-  
-  ".cm-hidden-bold": {
-    fontSize: "0",
-    color: "transparent",
-    width: "0",
-    padding: "0",
-    margin: "0",
-  },
+
   ".cm-styled-bold": {
     fontWeight: "bold",
   },
+
+  ".cm-styled-link": {
+    color: "#3477eb",
+  },
+  ".cm-styled-link *": {
+    color: "inherit"
+  }
+  
 });
 
 type DecorationContext = {
@@ -53,7 +54,7 @@ type DecorationContext = {
 const createDecorationContext = (view: EditorView, line: Line, builder: RangeSetBuilder<Decoration>): DecorationContext => {
   const lineRange = { from: line.from, to: line.to };
   const mainSelection = view.state.selection.main;
-  var selection: { start: number; end: number; } | null = null;
+  let selection: { start: number; end: number; } | null = null;
   if (mainSelection.from <= lineRange.to && mainSelection.to >= lineRange.from) {
     const start = Math.max(lineRange.from, Math.min(mainSelection.from, mainSelection.to)) - line.from;
     const end = Math.min(lineRange.to, Math.max(mainSelection.from, mainSelection.to)) - line.from;
@@ -89,7 +90,7 @@ const decorateHeaders = (context: DecorationContext) => {
         builder.add(
           hashStart,
           spaceEnd,
-          Decoration.mark({ class: "cm-hidden-hash" })
+          Decoration.mark({ class: "cm-hidden-characters" })
         );
 
         builder.add(
@@ -127,18 +128,71 @@ const decorateBold = (context: DecorationContext) => {
       builder.add(
         firstAsteriskSet,
         firstAsteriskSet + 2,
-        Decoration.mark({ class: "cm-hidden-bold" })
+        Decoration.mark({ class: "cm-hidden-characters" })
       );
       builder.add(
         secondAsteriskSet,
         secondAsteriskSet + 2,
-        Decoration.mark({ class: "cm-hidden-bold" })
+        Decoration.mark({ class: "cm-hidden-characters" })
       );
     }
   }
 }
 
-const headerDecorations = ViewPlugin.fromClass(
+class LinkWidget extends WidgetType {
+  constructor(readonly text: string, readonly url: string) {
+    super();
+  }
+
+  toDOM() {
+    const link = document.createElement("a");
+    link.textContent = this.text;
+    link.href = this.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.classList.add("cm-styled-link");
+    return link;
+  }
+}
+
+const decorateLink = (context: DecorationContext) => {
+  const { line, selection, builder } = context;
+  const linkMatches = line.text.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g);
+
+  for (const linkMatch of linkMatches) {
+    const start = line.from + linkMatch.index!;
+    const textStart = start + 1;
+    const textEnd = start + linkMatch[1].length + 1;
+    const end = start + linkMatch[0].length;
+    const intersectingSelection = selection && selection.start < end - line.from && selection.end > start - line.from;
+    
+    builder.add(
+      start,
+      end,
+      Decoration.mark({ class: "cm-styled-link" })
+    );
+
+    if (!intersectingSelection) {
+      builder.add(
+        start,
+        start + 1,
+        Decoration.mark({ class: "cm-hidden-characters" })
+      );
+      builder.add(
+        textStart,
+        textEnd,
+        Decoration.widget({ widget: new LinkWidget(linkMatch[1], linkMatch[2]) })
+      );
+      builder.add(
+        textEnd,
+        end,
+        Decoration.mark({ class: "cm-hidden-characters" })
+      );
+    }
+  }
+}
+
+const Decorations = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
 
@@ -162,6 +216,7 @@ const headerDecorations = ViewPlugin.fromClass(
           const context = createDecorationContext(view, line, builder);
           decorateHeaders(context);
           decorateBold(context);
+          decorateLink(context);
 
           pos = line.to + 1;
         }
@@ -190,9 +245,14 @@ export default function CodeEditor() {
   const [text, setText] = useState('');
   console.log(text)
 
-  const onUpdate = EditorView.updateListener.of((v) => {
-    setText(v.state.doc.toString());
-  });
+  const onUpdate = useMemo(
+    () =>
+      EditorView.updateListener.of((v) => {
+        setText(v.state.doc.toString());
+      }),
+    []
+  );
+  
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -207,8 +267,7 @@ export default function CodeEditor() {
         syntaxHighlighting(markdownHighlightStyle),
         EditorView.lineWrapping,
         headerTheme,
-        headerDecorations,
-        highlightActiveLine(),
+        Decorations,
       ],
     });
 
@@ -218,7 +277,7 @@ export default function CodeEditor() {
     });
 
     return () => view.destroy();
-  }, []);
+  }, [onUpdate]);
 
   return <div ref={editorRef} style={{ border: "1px solid #ddd", padding: "10px"}} />;
 }
