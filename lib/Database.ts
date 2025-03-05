@@ -24,6 +24,12 @@ CREATE TABLE IF NOT EXISTS Keys (
   key_hash   TEXT     NOT NULL UNIQUE,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE IF NOT EXISTS Chat_History(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  is_user BOOLEAN NOT NULL,
+  content TEXT NOT NULL,
+  time DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 `
 
 // Database wraps the Tauri SQLite database API into a class. It can be
