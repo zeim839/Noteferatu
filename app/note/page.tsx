@@ -45,7 +45,7 @@ type DecorationContext = {
   view: EditorView;
   line: Line;
   lineRange: { from: number; to: number };
-  selectionOverlaps: boolean;
+  selection: { start: number; end: number } | null;
   cursorOnLine: boolean;
   cursorPositionInLine: number | null;
   builder: RangeSetBuilder<Decoration>;
@@ -53,15 +53,21 @@ type DecorationContext = {
 
 const createDecorationContext = (view: EditorView, line: Line, builder: RangeSetBuilder<Decoration>): DecorationContext => {
   const lineRange = { from: line.from, to: line.to };
-  const selectionOverlaps = view.state.selection.ranges.some(
-    range => range.from <= lineRange.to && range.to >= lineRange.from
-  );
+  const mainSelection = view.state.selection.main;
+  var selection: { start: number; end: number; } | null = null;
+  if (mainSelection.from <= lineRange.to && mainSelection.to >= lineRange.from) {
+    const start = Math.max(lineRange.from, Math.min(mainSelection.from, mainSelection.to)) - line.from;
+    const end = Math.min(lineRange.to, Math.max(mainSelection.from, mainSelection.to)) - line.from;
+
+    selection = { start, end };
+  }
   const cursorOnLine = view.state.selection.ranges.some(
-    range => range.from === range.to && 
-             range.from >= lineRange.from && 
+    range => {
+      return range.from >= lineRange.from && 
              range.from <= lineRange.to
+    }
   );
-  const cursorPositionInLine = selectionOverlaps 
+  const cursorPositionInLine = cursorOnLine 
     ? view.state.selection.main.head - line.from 
     : null;
 
@@ -69,7 +75,7 @@ const createDecorationContext = (view: EditorView, line: Line, builder: RangeSet
     view,
     line,
     lineRange,
-    selectionOverlaps,
+    selection,
     cursorOnLine,
     cursorPositionInLine,
     builder
@@ -77,14 +83,14 @@ const createDecorationContext = (view: EditorView, line: Line, builder: RangeSet
 };
 
 const decorateHeaders = (context: DecorationContext) => {
-  const { line, selectionOverlaps, cursorOnLine, builder } = context;
+  const { line, selection, cursorOnLine, builder } = context;
   const headerMatch = line.text.match(/^(#{1,6})(\s)(.*)/);
 
   if (headerMatch) {
     const hashLevel = headerMatch[1].length;
     const hashStart = line.from + headerMatch.index!;
     const spaceEnd = hashStart + headerMatch[1].length + 1;
-    if (!(selectionOverlaps || cursorOnLine)) {
+    if (!(selection || cursorOnLine)) {
         builder.add(
           hashStart,
           spaceEnd,
@@ -109,17 +115,17 @@ const decorateHeaders = (context: DecorationContext) => {
 
 const decorateBold = (context: DecorationContext) => {
   const { line, cursorPositionInLine, builder } = context;
-  const boldMatch = line.text.match(/(\*\*|__)(.*?)(\*\*|__)/);
-
-  if (boldMatch) {
+  const boldMatches = line.text.matchAll(/\*\*(.*?)\*\*/g);
+  for (const boldMatch of boldMatches) {
     const start = line.from + boldMatch.index!;
     const end = start + boldMatch[0].length;
+    const intersectingSelection = context.selection && context.selection.start < end - line.from && context.selection.end > start - line.from;
     builder.add(
         start,
         end,
         Decoration.mark({ class: "cm-styled-bold" })
       );
-    if (!(cursorPositionInLine && cursorPositionInLine >= boldMatch.index! && cursorPositionInLine <= boldMatch.index! + boldMatch[0].length)) {
+    if (!intersectingSelection && !(cursorPositionInLine && cursorPositionInLine >= boldMatch.index! && cursorPositionInLine <= boldMatch.index! + boldMatch[0].length)) {
       // hide the asterisks
       const firstAsteriskSet = boldMatch.index! + line.from;
       const secondAsteriskSet = line.from + boldMatch.index! + boldMatch[0].length - 2;
@@ -159,7 +165,6 @@ const headerDecorations = ViewPlugin.fromClass(
         while (pos < to) {
           const line = view.state.doc.lineAt(pos);
           const context = createDecorationContext(view, line, builder);
-
           decorateHeaders(context);
           decorateBold(context);
 
