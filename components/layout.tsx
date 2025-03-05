@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { AlignJustify, MessageSquare, Settings } from "lucide-react"
 import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
-import Chat from "@/components/chat"
+import Chat from "@/components/chat/chat"
 
 // Handles layout state.
 type LayoutContext = {
@@ -81,7 +81,7 @@ const LeftSidebar = () => {
     return null
   }
   return (
-    <div className="min-w-[372px] w-[372px] h-screen bg-background p-3">
+    <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3">
       <div className="fixed z-101">
         <LeftNavigation />
       </div>
@@ -97,7 +97,7 @@ const RightSidebar = () => {
     return null
   }
   return (
-    <div className="min-w-[420px] w-[420px] h-screen bg-background p-3">
+    <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3">
       <div className="fixed z-101 right-3">
         <RightNavigation />
       </div>
