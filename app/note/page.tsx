@@ -38,6 +38,10 @@ const headerTheme = EditorView.theme({
   },
   ".cm-styled-link *": {
     color: "inherit"
+  },
+
+  ".cm-styled-quote": {
+    borderLeft: "3px solid #a8dadc"
   }
   
 });
@@ -192,6 +196,28 @@ const decorateLink = (context: DecorationContext) => {
   }
 }
 
+const decorateQuote = (context: DecorationContext) => {
+  const { line, selection, cursorOnLine, builder } = context;
+  const quoteMatch = line.text.match(/>\s.+/);
+
+  if (quoteMatch) {
+    const start = line.from + quoteMatch.index!;
+    const end = start + quoteMatch[0].length;
+    if (!(selection || cursorOnLine)) {
+      builder.add(
+        start,
+        start + 1,
+        Decoration.mark({ class: "cm-hidden-characters" })
+      );
+      builder.add(
+        start + 1,
+        end,
+        Decoration.mark({ class: "cm-styled-quote" })
+      );
+    }
+  }
+}
+
 const Decorations = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
@@ -217,6 +243,7 @@ const Decorations = ViewPlugin.fromClass(
           decorateHeaders(context);
           decorateBold(context);
           decorateLink(context);
+          decorateQuote(context);
 
           pos = line.to + 1;
         }
@@ -233,7 +260,7 @@ const Decorations = ViewPlugin.fromClass(
 const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.emphasis, fontStyle: "italic", color: "#e76f51" },
   { tag: tags.link, textDecoration: "underline", color: "#264653" },
-  { tag: tags.quote, fontStyle: "italic", borderLeft: "3px solid #a8dadc", paddingLeft: "4px", color: "#555" },
+  { tag: tags.quote, fontStyle: "italic", color: "#555" },
   { tag: tags.monospace, backgroundColor: "#f4f4f4", fontFamily: "monospace", padding: "0 2px", borderRadius: "3px" },
   { tag: tags.deleted, textDecoration: "line-through", color: "#6c757d" },
   { tag: tags.list, color: "#457b9d" },
