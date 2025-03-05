@@ -7,10 +7,9 @@
 
 </h3>
 
-![GitHub issues](https://img.shields.io/github/issues-raw/ufosc/Club_Website_2)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/ufosc/Club_Website_2/gatsby.yml?label=ghpages)
-![GitHub package.json version](https://img.shields.io/github/package-json/v/ufosc/Club_Website_2)
-![GitHub](https://img.shields.io/github/license/ufosc/Club_Website_2)
+![GitHub issues](https://img.shields.io/github/issues-raw/zeim839/Noteferatu)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/zeim839/Noteferatu/tauri-build.yml)
+![GitHub](https://img.shields.io/github/license/zeim839/Noteferatu)
 
 NoteFeratu is a plain-text personal knowledge management system with LLM capabilities. Build your second brain, discover new information through knowledge graphs, and chat with your notes using frontier LLM models.
 </div>
