@@ -8,6 +8,7 @@ import { defaultKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
+import { useLayout } from "@/components/layout";
 
 
 const headerTheme = EditorView.theme({
@@ -107,6 +108,7 @@ const markdownHighlightStyle = HighlightStyle.define([
 export default function CodeEditor() {
   const editorRef = useRef(null);
   const [text, setText] = useState('');
+  const { setBackButton } = useLayout()
   console.log(text)
 
   const onUpdate = EditorView.updateListener.of((v) => {
@@ -114,6 +116,10 @@ export default function CodeEditor() {
   });
 
   useEffect(() => {
+
+    // Show the back button in the navigation layout.
+    setBackButton(true)
+
     if (!editorRef.current) return;
 
     const state = EditorState.create({
