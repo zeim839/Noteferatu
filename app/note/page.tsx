@@ -10,7 +10,7 @@ import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { tags } from "@lezer/highlight";
 
 
-const headerTheme = EditorView.theme({
+const codeMirrorTheme = EditorView.theme({
   ".cm-hidden-characters": {
     fontSize: "0",
     color: "transparent",
@@ -19,15 +19,14 @@ const headerTheme = EditorView.theme({
     margin: "0",
   },
   ".cm-styled-header": {
-    fontWeight: "bold",
-    color: "#2a9d8f",
+    fontWeight: "500",
   },
-  ".cm-styled-header.level-1": { fontSize: "150%", margin: "20px 0" },
-  ".cm-styled-header.level-2": { fontSize: "140%", margin: "15px 0" },
-  ".cm-styled-header.level-3": { fontSize: "130%", margin: "10px 0" },
-  ".cm-styled-header.level-4": { fontSize: "120%", margin: "5px 0" },
-  ".cm-styled-header.level-5": { fontSize: "110%", margin: "5px 0" },
-  ".cm-styled-header.level-6": { fontSize: "100%", margin: "5px 0" },
+  ".cm-styled-header.level-1": { fontSize: "175%" },
+  ".cm-styled-header.level-2": { fontSize: "150%" },
+  ".cm-styled-header.level-3": { fontSize: "135%" },
+  ".cm-styled-header.level-4": { fontSize: "120%" },
+  ".cm-styled-header.level-5": { fontSize: "110%" },
+  ".cm-styled-header.level-6": { fontSize: "100%" },
 
   ".cm-styled-bold": {
     fontWeight: "bold",
@@ -42,7 +41,35 @@ const headerTheme = EditorView.theme({
 
   ".cm-styled-quote": {
     borderLeft: "3px solid #a8dadc"
-  }
+  },
+
+  ".cm-lineNumbers": {
+    width: "0"
+  },
+  ".cm-scroller": {
+    fontFamily: "'Iosevka Comfy', monospace"
+  },
+  "&.cm-focused": {
+      outline: "none",
+  },
+  ".cm-activeLineGutter, .cm-gutters": {
+    backgroundColor: "transparent"
+  },
+  ".cm-gutters": {
+    borderRight: "none"
+  },
+  ".cm-line-h1": {
+    borderBottom: "1px solid grey",
+    paddingBottom: "10px",
+    marginBottom: "10px"
+  },
+  ".cm-line-higher-headers": {
+    paddingTop: "5px",
+    paddingBottom: "5px",
+    marginBottom: "5px",
+    display: "flex",
+    justifyContent: "start"
+  },
   
 });
 
@@ -91,25 +118,39 @@ const decorateHeaders = (context: DecorationContext) => {
     const hashStart = line.from + headerMatch.index!;
     const spaceEnd = hashStart + headerMatch[1].length + 1;
     if (!(selection || cursorOnLine)) {
+      if (hashLevel == 1) {
         builder.add(
-          hashStart,
-          spaceEnd,
-          Decoration.mark({ class: "cm-hidden-characters" })
+          line.from,
+          line.from,
+          Decoration.line({ class: "cm-line-h1" })
         );
+      } else {
+        builder.add(
+          line.from,
+          line.from,
+          Decoration.line({ class: "cm-line-higher-headers" })
+        );
+      }
+    
+      builder.add(
+        hashStart,
+        spaceEnd,
+        Decoration.mark({ class: "cm-hidden-characters" })
+      );
 
-        builder.add(
-          spaceEnd,
-          line.to,
-          Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
-        );
-      }
-      else {
-        builder.add(
-          hashStart,
-          line.to,
-          Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
-        );
-      }
+      builder.add(
+        spaceEnd,
+        line.to,
+        Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+      );
+    }
+    else {
+      builder.add(
+        hashStart,
+        line.to,
+        Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
+      );
+    }
     }
 }
 
@@ -324,6 +365,8 @@ export default function CodeEditor() {
   useEffect(() => {
     if (!editorRef.current) return;
 
+    document.body.style.backgroundColor = '#FBF9F3';
+
     const state = EditorState.create({
       doc: 'Hello World\n\n',
       extensions: [
@@ -333,8 +376,8 @@ export default function CodeEditor() {
         onUpdate,
         syntaxHighlighting(markdownHighlightStyle),
         EditorView.lineWrapping,
-        headerTheme,
-        Decorations,
+        codeMirrorTheme,
+        Decorations
       ],
     });
 
@@ -346,5 +389,5 @@ export default function CodeEditor() {
     return () => view.destroy();
   }, [onUpdate]);
 
-  return <div ref={editorRef} style={{ border: "1px solid #ddd", padding: "10px"}} />;
+  return <div ref={editorRef} style={{ padding: "10px", maxWidth: "800px", width: "100%", margin: "0 auto"}} />;
 }
