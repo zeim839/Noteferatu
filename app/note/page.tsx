@@ -161,7 +161,7 @@ class LinkWidget extends WidgetType {
 
 const decorateLink = (context: DecorationContext) => {
   const { line, selection, builder } = context;
-  const linkMatches = line.text.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g);
+  const linkMatches = line.text.matchAll(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g);
 
   for (const linkMatch of linkMatches) {
     const start = line.from + linkMatch.index!;
@@ -218,6 +218,44 @@ const decorateQuote = (context: DecorationContext) => {
   }
 }
 
+class ImageWidget extends WidgetType {
+  constructor(readonly src: string, readonly altText: string) {
+    super();
+  }
+
+  toDOM() {
+    const img = document.createElement("img");
+    img.src = this.src;
+    img.alt = this.altText;
+
+    return img;
+  }
+}
+
+const decorateImage = (context: DecorationContext) => {
+  const { line, selection, builder } = context;
+  const imageMatch = line.text.match(/!\[(.+?)\]\((.+?)(?:\s"(.+?)")?\)(?=\s|$)/);
+
+  if (imageMatch) {
+    const start = line.from + imageMatch.index!;
+    const end = start + imageMatch[0].length;
+
+    const intersectingSelection = selection && selection.start < end - line.from && selection.end > start - line.from;
+    if(!intersectingSelection) {
+      builder.add(
+        start,
+        end,
+        Decoration.mark({ class: "cm-hidden-characters" })
+      );
+      builder.add(
+        end,
+        end,
+        Decoration.widget({ widget: new ImageWidget(imageMatch[2], imageMatch[1]) })
+      );
+    }
+  }
+}
+
 const Decorations = ViewPlugin.fromClass(
   class {
     decorations: DecorationSet;
@@ -244,6 +282,7 @@ const Decorations = ViewPlugin.fromClass(
           decorateBold(context);
           decorateLink(context);
           decorateQuote(context);
+          decorateImage(context);
 
           pos = line.to + 1;
         }
@@ -267,6 +306,7 @@ const markdownHighlightStyle = HighlightStyle.define([
   { tag: tags.punctuation, color: "#999" },
 ]);
 
+// TODO: make it so there is always a line underneath the cursor 
 export default function CodeEditor() {
   const editorRef = useRef(null);
   const [text, setText] = useState('');
