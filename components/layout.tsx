@@ -8,6 +8,8 @@ import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
+import Recents from "./recents/Recents"
+
 
 // Handles layout state.
 type LayoutContext = {
@@ -106,6 +108,7 @@ const LeftSidebar = () => {
     <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3">
       <div className="fixed z-101">
         <LeftNavigation />
+        <Recents />
       </div>
     </div>
   )
