@@ -368,7 +368,7 @@ export default function CodeEditor() {
     document.body.style.backgroundColor = '#FBF9F3';
 
     const state = EditorState.create({
-      doc: 'Hello World\n\n',
+      doc: '# Heading 1\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n## Heading 2\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n### Heading 3\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
       extensions: [
         basicSetup,
         keymap.of([...defaultKeymap, indentWithTab]),
@@ -389,5 +389,20 @@ export default function CodeEditor() {
     return () => view.destroy();
   }, [onUpdate]);
 
-  return <div ref={editorRef} style={{ padding: "10px", maxWidth: "800px", width: "100%", margin: "0 auto"}} />;
+  return (
+    <div className="editor-container" style={{ 
+      height: "calc(100vh - 80px)", 
+      overflow: "hidden",
+      position: "relative",
+      margin: "0 auto",
+      maxWidth: "800px", 
+      width: "100%"
+    }}>
+      <div ref={editorRef} style={{ 
+        width: "100%",
+        height: "100%",
+        overflow: "auto"
+      }} />
+    </div>
+  );
 }
