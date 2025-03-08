@@ -24,6 +24,7 @@ function timeAgo(timestamp: string | Date): string {
     return `${diffInYears}y ago`;
 } 
 export default function RecentsCard({title, desc, atime, updateDivHeight} : RecentsCardsProps) {
+    console.log(atime)
     const refContainer = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (refContainer.current) {
