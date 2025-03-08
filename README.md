@@ -29,9 +29,10 @@ Enter the repository directory:
 cd Noteferatu
 ```
 
-Install NPM dependencies:
+Install Tauri and NPM dependencies:
 ```
-npm i
+npm i --global @tauri-apps/cli@latest
+npm i --force
 ```
 ## Usage
 You can run a development version of NoteFeratu either through the NextJS dev server or directly via Tauri. Tauri is a web app bundler that exposes NoteFeratu as a native desktop application.
