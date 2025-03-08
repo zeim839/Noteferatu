@@ -8,6 +8,7 @@ import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
+import { useEditorBackground } from "./editor/background"
 
 // Handles layout state.
 type LayoutContext = {
@@ -131,6 +132,7 @@ const RightSidebar = () => {
 // Navigation bar element.
 const Layout = ({ children } : { children?: ReactNode }) => {
   const { isRecentsOpen, isChatOpen }= useLayout()
+  const { isEditorMode } = useEditorBackground()
   return (
     <div>
       <div className="fixed z-100 w-full flex flex-row p-3 justify-between">
@@ -139,7 +141,7 @@ const Layout = ({ children } : { children?: ReactNode }) => {
       </div>
       <div className="flex justify-between">
         <LeftSidebar />
-        <div className="w-full h-full pt-16">
+        <div className="w-full h-full pt-16" style={{ backgroundColor: isEditorMode ? '#FBF9F3' : 'transparent' }}        >
           {children}
         </div>
         <RightSidebar />
