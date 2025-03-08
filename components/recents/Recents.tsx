@@ -1,7 +1,7 @@
 import RecentsCard from "./RecentsCard"
 import useWindowDimensions from "./WindowHeight";
 import React, { useState, useEffect, useMemo} from "react";
-import {getNotesData, createNote} from "../../lib/DatabaseFunctions";
+import {getNotesData} from "../../lib/DatabaseFunctions";
 import Database from '../../lib/Database';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 
@@ -21,7 +21,6 @@ async function getRecents(queryAmount: number): Promise<NoteData[] | null> {
         const db = new Database(dbPath);
         await db.connect();
         console.log('Database connected');
-        createNote(db,'JOJO IS THE GREATEST SHOW EVER','WAMU NOOOOO I LOVED YOU FOREVER AND EVER AND EVER AND EVER')
         const retrievedNotes = await getNotesData(db,queryAmount);
         console.log('getnotes',retrievedNotes)
         return retrievedNotes as NoteData[];
