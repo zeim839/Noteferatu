@@ -1,7 +1,10 @@
+import React, { useState, useEffect, useRef } from "react";
+
 type RecentsCardsProps = {
     title : string
     desc  : string 
     atime : string | Date
+    updateDivHeight: (height: number) => void;
 }
 
 function timeAgo(timestamp: string | Date): string {
@@ -20,9 +23,17 @@ function timeAgo(timestamp: string | Date): string {
     const diffInYears = Math.floor(diffInMonths / 12);
     return `${diffInYears}y ago`;
 } 
-export default function RecentsCard({title, desc, atime} : RecentsCardsProps) {
+export default function RecentsCard({title, desc, atime, updateDivHeight} : RecentsCardsProps) {
+    const refContainer = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (refContainer.current) {
+            updateDivHeight(refContainer.current.offsetHeight);
+            console.log('current div height is',refContainer.current.offsetHeight)
+        }
+    }, []);
+    
     return (
-        <div className='w-[344px] min-h-[76px] bg-white rounded-md border border-[#979797] grid grid-cols-[3fr_1fr] my-2'>
+        <div ref = {refContainer} className='w-[344px] min-h-[76px] bg-white rounded-md border border-[#979797] grid grid-cols-[3fr_1fr] my-1'>
             <div className="p-2">
                 <p className='font-extrabold text-sm line-clamp-1'>{title}</p>
                 <p className='font-light text-sm line-clamp-2'>{desc}</p>
