@@ -105,14 +105,12 @@ const LeftSidebar = () => {
     return null
   }
   return (
-  <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 flex">
-  <div className="fixed z-10">
-    <LeftNavigation />
-  </div>
-  <div className="fixed w-full flex justify-center items-center flex-col">
-    <Recents />
-  </div>
-</div>
+    <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3">
+      <div className="fixed z-101 h-[calc(100vh)]">
+        <LeftNavigation />
+        <Recents />
+      </div>
+    </div>
   )
 }
 
