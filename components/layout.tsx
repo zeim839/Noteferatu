@@ -103,7 +103,7 @@ const LeftSidebar = () => {
   if (!isRecentsOpen) {
     return null
   }
-  return (
+  return(
     <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-r-gray-300">
       <div className="fixed z-101">
         <LeftNavigation />
@@ -116,12 +116,12 @@ const LeftSidebar = () => {
 // own RightNavigation, which appears only when the sidebar is open.
 const RightSidebar = () => {
   const {isChatOpen} = useLayout()
-  if (!isChatOpen) {
-    return null
-  }
+  // if (!isChatOpen) { getting rid of this because tailwind transitions are based on the dom so if it is false, the animation wont work probably
+  //   return null
+  // }
   return (
-    <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-l-gray-300">
-      <div className="fixed z-101 right-3">
+    <div className={`fixed top-0 right-0 min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-l-gray-300 z-50 transform transition-transform duration-300 ease-in-out ${isChatOpen ? "translate-x-0" : "translate-x-full"}`}>
+      <div className="absolute z-101 right-3 top-3">
         <RightNavigation />
       </div>
       <Chat />
