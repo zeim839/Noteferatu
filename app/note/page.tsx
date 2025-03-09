@@ -6,6 +6,6 @@ import { useEffect } from "react"
 
 export default function Page() {
   const { setBackButton } = useLayout()
-  useEffect(() => { setBackButton(true) }, [])
+  useEffect(() => { setBackButton(true) }, [setBackButton])
   return <Editor />
 }

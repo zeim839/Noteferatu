@@ -5,7 +5,7 @@ export const MessageField = (message: Message, index: number) => {
   return (
     <div
       key={index}
-      className={`max-w-[75%] rounded-sm p-3 text-sm ${isUser ? "self-end bg-black text-white" : "self-start bg-[#F6F6F6] border border-[#979797] text-black"}`}
+      className={`max-w-[75%] break-words rounded-sm p-3 text-sm ${isUser ? "self-end bg-black text-white" : "self-start bg-[#F6F6F6] border border-[#979797] text-black"}`}
     >
       {message.content}
     </div>
