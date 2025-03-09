@@ -1,7 +1,7 @@
 import RecentsCard from "./RecentsCard"
 import useWindowDimensions from "./WindowHeight";
 import React, { useState, useEffect, useMemo} from "react";
-import {getNotesData} from "../../lib/DatabaseFunctions";
+import {getNotesData,createNote, deleteNote} from "../../lib/DatabaseFunctions";
 import Database from '../../lib/Database';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 
@@ -33,7 +33,7 @@ export default function Recents() {
     });
     const height = useWindowDimensions()
     const divHeight = 77;
-    const [recentsData, setRecentsData] = useState<NoteData[]>([]);
+    const [recentsData, setRecentsData] = useState<NoteData[] | null>([]);
     // 60 is the height the search bar takes up
     const avaialableHeight = height - 60
 
@@ -47,30 +47,27 @@ export default function Recents() {
 
     useEffect(() => {
         async function fetchData(){
-                try {
-                    const data = await getRecents(cardCount);
-                    setRecentsData(data || []);
-                    console.log("data fetched PLEASE NOT A LOT")
-                } catch (error) {
-                    console.error('Error fetching recents:', error);
-                    setRecentsData([]);
-                } finally {
-                    setIsLoading(false);
-                }
-            
+            try {
+                const data = await getRecents(cardCount);
+                setRecentsData(data);
+                console.log("data fetched");
+            } catch (error) {
+                console.error('Error fetching recents:', error);
+                setRecentsData(null);
+            } finally {
+                setIsLoading(false);
+            }
         }
-        // Right now it is fetching every render
-        // I will fix this when everything has been integrated
-        fetchData()
+        fetchData();
     }, [cardCount]);
     
-        if (isLoading){
+    if (isLoading){
         return(
             <>
             </>
         );
     }
-    if (recentsData.length > 0){
+    if (recentsData && recentsData.length > 0){
         console.log('first condition has been entered')
         const recentsCardsList = recentsData.slice(0, cardCount).map((note, i) => (
         <div key={i} className="opacity-0 animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
@@ -81,11 +78,20 @@ export default function Recents() {
             />
         </div>
     ));
-    return (
-        <div className="h-full">
-            {recentsCardsList}
+        return (
+            <div className="h-full">
+                {recentsCardsList}
+            </div>
+        );
+    }
+    if (recentsData === null){
+        return(
+        <div className="flex h-full items-center justify-center">
+            <p className="text-xl font-bold text-red-700">            
+                Unable to connect to Database
+            </p>
         </div>
-    );
+        );
     }
     else {
         return (
