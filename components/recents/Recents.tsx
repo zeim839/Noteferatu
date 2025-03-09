@@ -20,6 +20,8 @@ async function getRecents(queryAmount: number): Promise<NoteData[] | null> {
         const db = new Database(dbPath);
         await db.connect();
         const retrievedNotes = await getNotesData(db,queryAmount);
+        // deleteNote(db);
+        // createNote(db,'testing','testing');
         return retrievedNotes as NoteData[];
     } catch (error) {
         console.error('Could not connect to database',error);
@@ -67,7 +69,7 @@ export default function Recents() {
             </>
         );
     }
-    if (recentsData && recentsData.length > 0){
+    else if (recentsData && recentsData.length > 0){
         console.log('first condition has been entered')
         const recentsCardsList = recentsData.slice(0, cardCount).map((note, i) => (
         <div key={i} className="opacity-0 animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
@@ -84,7 +86,7 @@ export default function Recents() {
             </div>
         );
     }
-    if (recentsData === null){
+    else if (recentsData === null){
         return(
         <div className="flex h-full items-center justify-center">
             <p className="text-xl font-bold text-red-700">            
