@@ -8,6 +8,8 @@ import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
+import Recents from "./recents/Recents"
+
 import { useEditorBackground } from "./editor/background"
 
 // Handles layout state.
@@ -105,8 +107,9 @@ const LeftSidebar = () => {
   }
   return (
     <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-r-gray-300">
-      <div className="fixed z-101">
+      <div className="fixed z-101 h-[calc(100vh)]">
         <LeftNavigation />
+        <Recents />
       </div>
     </div>
   )
