@@ -10,6 +10,7 @@ import { syntaxHighlighting } from "@codemirror/language"
 import { markdownHighlightStyle, codeMirrorTheme } from "./theme"
 import Decorations from "./Decorations"
 import { useEditorBackground } from "./background"
+import { placeholder } from '@codemirror/view';
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
@@ -33,7 +34,8 @@ export default function Editor() {
         syntaxHighlighting(markdownHighlightStyle),
         EditorView.lineWrapping,
         codeMirrorTheme,
-        Decorations
+        Decorations,
+        placeholder('Start typing here...')
       ],
     });
 
