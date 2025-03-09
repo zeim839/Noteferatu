@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
 import { Stream, Message, Model } from "@/lib/OpenRouter"
 import { MessageView } from "./messages"
+import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
@@ -49,11 +49,13 @@ export default function Chat() {
   return (
     <div className="pt-12 min-h-full grid grid-rows-[auto_40px]">
       { MessageView(messages, isTyping, bottomRef) }
-      <div className="flex items-center">
+      <div className="grid grid-cols-[24px_auto_24px] gap-2 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none bg-white">
+        <WandSparklesIcon className="text-[#ADADAD]"/>
         <input
           type="text"
-          placeholder={`Message ${source}`}
-          className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none"
+          disabled={isTyping}
+          placeholder={isTyping ? "Processing..." : `Message ${source}`}
+          className="flex-1 focus:outline-none focus:ring-0"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(event: FormEvent) => {
@@ -64,7 +66,7 @@ export default function Chat() {
             onSubmit()
           }}
         />
-        <Button className="ml-2 text-sm" onClick={onSubmit}>Send</Button>
+        <SendHorizontalIcon onClick={onSubmit} className="cursor-pointer text-[#ADADAD]"/>
       </div>
     </div>
   )
