@@ -1,7 +1,7 @@
 import RecentsCard from "./RecentsCard"
 import useWindowDimensions from "./WindowHeight";
 import React, { useState, useEffect, useMemo} from "react";
-import {getNotesData,createNote, deleteNote} from "../../lib/DatabaseFunctions";
+import {getNotesData} from "../../lib/DatabaseFunctions";
 import Database from '../../lib/Database';
 import { appLocalDataDir } from '@tauri-apps/api/path';
 
@@ -45,7 +45,7 @@ export default function Recents() {
         if (height > 0){
             setCardCount(Math.round((avaialableHeight)/(divHeight+8)))
         }
-    }, [height]);
+    }, [height,avaialableHeight]);
 
     useEffect(() => {
         async function fetchData(){
