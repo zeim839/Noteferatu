@@ -116,15 +116,29 @@ const LeftSidebar = () => {
 // own RightNavigation, which appears only when the sidebar is open.
 const RightSidebar = () => {
   const {isChatOpen} = useLayout()
-  // if (!isChatOpen) { getting rid of this because tailwind transitions are based on the dom so if it is false, the animation wont work probably
+  // if (!isChatOpen) { //getting rid of this because tailwind transitions are based on the dom so if it is false, the animation wont work probably
   //   return null
   // }
+  // <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-;-gray-300">  
   return (
-    <div className={`fixed top-0 right-0 min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-l-gray-300 z-50 transform transition-transform duration-300 ease-in-out ${isChatOpen ? "translate-x-0" : "translate-x-full"}`}>
-      <div className="absolute z-101 right-3 top-3">
-        <RightNavigation />
-      </div>
-      <Chat />
+    <div
+      className={`
+        h-screen border border-l-gray-300
+        bg-[rgba(245,245,245,0.75)]
+        overflow-hidden      /* so we don’t see scrollbars or content overflow when w=0 */
+        transition-all       /* animate changes to width, padding, etc. */
+        duration-300 ease-in-out
+        ${isChatOpen ? "w-[420px] p-3" : "w-0 p-0"}
+      `}
+    >
+      {isChatOpen && (
+        <div className="relative w-full h-full">
+          <div className="fixed z-101 right-3 top-3">
+            <RightNavigation />
+          </div>
+          <Chat />
+        </div>
+      )}
     </div>
   )
 }
