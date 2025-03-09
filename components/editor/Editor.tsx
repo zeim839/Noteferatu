@@ -14,6 +14,7 @@ import { placeholder } from '@codemirror/view';
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
+  const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
   const { setEditorMode } = useEditorBackground();
   const onUpdate = useMemo(() =>
@@ -24,6 +25,10 @@ export default function Editor() {
   useEffect(() => {
     if (!editorRef.current) return
     setEditorMode(true);
+    if (titleRef.current) {
+      titleRef.current.focus();
+      titleRef.current.select();
+    }
     const state = EditorState.create({
       doc: '# Heading 1\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n## Heading 2\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n### Heading 3\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
       extensions: [
@@ -51,7 +56,14 @@ export default function Editor() {
   }, [onUpdate, setEditorMode])
 
   return (
-    <div className='h-[calc(100vh-80px)] overflow-hidden relative max-w-[800px] w-full m-auto'>
+    <div className='h-[calc(100vh-80px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
+      <input
+      ref={titleRef}
+      type="text"
+      placeholder="Untitled"
+      className="text-2xl font-medium p-2 w-full bg-[#FBF9F3] outline-none border-none"
+      defaultValue="Untitled"
+    />
       <div ref={editorRef} className='w-full h-full overflow-auto' />
     </div>
   )
