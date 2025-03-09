@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
 import Recents from "./recents/Recents"
 
+import { useEditorBackground } from "./editor/background"
 
 // Handles layout state.
 type LayoutContext = {
@@ -105,7 +106,7 @@ const LeftSidebar = () => {
     return null
   }
   return (
-    <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3">
+    <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-r-gray-300">
       <div className="fixed z-101 h-[calc(100vh)]">
         <LeftNavigation />
         <Recents />
@@ -122,7 +123,7 @@ const RightSidebar = () => {
     return null
   }
   return (
-    <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3">
+    <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-l-gray-300">
       <div className="fixed z-101 right-3">
         <RightNavigation />
       </div>
@@ -134,6 +135,7 @@ const RightSidebar = () => {
 // Navigation bar element.
 const Layout = ({ children } : { children?: ReactNode }) => {
   const { isRecentsOpen, isChatOpen }= useLayout()
+  const { isEditorMode } = useEditorBackground()
   return (
     <div>
       <div className="fixed z-100 w-full flex flex-row p-3 justify-between">
@@ -142,7 +144,7 @@ const Layout = ({ children } : { children?: ReactNode }) => {
       </div>
       <div className="flex justify-between">
         <LeftSidebar />
-        <div className="w-full h-full pt-16">
+        <div className="w-full h-full pt-16" style={{ backgroundColor: isEditorMode ? '#FBF9F3' : 'transparent' }}        >
           {children}
         </div>
         <RightSidebar />
