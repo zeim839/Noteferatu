@@ -1,5 +1,3 @@
-import React, { useState, useEffect, useRef } from "react";
-
 type RecentsCardsProps = {
     title : string
     desc  : string
