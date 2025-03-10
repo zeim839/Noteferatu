@@ -11,9 +11,12 @@ import { markdownHighlightStyle, codeMirrorTheme } from "./theme"
 import Decorations from "./Decorations"
 import { useEditorBackground } from "./background"
 import { placeholder } from '@codemirror/view'
+import EditableDiv from "./title"
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
+  const [title, setTitle] = useState('');
+  console.log(title);
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
   const { setEditorMode } = useEditorBackground();
@@ -67,14 +70,12 @@ export default function Editor() {
   return (
     <div className='h-[calc(100vh-80px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
       <div ref={editorRef} className='w-full h-full overflow-auto'>
-        <div
-          ref={titleRef}
-          className="text-4xl font-medium p-3 outline-none break-words overflow-hidden my-4 max-w-[800px]"
-          contentEditable
-          suppressContentEditableWarning={true}
-        >
-          Untitled
-        </div>
+        <EditableDiv 
+          className="text-4xl font-medium p-3 outline-none break-words overflow-hidden my-4 max-w-[800px] relative"
+          placeholder="Untitled"
+          value={title}
+          onChange={setTitle}
+        />
       </div>
     </div>
   )
