@@ -10,7 +10,7 @@ import { syntaxHighlighting } from "@codemirror/language"
 import { markdownHighlightStyle, codeMirrorTheme } from "./theme"
 import Decorations from "./Decorations"
 import { useEditorBackground } from "./background"
-import { placeholder } from '@codemirror/view';
+import { placeholder } from '@codemirror/view'
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
@@ -24,11 +24,20 @@ export default function Editor() {
 
   useEffect(() => {
     if (!editorRef.current) return
-    setEditorMode(true);
+    setEditorMode(true)
+
+    // Set keyboard caret to the end of the title text.
     if (titleRef.current) {
-      titleRef.current.focus();
-      titleRef.current.select();
+      const element = titleRef.current
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      range.collapse(false)
+
+      const selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(range)
     }
+
     const state = EditorState.create({
       doc: '# Heading 1\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n## Heading 2\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n### Heading 3\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
       extensions: [
@@ -57,14 +66,16 @@ export default function Editor() {
 
   return (
     <div className='h-[calc(100vh-80px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
-      <input
-      ref={titleRef}
-      type="text"
-      placeholder="Untitled"
-      className="text-2xl font-medium p-2 w-full bg-[#FBF9F3] outline-none border-none"
-      defaultValue="Untitled"
-    />
-      <div ref={editorRef} className='w-full h-full overflow-auto' />
+      <div ref={editorRef} className='w-full h-full overflow-auto'>
+        <div
+          ref={titleRef}
+          className="text-4xl font-medium p-3 outline-none break-words overflow-hidden my-4 max-w-[800px]"
+          contentEditable
+          suppressContentEditableWarning={true}
+        >
+          Untitled
+        </div>
+      </div>
     </div>
   )
 }
