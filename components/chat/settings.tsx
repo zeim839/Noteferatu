@@ -17,9 +17,9 @@ export default function Key() {
     <Dialog defaultOpen>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit profile</DialogTitle>
+          <DialogTitle>Add API Key</DialogTitle>
           <DialogDescription>
-            Make changes to your profile here. Click save when you're done.
+            Add your OpenRouter API Key Here
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -27,13 +27,7 @@ export default function Key() {
             <label htmlFor="name" className="text-right">
               Name
             </label>
-            <input id="name" value="Pedro Duarte" className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <label htmlFor="username" className="text-right">
-              Username
-            </label>
-            <input id="username" value="@peduarte" className="col-span-3" />
+            <input id="name" value="xx-xx-xx-xxxxxx" className="col-span-3" />
           </div>
         </div>
         <DialogFooter>
