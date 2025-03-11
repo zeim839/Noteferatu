@@ -11,7 +11,7 @@ import { useEditorBackground } from "./editor/background"
 
 import {
   AlignJustify,
-  ArrowLeftIcon,
+  HouseIcon,
   PlusIcon,
   MessageSquare,
   Settings
@@ -72,7 +72,7 @@ const LeftNavigation = () => {
     <div className="flex flex-row gap-2">
       { (isBackButton) ? (
         <Button size="icon" onClick={onBackButton}>
-          <ArrowLeftIcon />
+          <HouseIcon />
         </Button>
       ) : null
       }
