@@ -79,7 +79,8 @@ const LeftNavigation = () => {
       <Button size="icon" onClick={() =>{setRecentsOpen(!isRecentsOpen)}}>
         <AlignJustify />
       </Button>
-      <Command className={`${(isBackButton) ? 'w-[256]' : 'w-[300]'}`}>
+      {/* <Command className={`${(isBackButton) ? 'w-[256]' : 'w-[300]'}`}> */}
+      <Command className="w-full mr-3">
         <CommandInput placeholder="Search Notes" />
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
@@ -111,15 +112,32 @@ const RightNavigation = () => {
 // sidebar is open.
 const LeftSidebar = () => {
   const {isRecentsOpen} = useLayout()
-  if (!isRecentsOpen) {
-    return null
-  }
-  return (
-    <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-r-gray-300">
-      <div className="fixed z-101">
-        <LeftNavigation />
+  // if (!isRecentsOpen) {
+  //   return null
+  // }
+  return(
+    // <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-r-gray-300">
+    //   <div className="fixed z-101">
+    //     <LeftNavigation />
+    //   </div>
+    // </div>
+      <div
+        className={`
+          relative
+          h-screen border border-r-gray-300
+          bg-[rgba(245,245,245,0.75)]
+          overflow-hidden      /* so we don’t see scrollbars or content overflow when w=0 */
+          transition-all       /* animate changes to width, padding, etc. */
+          duration-300 ease-in-out
+          ${isRecentsOpen ? "w-[372px] p-3" : "w-0 p-0"}
+        `}
+      >
+        {isRecentsOpen && (
+          <div className="absolute z-10 left-3 top-3">
+            <LeftNavigation />
+          </div>
+        )}
       </div>
-    </div>
   )
 }
 
@@ -127,15 +145,28 @@ const LeftSidebar = () => {
 // own RightNavigation, which appears only when the sidebar is open.
 const RightSidebar = () => {
   const {isChatOpen} = useLayout()
-  if (!isChatOpen) {
-    return null
-  }
+  // if (!isChatOpen) { //getting rid of this because tailwind transitions are based on the dom so if it is false, the animation wont work probably
+  //   return null
+  // }
   return (
-    <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-l-gray-300">
-      <div className="fixed z-101 right-3">
-        <RightNavigation />
-      </div>
-      <Chat />
+    <div
+      className={`
+        h-screen border border-l-gray-300
+        bg-[rgba(245,245,245,0.75)]
+        overflow-hidden      /* so we don’t see scrollbars or content overflow when w=0 */
+        transition-all       /* animate changes to width, padding, etc. */
+        duration-300 ease-in-out
+        ${isChatOpen ? "w-[420px] p-3" : "w-0 p-0"}
+      `}
+    >
+      {isChatOpen && (
+        <div className="relative w-full h-full">
+          <div className="fixed z-101 right-3 top-3">
+            <RightNavigation />
+          </div>
+          <Chat />
+        </div>
+      )}
     </div>
   )
 }
