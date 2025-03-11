@@ -3,12 +3,19 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { AlignJustify, ArrowLeftIcon, MessageSquare, Settings } from "lucide-react"
 import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
 import { useEditorBackground } from "./editor/background"
+
+import {
+  AlignJustify,
+  HouseIcon,
+  PlusIcon,
+  MessageSquare,
+  Settings
+} from "lucide-react"
 
 // Handles layout state.
 type LayoutContext = {
@@ -65,7 +72,7 @@ const LeftNavigation = () => {
     <div className="flex flex-row gap-2">
       { (isBackButton) ? (
         <Button size="icon" onClick={onBackButton}>
-          <ArrowLeftIcon />
+          <HouseIcon />
         </Button>
       ) : null
       }
@@ -85,8 +92,12 @@ const LeftNavigation = () => {
 // RightNavigation includes the chat and settings buttons.
 const RightNavigation = () => {
   const { isChatOpen, setChatOpen } = useLayout()
+  const router = useRouter()
   return (
     <div className="flex flex-row gap-1">
+      <Button size="icon" onClick={() => {router.push('/note')}}>
+        <PlusIcon />
+      </Button>
       <Button size="icon" onClick={() => {setChatOpen(!isChatOpen)}}>
         <MessageSquare />
       </Button>

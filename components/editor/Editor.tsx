@@ -110,7 +110,7 @@ export default function Editor() {
   }, [onUpdate, setEditorMode])
 
   return (
-    <div className='h-[calc(100vh-80px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
+    <div className='h-[calc(100vh-66px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
       <div ref={editorRef} className='w-full h-full overflow-auto'>
         <NoteTitle
           ref={titleRef}
