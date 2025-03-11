@@ -199,13 +199,13 @@ export class Decorations {
   // decorateLink transforms a markdown hyperlink into a LinkWidget.
   static decorateLink(ctx : DecorationContext) {
     const { line, selection, builder } = ctx
-    const linkMatches = line.text.matchAll(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g);
+    const linkMatches = line.text.matchAll(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g)
     for (const linkMatch of linkMatches) {
       const start = line.from + linkMatch.index!
       const textStart = start + 1
       const textEnd = start + linkMatch[1].length + 1
       const end = start + linkMatch[0].length
-      const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from;
+      const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from
       builder.add(
         start,
         end,
@@ -259,13 +259,13 @@ export class Decorations {
   // an HTML image component (ImageWidget).
   static decorateImage(ctx : DecorationContext) {
     const { line, selection, builder } = ctx
-    const imageMatch = line.text.match(/!\[(.+?)\]\((.+?)(?:\s"(.+?)")?\)(?=\s|$)/);
+    const imageMatch = line.text.match(/!\[(.+?)\]\((.+?)(?:\s"(.+?)")?\)(?=\s|$)/)
     if (!imageMatch) {
       return
     }
-    const start = line.from + imageMatch.index!;
-    const end = start + imageMatch[0].length;
-    const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from;
+    const start = line.from + imageMatch.index!
+    const end = start + imageMatch[0].length
+    const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from
     if (!intersectingSelection) {
       builder.add(
         start,

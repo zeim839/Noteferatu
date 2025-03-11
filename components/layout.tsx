@@ -7,7 +7,7 @@ import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
-import { useEditorBackground } from "./editor/background"
+import { useEditorBackground } from "@/components/background"
 
 import {
   AlignJustify,
@@ -34,7 +34,7 @@ const LayoutContext = createContext<LayoutContext | null>(null)
 const useLayout = () => {
   const context = useContext(LayoutContext)
   if (!context) {
-    throw new Error('useNav must be used within a NavProvider')
+    throw new Error('useLayout must be used within a LayoutProvider')
   }
   return context
 }
