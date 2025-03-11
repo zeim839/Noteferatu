@@ -32,6 +32,12 @@ const NoteTitle = React.forwardRef<HTMLDivElement, DocumentTitleProps>(
     };
 
     const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+      const textContent = divRef.current?.textContent || '';
+      if (e.key === ' ' && !textContent.trim()) {
+        e.preventDefault();
+        return;
+      }
+
       if ((e.key === 'Enter' || e.key === 'ArrowDown') && onExit) {
         e.preventDefault();
         onExit();
