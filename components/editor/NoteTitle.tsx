@@ -1,54 +1,54 @@
-import React, { useState, useEffect, KeyboardEvent } from 'react';
-import { cn } from '@/lib/utils'; 
+import React, { useState, useEffect, KeyboardEvent } from 'react'
+import { cn } from '@/lib/utils'
 
 interface DocumentTitleProps extends React.HTMLAttributes<HTMLDivElement> {
-  placeholder?: string;
-  value?: string;
-  onEdit?: (value: string) => void;
-  onExit?: () => void; 
+  placeholder? : string
+  value?       : string
+  onEdit?      : (value: string) => void
+  onExit?      : () => void
 }
 
 const NoteTitle = React.forwardRef<HTMLDivElement, DocumentTitleProps>(
   ({ className, placeholder = 'Untitled', value = '', onEdit, onExit, ...props }, ref) => {
-    const [isEmpty, setIsEmpty] = useState(!value);
-    const divRef = ref as React.RefObject<HTMLDivElement>;
+    const [isEmpty, setIsEmpty] = useState(!value)
+    const divRef = ref as React.RefObject<HTMLDivElement>
 
     useEffect(() => {
       if (divRef.current && divRef.current.innerHTML !== value && value !== undefined) {
-        divRef.current.innerHTML = value;
+        divRef.current.innerHTML = value
       }
-      setIsEmpty(!value);
-    }, [value, divRef]);
+      setIsEmpty(!value)
+    }, [value, divRef])
 
     const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-      const content = e.currentTarget.innerHTML;
-      const isContentEmpty = content === '';
-      
-      setIsEmpty(isContentEmpty);
-      
+      const content = e.currentTarget.innerHTML
+      const isContentEmpty = content === ''
+
+      setIsEmpty(isContentEmpty)
+
       if (onEdit) {
-        onEdit(isContentEmpty ? '' : content);
+        onEdit(isContentEmpty ? '' : content)
       }
-    };
+    }
 
     const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-      const textContent = divRef.current?.textContent || '';
+      const textContent = divRef.current?.textContent || ''
       if (e.key === ' ' && !textContent.trim()) {
-        e.preventDefault();
-        return;
+        e.preventDefault()
+        return
       }
 
       if ((e.key === 'Enter' || e.key === 'ArrowDown') && onExit) {
-        e.preventDefault();
-        onExit();
+        e.preventDefault()
+        onExit()
       }
-    };
+    }
 
     const handleFocus = () => {
       if (isEmpty && divRef.current) {
-        divRef.current.innerHTML = '';
+        divRef.current.innerHTML = ''
       }
-    };
+    }
 
     return (
       <div
@@ -65,10 +65,10 @@ const NoteTitle = React.forwardRef<HTMLDivElement, DocumentTitleProps>(
         onFocus={handleFocus}
         {...props}
       />
-    );
+    )
   }
-);
+)
 
 NoteTitle.displayName = "NoteTitle"
 
-export default NoteTitle;
+export default NoteTitle

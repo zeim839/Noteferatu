@@ -9,43 +9,45 @@ import { defaultKeymap, indentWithTab } from "@codemirror/commands"
 import { syntaxHighlighting } from "@codemirror/language"
 import { markdownHighlightStyle, codeMirrorTheme } from "./theme"
 import Decorations from "./Decorations"
-import { useEditorBackground } from "./background"
+import { useEditorBackground } from "@/components/background"
 import { placeholder } from '@codemirror/view'
 import NoteTitle from "./NoteTitle"
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
   const editorViewRef = useRef<EditorView | null>(null)
-  const { setEditorMode } = useEditorBackground();
+  const { setEditorMode } = useEditorBackground()
   const onUpdate = useMemo(() =>
     EditorView.updateListener.of((v) => {
       setText(v.state.doc.toString())
-    }), 
+    }),
   [])
 
   const focusEditor = () => {
-    if (editorViewRef.current) {
-      editorViewRef.current.focus();
-      editorViewRef.current.dispatch({
-        selection: {anchor: 0}
-      });
+    if (!editorViewRef.current) {
+      return
     }
-  };
+    editorViewRef.current.focus()
+    editorViewRef.current.dispatch({
+      selection: {anchor: 0}
+    })
+  }
 
   const focusTitle = () => {
-    if (titleRef.current) {
-      titleRef.current.focus();
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(titleRef.current);
-      range.collapse(false);
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+    if (!titleRef.current) {
+      return
     }
-  };
+    titleRef.current.focus()
+    const range = document.createRange()
+    const sel = window.getSelection()
+    range.selectNodeContents(titleRef.current)
+    range.collapse(false)
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+  }
 
   useEffect(() => {
     if (!editorRef.current) return
@@ -61,7 +63,7 @@ export default function Editor() {
       selection?.removeAllRanges()
       selection?.addRange(range)
     }
-    
+
     const state = EditorState.create({
       doc: '# Heading 1\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n## Heading 2\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n### Heading 3\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
       extensions: [
@@ -75,37 +77,35 @@ export default function Editor() {
         Decorations,
         placeholder('Start typing here...')
       ],
-    });
+    })
 
     const view = new EditorView({
       state,
       parent: editorRef.current,
-    });
-    editorViewRef.current = view;
+    })
+    editorViewRef.current = view
 
-    const editorDom = view.dom;
+    const editorDom = view.dom
     const keyDownHandler = (e: KeyboardEvent) => {
       if (e.key === 'ArrowUp') {
-        const pos = view.state.selection.main.head;
-        const line = view.state.doc.lineAt(pos);
-        
+        const pos = view.state.selection.main.head
+        const line = view.state.doc.lineAt(pos)
         if (line.number === 1) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          focusTitle();
-          return false;
+          e.preventDefault()
+          e.stopPropagation()
+          focusTitle()
+          return false
         }
       }
-    };
-    
+    }
+
     // Use capturing phase to ensure custom keydown handler runs first
-    editorDom.addEventListener('keydown', keyDownHandler, true);
+    editorDom.addEventListener('keydown', keyDownHandler, true)
 
     return () => {
-      editorDom.removeEventListener('keydown', keyDownHandler, true);
-      view.destroy();
-      setEditorMode(false);
+      editorDom.removeEventListener('keydown', keyDownHandler, true)
+      view.destroy()
+      setEditorMode(false)
     }
   }, [onUpdate, setEditorMode])
 
