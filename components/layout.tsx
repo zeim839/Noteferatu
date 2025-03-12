@@ -3,14 +3,20 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { AlignJustify, ArrowLeftIcon, MessageSquare, Settings } from "lucide-react"
 import { ReactNode, useContext, createContext, useState } from "react"
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command"
 import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
 import Recents from "./recents/Recents"
+import { useEditorBackground } from "@/components/background"
 
-import { useEditorBackground } from "./editor/background"
+import {
+  AlignJustify,
+  HouseIcon,
+  PlusIcon,
+  MessageSquare,
+  Settings
+} from "lucide-react"
 
 // Handles layout state.
 type LayoutContext = {
@@ -29,7 +35,7 @@ const LayoutContext = createContext<LayoutContext | null>(null)
 const useLayout = () => {
   const context = useContext(LayoutContext)
   if (!context) {
-    throw new Error('useNav must be used within a NavProvider')
+    throw new Error('useLayout must be used within a LayoutProvider')
   }
   return context
 }
@@ -67,7 +73,7 @@ const LeftNavigation = () => {
     <div className="flex flex-row gap-2">
       { (isBackButton) ? (
         <Button size="icon" onClick={onBackButton}>
-          <ArrowLeftIcon />
+          <HouseIcon />
         </Button>
       ) : null
       }
@@ -87,8 +93,12 @@ const LeftNavigation = () => {
 // RightNavigation includes the chat and settings buttons.
 const RightNavigation = () => {
   const { isChatOpen, setChatOpen } = useLayout()
+  const router = useRouter()
   return (
     <div className="flex flex-row gap-1">
+      <Button size="icon" onClick={() => {router.push('/note')}}>
+        <PlusIcon />
+      </Button>
       <Button size="icon" onClick={() => {setChatOpen(!isChatOpen)}}>
         <MessageSquare />
       </Button>

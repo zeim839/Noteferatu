@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { LayoutProvider, Layout } from "@/components/layout"
 import "./globals.css"
-import { EditorBackgroundProvider } from "@/components/editor/background";
+import { EditorBackgroundProvider } from "@/components/background"
 
 export const metadata: Metadata = {
   title: "NoteFeratu",
