@@ -58,6 +58,7 @@ class Database {
 
   // Executes an SQL expression. Throws an error if the database
   // instance has not been connected.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async execute(query: string, bindValues?: unknown[]) : Promise<any> {
     if (!this.driver) {
       throw new Error("cannot execute query while database is disconnected")
@@ -67,6 +68,7 @@ class Database {
 
   // Passes in a SELECT query to the database for execution. An error is
   // throw if the database instance has not been connected.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async select<T = any>(query: string, bindValues?: unknown[]) : Promise<T[]> {
     if (!this.driver) {
       throw new Error("cannot execute select query while database is disconnected")

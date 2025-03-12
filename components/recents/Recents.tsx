@@ -15,7 +15,7 @@ type NoteData = {
 }
 
 async function getRecents(count: number): Promise<NoteData[] | null> {
-  const appDataDir = await appLocalDataDir();
+  const appDataDir = await appLocalDataDir()
   const controller = new NoteController(path.join(appDataDir, 'db.sqlite'))
   const notes = await controller.getRecents(count)
   return notes as NoteData[]
@@ -51,7 +51,7 @@ export default function Recents() {
       try {
         const data = await getRecents(cardCount)
         setRecentsData(data)
-      } catch (error) {
+      } catch {
         setRecentsData(null)
       } finally {
         setIsLoading(false)
