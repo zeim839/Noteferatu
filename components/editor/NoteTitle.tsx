@@ -14,20 +14,20 @@ const NoteTitle = React.forwardRef<HTMLDivElement, DocumentTitleProps>(
     const divRef = ref as React.RefObject<HTMLDivElement>
 
     useEffect(() => {
-      if (divRef.current && divRef.current.innerHTML !== value && value !== undefined) {
-        divRef.current.innerHTML = value
+      if (divRef.current && divRef.current.textContent !== value) {
+        divRef.current.textContent = value
       }
       setIsEmpty(!value)
     }, [value, divRef])
 
     const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-      const content = e.currentTarget.innerHTML
-      const isContentEmpty = content === ''
+      const textContent = e.currentTarget.textContent || ''
+      const isContentEmpty = textContent.trim() === ''
 
       setIsEmpty(isContentEmpty)
 
       if (onEdit) {
-        onEdit(isContentEmpty ? '' : content)
+        onEdit(isContentEmpty ? '' : textContent)
       }
     }
 
@@ -46,7 +46,7 @@ const NoteTitle = React.forwardRef<HTMLDivElement, DocumentTitleProps>(
 
     const handleFocus = () => {
       if (isEmpty && divRef.current) {
-        divRef.current.innerHTML = ''
+        divRef.current.textContent = ''
       }
     }
 
