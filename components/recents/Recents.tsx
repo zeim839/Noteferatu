@@ -1,9 +1,11 @@
 import RecentsCard from "./RecentsCard"
-import useWindowDimensions from "./WindowHeight";
-import React, { useState, useEffect, useMemo} from "react";
-import {getNotesData} from "../../lib/DatabaseFunctions";
+import React, { useState, useEffect, useMemo, useLayoutEffect} from "react";
+import {createNote, getNotesData} from "../../lib/DatabaseFunctions";
 import Database from '../../lib/Database';
 import { appLocalDataDir } from '@tauri-apps/api/path';
+import { Button } from "@/components/ui/button"
+import { PlusIcon } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 type NoteData = {
     id: number
@@ -20,8 +22,7 @@ async function getRecents(queryAmount: number): Promise<NoteData[] | null> {
         const db = new Database(dbPath);
         await db.connect();
         const retrievedNotes = await getNotesData(db,queryAmount);
-        // deleteNote(db);
-        // createNote(db,'testing','testing');
+        createNote(db,'testing','testing');
         return retrievedNotes as NoteData[];
     } catch (error) {
         console.error('Could not connect to database',error);
@@ -29,26 +30,33 @@ async function getRecents(queryAmount: number): Promise<NoteData[] | null> {
     }
 }
 
-export default function Recents() {
-    const [cardCount, setCardCount] = useState(() => {
-         return 0;
-    });
-    const height = useWindowDimensions()
-    const divHeight = 77;
-    const [recentsData, setRecentsData] = useState<NoteData[] | null>([]);
-    // 60 is the height the search bar takes up
-    const avaialableHeight = height - 60
+function useWindowSize() {
+    const [size, setSize] = useState([0, 0]);
+    useLayoutEffect(() => {
+      function updateSize() {
+        setSize([window.innerWidth, window.innerHeight]);
+      }
+      window.addEventListener('resize', updateSize);
+      updateSize();
+      return () => window.removeEventListener('resize', updateSize);
+    }, []);
+    return size;
+  }
 
+export default function Recents() {
+    const [cardCount, setCardCount] = useState<number>(0)
+    const [recentsData, setRecentsData] = useState<NoteData[] | null>([]);
+    const [, height] = useWindowSize();
     const [isLoading, setIsLoading] = useState(true);
-    
+    const router = useRouter()
+    const divHeight = 77;
+
     useMemo(() => {
-        if (height > 0){
-            setCardCount(Math.round((avaialableHeight)/(divHeight+8)))
-        }
-    }, [height,avaialableHeight]);
+        setCardCount(Math.round((height - 60)/(divHeight+8)))
+    }, [height]);
 
     useEffect(() => {
-        async function fetchData(){
+        async function fetchData() {
             try {
                 const data = await getRecents(cardCount);
                 setRecentsData(data);
@@ -63,48 +71,46 @@ export default function Recents() {
         fetchData();
     }, [cardCount]);
     
-    if (isLoading){
-        return(
-            <>
-            </>
-        );
+    if (isLoading) {
+        return null
     }
-    else if (recentsData && recentsData.length > 0){
+
+    if (recentsData && recentsData.length > 0) {
         console.log('first condition has been entered')
         const recentsCardsList = recentsData.slice(0, cardCount).map((note, i) => (
-        <div key={i} className="opacity-0 animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
-            <RecentsCard 
-                title={note.title} 
-                desc={note.content}
-                atime={note.atime} 
-            />
-        </div>
-    ));
+            <div key={i} className="opacity-0 animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
+                <RecentsCard 
+                    title={note.title} 
+                    desc={note.content}
+                    atime={note.atime} 
+                />
+            </div>
+        ));
         return (
-            <div className="h-full">
+            <div className="pt-12 h-full">
                 {recentsCardsList}
             </div>
         );
     }
-    else if (recentsData === null){
-        return(
-        <div className="flex h-full items-center justify-center">
-            <p className="text-xl font-bold text-red-700">            
-                Unable to connect to Database
-            </p>
-        </div>
-        );
-    }
-    else {
+
+    if (recentsData === null) {
         return (
             <div className="flex h-full items-center justify-center">
-                <p className="text-xl font-bold text-gray-700">
-                    Create a note to get started
+                <p className="text-xl font-bold text-red-700">
+                    Unable to connect to Database
                 </p>
             </div>
-
         );
     }
-
+    
+    return (
+        <div className="h-full flex flex-col justify-center items-center text-center text-gray-700">
+            <p className='mb-2'>Create a note to get started</p>
+            <Button onClick={() => router.push('/note')}>
+                Create
+                <PlusIcon />
+            </Button>
+        </div>
+    );
 }
 
