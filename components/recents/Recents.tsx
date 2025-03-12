@@ -1,26 +1,24 @@
 import RecentsCard from "./RecentsCard"
 import React, { useState, useEffect, useMemo, useLayoutEffect} from "react"
-import {getNotesData} from "../../lib/DatabaseFunctions"
-import Database from '../../lib/Database'
 import { appLocalDataDir } from '@tauri-apps/api/path'
 import { Button } from "@/components/ui/button"
 import { PlusIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
+import NoteController from "@/lib/controller/NoteController"
+import path from "path"
 
 type NoteData = {
   id      : number
-  title   : string,
-  content : string;
+  title   : string
+  content : string
   atime   : number
 }
 
-async function getRecents(queryAmount: number): Promise<NoteData[] | null> {
+async function getRecents(count: number): Promise<NoteData[] | null> {
   const appDataDir = await appLocalDataDir();
-  const dbPath = `${appDataDir}/db.sqlite`
-  const db = new Database(dbPath)
-  await db.connect()
-  const retrievedNotes = await getNotesData(db,queryAmount)
-  return retrievedNotes as NoteData[]
+  const controller = new NoteController(path.join(appDataDir, 'db.sqlite'))
+  const notes = await controller.getRecents(count)
+  return notes as NoteData[]
 }
 
 function useWindowSize() {
