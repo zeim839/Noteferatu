@@ -20,7 +20,7 @@ export const MessageView = (messages: Message[], isTyping: boolean, ref: BottomR
       <div className="flex flex-col justify-center items-center text-center text-gray-700">
         <h2 className="text-xl font-bold">Chat with your Notes</h2>
         <p className="mt-2">
-          Enter a message to start chatting with Notefaratu
+          Enter a message to start chatting with Noteferatu
         </p>
       </div>
     )
