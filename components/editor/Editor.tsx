@@ -27,20 +27,21 @@ export default function Editor() {
   [])
 
   const focusEditor = () => {
-    if (!editorViewRef.current) {
-      return
-    }
-    editorViewRef.current.focus()
-    editorViewRef.current.dispatch({
-      selection: {anchor: 0}
+    if (!editorViewRef.current) return
+    const view = editorViewRef.current
+    view.focus()
+    view.dispatch({
+      selection: { anchor: view.state.doc.line(1).to }, // Move cursor to the end of the first line
     })
   }
 
+
   const focusTitle = () => {
-    if (!titleRef.current) {
-      return
-    }
+    if (!titleRef.current) return
     titleRef.current.focus()
+    if (editorViewRef.current) {
+      editorViewRef.current.contentDOM.blur()
+    }
     const range = document.createRange()
     const sel = window.getSelection()
     range.selectNodeContents(titleRef.current)
@@ -52,17 +53,7 @@ export default function Editor() {
   useEffect(() => {
     if (!editorRef.current) return
     setEditorMode(true)
-
-    if (titleRef.current) {
-      const element = titleRef.current
-      const range = document.createRange()
-      range.selectNodeContents(element)
-      range.collapse(false)
-
-      const selection = window.getSelection()
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-    }
+    focusTitle()
 
     const state = EditorState.create({
       doc: '# Heading 1\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n## Heading 2\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n### Heading 3\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
