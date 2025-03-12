@@ -70,6 +70,9 @@ export const codeMirrorTheme = EditorView.theme({
     display: "flex",
     justifyContent: "start"
   },
+  "&:not(.cm-focused) .cm-activeLine": {
+    background: "transparent"
+  },
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
