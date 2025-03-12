@@ -107,8 +107,8 @@ const LeftSidebar = () => {
   }
   return (
     <div className="min-w-[372px] w-[372px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-r-gray-300">
-      <div className="fixed z-101 h-[calc(100vh)]">
-        <LeftNavigation /> 
+      <div className="fixed z-101 h-screen">
+        <LeftNavigation />
       </div>
       <Recents />
     </div>
@@ -144,7 +144,7 @@ const Layout = ({ children } : { children?: ReactNode }) => {
       </div>
       <div className="flex justify-between">
         <LeftSidebar />
-        <div className="w-full h-full pt-16" style={{ backgroundColor: isEditorMode ? '#FBF9F3' : 'transparent' }}        >
+        <div className="w-full h-full pt-16" style={{ backgroundColor: isEditorMode ? '#FBF9F3' : 'transparent' }}>
           {children}
         </div>
         <RightSidebar />
