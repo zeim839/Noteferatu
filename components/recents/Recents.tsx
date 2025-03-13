@@ -93,11 +93,13 @@ export default function Recents() {
 
   return (
     <div className="h-full flex flex-col justify-center items-center text-center text-gray-700">
-      <p className='mb-2'>Create a note to get started</p>
-      <Button onClick={() => router.push('/note')}>
-        Create
-        <PlusIcon />
-      </Button>
+      <div>
+        <p className='mb-2'>Create a note to get started</p>
+        <Button onClick={() => router.push('/note')} className='w-full'>
+          Create
+          <PlusIcon />
+        </Button>
+      </div>
     </div>
   )
 }
