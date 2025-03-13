@@ -4,8 +4,13 @@ import { useRouter } from "next/navigation"
 import NoteController, { Note } from '@/lib/controller/NoteController'
 import { appLocalDataDir } from '@tauri-apps/api/path'
 import { Button } from "@/components/ui/button"
-import { PlusIcon } from "lucide-react"
 import path from "path"
+
+import {
+  FocusIcon,
+  PlusIcon,
+  MinusIcon,
+} from "lucide-react"
 
 const CreateNoteCard = () => {
   const router = useRouter()
@@ -24,6 +29,7 @@ const CreateNoteCard = () => {
 
 export default function GraphView() {
   const [notes, setNotes] = useState<Note[]>([])
+  const cyInstanceRef = useRef<cytoscape.Core | null>(null)
   const cyContainerRef = useRef(null)
   const router = useRouter()
 
@@ -92,17 +98,58 @@ export default function GraphView() {
       router.push(`/note?id=${node.id()}`)
     })
 
+    cyInstanceRef.current = cy
+
     return () => { cy.destroy() }
   }, [notes, router])
+
+  // Zoom in: multiply the current zoom level by 1.2.
+  const zoomIn = () => {
+    if (!cyInstanceRef.current) return
+    const currentZoom = cyInstanceRef.current.zoom()
+    cyInstanceRef.current.zoom({
+      level: currentZoom * 1.2,
+      renderedPosition: {
+        x: cyInstanceRef.current.width() / 2,
+        y: cyInstanceRef.current.height() / 2,
+      },
+    })
+  }
+
+  // Zoom out: multiply the current zoom level by 0.8.
+  const zoomOut = () => {
+    if (!cyInstanceRef.current) return
+    const currentZoom = cyInstanceRef.current.zoom()
+    cyInstanceRef.current.zoom({
+      level: currentZoom * 0.8,
+      renderedPosition: {
+        x: cyInstanceRef.current.width() / 2,
+        y: cyInstanceRef.current.height() / 2,
+      },
+    })
+  }
+
+  // Recenters the graph in the viewport.
+  const recenter = () => {
+    if (!cyInstanceRef.current) return
+    cyInstanceRef.current.center()
+  }
 
   return (
     <div className='w-screen h-[calc(100vh-70px)] overflow-hidden relative'>
       {
         (notes.length > 0) ? (
-          <div
-            ref={cyContainerRef}
-            className='w-screen h-[calc(100vh-70px)]'
-          />
+          <>
+            <div
+              ref={cyContainerRef}
+              className='w-screen h-[calc(100vh-70px)]'
+            />
+            <div className='absolute bottom-3 right-3 z-10 flex flex-col gap-1'>
+              <Button size='icon' onClick={zoomIn}><PlusIcon /></Button>
+              <Button size='icon' onClick={zoomOut}><MinusIcon /></Button>
+              <Button size='icon' onClick={recenter}><FocusIcon /></Button>
+            </div>
+          </>
         ) : <CreateNoteCard />
       }
     </div>
