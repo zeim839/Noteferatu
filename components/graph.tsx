@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import cytoscape from 'cytoscape'
 import { useRouter } from "next/navigation"
-import NoteController, { Note } from '@/lib/controller/NoteController'
-import { appLocalDataDir } from '@tauri-apps/api/path'
+import { Note } from '@/lib/controller/NoteController'
 import { Button } from "@/components/ui/button"
-import path from "path"
+import { useDB } from '@/components/DatabaseProvider'
 
 import {
   FocusIcon,
@@ -32,14 +31,14 @@ export default function GraphView() {
   const cyInstanceRef = useRef<cytoscape.Core | null>(null)
   const cyContainerRef = useRef(null)
   const router = useRouter()
+  const db = useDB()
 
   const fetchNotes = async () => {
-    const dbDir = await appLocalDataDir()
-    const controller = new NoteController(path.join(dbDir, 'db.sqlite'))
-    setNotes(await controller.readAll())
+    if (!db) return
+    setNotes(await db.notes.readAll())
   }
 
-  useEffect(() => { fetchNotes() }, [])
+  useEffect(() => { fetchNotes() }, [db])
 
   useEffect(() => {
     if (!cyContainerRef.current || notes.length == 0) return
