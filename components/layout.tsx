@@ -9,13 +9,17 @@ import { useRouter } from "next/navigation"
 import Chat from "@/components/chat/chat"
 import Recents from "./recents/Recents"
 import { useEditorBackground } from "@/components/background"
+import NoteController from "@/lib/controller/NoteController"
+import { appLocalDataDir } from "@tauri-apps/api/path"
+import path from "path"
 
 import {
   AlignJustify,
   HouseIcon,
   PlusIcon,
   MessageSquare,
-  Settings
+  Settings,
+  BeanIcon
 } from "lucide-react"
 
 // Handles layout state.
@@ -94,10 +98,48 @@ const LeftNavigation = () => {
 const RightNavigation = () => {
   const { isChatOpen, setChatOpen } = useLayout()
   const router = useRouter()
+
+  const temporarySeed = async () => {
+    const dbDir = await appLocalDataDir()
+    const controller = new NoteController(path.join(dbDir, 'db.sqlite'))
+    const count = await controller.count()
+    if (count > 0) {
+      await controller.deleteAll()
+      return
+    }
+    await controller.create({
+      title: 'Open Source Club',
+      content: "Embrace the power of collaborative creation at the University of Florida's Open Source Club. Meet new friends, propose ideas, learn programming, and work on open source projects.",
+      atime: Math.floor(Date.now() / 1000),
+      mtime: Math.floor(Date.now() / 1000)
+    })
+    await controller.create({
+      title: 'TikTok Rizz Party',
+      content: "A Rizz party is a group of friends having fun on prom night, dancing to the song Carnival by Kanye and it went super viral to the point where",
+      atime: Math.floor(Date.now() / 1000),
+      mtime: Math.floor(Date.now() / 1000)
+    })
+    await controller.create({
+      title: 'Quandale Dingle Lore',
+      content: "Quandale Dingle Lore: The Movie may contain material that could be considered sensitive or inappropriate for certain audiences, such as content related to the story behind the subject. If you are sensitive to this type of material, you should refrain from proceeding further.",
+      atime: Math.floor(Date.now() / 1000),
+      mtime: Math.floor(Date.now() / 1000)
+    })
+    await controller.create({
+      title: 'Skibidi Toilet Lore',
+      content: "skibidi toilet is the very first episode Episode in the Skibidi Toilet series, created by DaFuq!?Boom!. It marks the start of the war between The Alliance and Skibidi Toilets.",
+      atime: Math.floor(Date.now() / 1000),
+      mtime: Math.floor(Date.now() / 1000)
+    })
+  }
+
   return (
     <div className="flex flex-row gap-1">
       <Button size="icon" onClick={() => {router.push('/note')}}>
         <PlusIcon />
+      </Button>
+      <Button size="icon" onClick={() => { temporarySeed() }}>
+        <BeanIcon />
       </Button>
       <Button size="icon" onClick={() => {setChatOpen(!isChatOpen)}}>
         <MessageSquare />
@@ -134,7 +176,7 @@ const RightSidebar = () => {
   }
   return (
     <div className="min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-3 border border-l-gray-300">
-      <div className="fixed z-101 right-3">
+      <div className="fixed z-101 right-3 h-screen">
         <RightNavigation />
       </div>
       <Chat />
@@ -153,8 +195,17 @@ const Layout = ({ children } : { children?: ReactNode }) => {
         {(isChatOpen) ? <div />: <RightNavigation />}
       </div>
       <div className="flex justify-between">
-        <LeftSidebar />
-        <div className="w-full h-full pt-16" style={{ backgroundColor: isEditorMode ? '#FBF9F3' : 'transparent' }}>
+        {
+          // Set the LeftSidebar to a fixed position when using
+          // the graph view to prevent the graph shifting to the
+          // right.
+          (isEditorMode) ? <LeftSidebar /> : (
+            <div className='fixed z-10'>
+              <LeftSidebar />
+            </div>
+          )
+        }
+        <div className="w-full h-full pt-16 overflow-x-auto" style={{ backgroundColor: isEditorMode ? '#FBF9F3' : 'transparent' }}>
           {children}
         </div>
         <RightSidebar />
