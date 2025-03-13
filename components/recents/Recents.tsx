@@ -66,7 +66,10 @@ export default function Recents() {
 
   if (recentsData && recentsData.length > 0) {
     const recentsCardsList = recentsData.slice(0, cardCount).map((note, i) => (
-      <div key={i} className="opacity-0 animate-fade-in" style={{ animationDelay: `${i * 0.06}s` }}>
+      <div key={i}
+        onClick={() => router.push(`/note?id=${note.id}`) }
+        className="opacity-0 animate-fade-in"
+        style={{ animationDelay: `${i * 0.06}s` }}>
         <RecentsCard
           title={note.title}
           desc={note.content}
