@@ -1,17 +1,21 @@
 "use client"
 
 import { useEffect } from "react"
-import Database from "@/lib/Database"
 import Graph from "@/components/graph"
+import { appLocalDataDir } from '@tauri-apps/api/path'
+import NoteController from "@/lib/controller/NoteController"
+import path from "path"
 
 export default function Home() {
   useEffect(() => {
-    const db = new Database('db.sqlite')
-    db.connect()
+    appLocalDataDir().then(async (dir: string) => {
+      const notes = new NoteController(path.join(dir, 'db.sqlite'))
+      console.log(await notes.readAll())
+    })
   }, [])
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <Graph width={500} height={500} />
+      <Graph />
     </div>
   )
 }
