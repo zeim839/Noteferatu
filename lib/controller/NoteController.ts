@@ -2,7 +2,7 @@ import Database from "@/lib/Database"
 
 // Note is the TypeScript type for the Notes database schema.
 export type Note = {
-  id?      : number
+  id?     : number
   title   : string
   content : string
   atime   : number
@@ -71,15 +71,15 @@ class NoteController extends Database {
     const query = `DELETE FROM Notes WHERE id = ?;`
     await this.execute(query, [id])
   }
-
-  // deleteAll removes all records in the Notes tables.
-  async deleteAll(): Promise<void> {
+  
+  // deleteAll removes all records in the Notes table.
+  async deleteAll() : Promise<void> {
     await this.ensureConnected()
     await this.execute(`DELETE FROM Notes;`)
   }
 
   // count returns the number of records in the Notes table.
-  async count(): Promise<number> {
+  async count() : Promise<number> {
     await this.ensureConnected()
     const query = `SELECT COUNT(*) FROM Notes;`
     const result = await this.select<{'COUNT(*)': number}>(query)

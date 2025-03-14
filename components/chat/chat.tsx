@@ -12,6 +12,7 @@ export default function Chat() {
   const [source/*, setSource */] = useState<Model>('ChatGPT')
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
+  const [isStreaming, setIsStreaming] = useState<boolean>(false)
 
   // Ref for the dummy div at the bottom of the message list.
   // allows us to automatically scroll to bottom.
@@ -27,6 +28,7 @@ export default function Chat() {
     setMessages(updatedMessages)
     setInput("")
     setIsTyping(true)
+    setIsStreaming(true)
     let res : string = ""
     await Stream(updatedMessages, source, (chunk: string, i: number) => {
       res += chunk
@@ -44,6 +46,7 @@ export default function Chat() {
         return newMessages
       })
     })
+    setIsStreaming(false)
   }
 
   return (
@@ -53,8 +56,8 @@ export default function Chat() {
         <WandSparklesIcon className="text-[#ADADAD]"/>
         <input
           type="text"
-          disabled={isTyping}
-          placeholder={isTyping ? "Processing..." : `Message ${source}`}
+          disabled={isTyping || isStreaming}
+          placeholder={(isTyping || isStreaming) ? "Processing..." : `Message ${source}`}
           className="flex-1 focus:outline-none focus:ring-0"
           value={input}
           onChange={(e) => setInput(e.target.value)}

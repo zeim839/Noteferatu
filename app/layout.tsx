@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { LayoutProvider, Layout } from "@/components/layout"
 import { EditorBackgroundProvider } from "@/components/background"
 import "./globals.css"
+import { DatabaseProvider } from "@/components/DatabaseProvider"
 
 export const metadata: Metadata = {
   title: "NoteFeratu",
@@ -16,13 +17,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-      <EditorBackgroundProvider>
-        <LayoutProvider>
-          <Layout>
-            {children}
-          </Layout>
-        </LayoutProvider>
-      </EditorBackgroundProvider>
+        <EditorBackgroundProvider>
+          <DatabaseProvider>
+            <LayoutProvider>
+              <Layout>
+                {children}
+              </Layout>
+            </LayoutProvider>
+          </DatabaseProvider>
+        </EditorBackgroundProvider>
       </body>
     </html>
   )

@@ -12,9 +12,14 @@ import Decorations from "./Decorations"
 import { useEditorBackground } from "@/components/background"
 import { placeholder } from '@codemirror/view'
 import NoteTitle from "./NoteTitle"
+import { useDB } from "@/components/DatabaseProvider"
+import { useSearchParams } from 'next/navigation'
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
+  const db = useDB()
+  const searchParams = useSearchParams()
+  const noteID = searchParams.get('id')
   const [title, setTitle] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
@@ -27,20 +32,20 @@ export default function Editor() {
   [])
 
   const focusEditor = () => {
-    if (!editorViewRef.current) {
-      return
-    }
-    editorViewRef.current.focus()
-    editorViewRef.current.dispatch({
-      selection: {anchor: 0}
+    if (!editorViewRef.current) return
+    const view = editorViewRef.current
+    view.focus()
+    view.dispatch({
+      selection: { anchor: view.state.doc.line(1).to }, // Move cursor to the end of the first line
     })
   }
 
   const focusTitle = () => {
-    if (!titleRef.current) {
-      return
-    }
+    if (!titleRef.current) return
     titleRef.current.focus()
+    if (editorViewRef.current) {
+      editorViewRef.current.contentDOM.blur()
+    }
     const range = document.createRange()
     const sel = window.getSelection()
     range.selectNodeContents(titleRef.current)
@@ -50,64 +55,75 @@ export default function Editor() {
   }
 
   useEffect(() => {
-    if (!editorRef.current) return
-    setEditorMode(true)
+    let isMounted = true
+    let view: EditorView | null = null
 
-    if (titleRef.current) {
-      const element = titleRef.current
-      const range = document.createRange()
-      range.selectNodeContents(element)
-      range.collapse(false)
+    const initEditor = async () => {
+      if (!editorRef.current) return
 
-      const selection = window.getSelection()
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-    }
-
-    const state = EditorState.create({
-      doc: '# Heading 1\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n## Heading 2\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n### Heading 3\nLorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-      extensions: [
-        basicSetup,
-        keymap.of([...defaultKeymap, indentWithTab]),
-        markdown(),
-        onUpdate,
-        syntaxHighlighting(markdownHighlightStyle),
-        EditorView.lineWrapping,
-        codeMirrorTheme,
-        Decorations,
-        placeholder('Start typing here...')
-      ],
-    })
-
-    const view = new EditorView({
-      state,
-      parent: editorRef.current,
-    })
-    editorViewRef.current = view
-
-    const editorDom = view.dom
-    const keyDownHandler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowUp') {
-        const pos = view.state.selection.main.head
-        const line = view.state.doc.lineAt(pos)
-        if (line.number === 1) {
-          e.preventDefault()
-          e.stopPropagation()
-          focusTitle()
-          return false
+      let content = ''
+      let noteTitle = ''
+      if (noteID) {
+        const note = await db.notes.read(Number(noteID))
+        if (note) {
+          content = note.content
+          noteTitle = note.title
         }
+      }
+
+      if (!isMounted) return
+      setTitle(noteTitle)
+      setEditorMode(true)
+      focusTitle()
+      const state = EditorState.create({
+        doc: content,
+        extensions: [
+          basicSetup,
+          keymap.of([...defaultKeymap, indentWithTab]),
+          markdown(),
+          onUpdate,
+          syntaxHighlighting(markdownHighlightStyle),
+          EditorView.lineWrapping,
+          codeMirrorTheme,
+          Decorations,
+          placeholder('Start typing here...')
+        ],
+      })
+
+      view = new EditorView({
+        state,
+        parent: editorRef.current,
+      })
+      editorViewRef.current = view
+
+      const editorDom = view.dom
+      const keyDownHandler = (e: KeyboardEvent) => {
+        if (e.key === 'ArrowUp') {
+          const pos = view!.state.selection.main.head
+          const line = view!.state.doc.lineAt(pos)
+          if (line.number === 1) {
+            e.preventDefault()
+            e.stopPropagation()
+            focusTitle()
+            return false
+          }
+        }
+      }
+      editorDom.addEventListener('keydown', keyDownHandler, true) // ensure custom keydown handler runs first
+      return () => {
+        editorDom.removeEventListener('keydown', keyDownHandler, true)
       }
     }
 
-    // Use capturing phase to ensure custom keydown handler runs first
-    editorDom.addEventListener('keydown', keyDownHandler, true)
-
+    initEditor()
     return () => {
-      editorDom.removeEventListener('keydown', keyDownHandler, true)
-      view.destroy()
-      setEditorMode(false)
+      isMounted = false
+      if (view) {
+        view.destroy()
+        setEditorMode(false)
+      }
     }
-  }, [onUpdate, setEditorMode])
+  }, [onUpdate, setEditorMode, noteID, db.notes])
 
   return (
     <div className='h-[calc(100vh-66px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>

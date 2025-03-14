@@ -1,73 +1,156 @@
-"use client"
-
-import { DefaultNode, Graph } from '@visx/network'
-import { Text } from "@visx/text"
+import React, { useEffect, useRef, useState } from 'react'
+import cytoscape from 'cytoscape'
 import { useRouter } from "next/navigation"
+import { Note } from '@/lib/controller/NoteController'
+import { Button } from "@/components/ui/button"
+import { useDB } from '@/components/DatabaseProvider'
 
-export type NetworkProps = {
-  width  : number
-  height : number
-}
+import {
+  FocusIcon,
+  PlusIcon,
+  MinusIcon,
+} from "lucide-react"
 
-interface CustomNode {
-  x          : number
-  y          : number
-  title      : string
-  isSelected : boolean
-}
-
-interface CustomLink {
-  source : CustomNode
-  target : CustomNode
-}
-
-const nodes: CustomNode[] = [
-  { x: 70, y: 20, title: 'Roman Republic', isSelected: false },
-  { x: 200, y: 250, title: 'Second Punic War', isSelected: false },
-  { x: 300, y: 40, title: 'Hamilcar Barca', isSelected: true },
-]
-
-const links: CustomLink[] = [
-  { source: nodes[0], target: nodes[1] },
-  { source: nodes[1], target: nodes[2] },
-  { source: nodes[2], target: nodes[0] },
-]
-
-const graph = {
-  nodes,
-  links,
-}
-
-const Node = ({node} : { node: CustomNode }) => {
+const CreateNoteCard = () => {
   const router = useRouter()
   return (
-    <>
-      { (node.isSelected) ? (<DefaultNode r={20} fill='#CE2E8C' />) : null }
-      <DefaultNode r={ (node.isSelected) ? 16 : 20 }
-        fill='#4C8EDA' onClick={() => router.push('/note')} />
-      <Text dy={40} verticalAnchor="middle" textAnchor="middle">{node.title}</Text>
-    </>
+    <div className='w-full h-full flex items-center justify-center pb-32'>
+      <div>
+        <p className='mb-2'>Create a note to get started</p>
+        <Button onClick={() => router.push('/note')} className='w-full'>
+          Create
+          <PlusIcon />
+        </Button>
+      </div>
+    </div>
   )
 }
 
-export default function GraphView({ width, height }: NetworkProps) {
+export default function GraphView() {
+  const [notes, setNotes] = useState<Note[]>([])
+  const cyInstanceRef = useRef<cytoscape.Core | null>(null)
+  const cyContainerRef = useRef(null)
+  const router = useRouter()
+  const db = useDB()
+
+  const fetchNotes = async () => {
+    if (!db) return
+    setNotes(await db.notes.readAll())
+  }
+
+  useEffect(() => { fetchNotes() }, [db])
+
+  useEffect(() => {
+    if (!cyContainerRef.current || notes.length == 0) return
+    const cy = cytoscape({
+      container: cyContainerRef.current,
+      elements: [
+        { data: { id: 'a', title: 'Skibidi Toilet Lore' } },
+        { data: { id: 'b', title: 'Quandale Dingle' } },
+        { data: { id: 'c', title: 'TikTok Rizz party' } },
+        { data: { id: 'd', title: 'Open Source Club' } },
+        { data: { id: 'e', title: 'WICSE' } },
+        { data: { id: 'f', title: 'Bytes of Love' } },
+        { data: { id: 'ab', source: 'a', target: 'b' } },
+        { data: { id: 'de', source: 'd', target: 'e' } },
+        { data: { id: 'df', source: 'd', target: 'f' } },
+        { data: { id: 'ce', source: 'c', target: 'e' } },
+        { data: { id: 'dc', source: 'd', target: 'c' } },
+      ],
+      style: [
+        {
+          selector: 'node',
+          style: {
+            'background-color': '#0074D9',
+            'text-valign': 'bottom',
+            'text-halign': 'center',
+            'text-margin-y': 5,
+            'font-family': 'Iosevka Comfy, monospace',
+            'font-weight': 'lighter',
+            'text-wrap': 'wrap',
+            'text-max-width': '80px',
+            'font-size': 5,
+            label: 'data(title)',
+            width: 10,
+            height: 10,
+          },
+        },
+        {
+          selector: 'edge',
+          style: {
+            'line-color': '#979797',
+            'curve-style': 'bezier',
+            width: 0.5,
+          },
+        },
+      ],
+      layout: {
+        name: 'cose',
+        randomize: true,
+        animate: false,
+        padding: 20,
+      },
+    })
+
+    cy.on('tap', 'node', (event) => {
+      const node = event.target
+      router.push(`/note?id=${node.id()}`)
+    })
+
+    cyInstanceRef.current = cy
+
+    return () => { cy.destroy() }
+  }, [notes, router])
+
+  // Zoom in: multiply the current zoom level by 1.2.
+  const zoomIn = () => {
+    if (!cyInstanceRef.current) return
+    const currentZoom = cyInstanceRef.current.zoom()
+    cyInstanceRef.current.zoom({
+      level: currentZoom * 1.2,
+      renderedPosition: {
+        x: cyInstanceRef.current.width() / 2,
+        y: cyInstanceRef.current.height() / 2,
+      },
+    })
+  }
+
+  // Zoom out: multiply the current zoom level by 0.8.
+  const zoomOut = () => {
+    if (!cyInstanceRef.current) return
+    const currentZoom = cyInstanceRef.current.zoom()
+    cyInstanceRef.current.zoom({
+      level: currentZoom * 0.8,
+      renderedPosition: {
+        x: cyInstanceRef.current.width() / 2,
+        y: cyInstanceRef.current.height() / 2,
+      },
+    })
+  }
+
+  // Recenters the graph in the viewport.
+  const recenter = () => {
+    if (!cyInstanceRef.current) return
+    cyInstanceRef.current.center()
+  }
+
   return (
-    <svg width={width} height={height}>
-      <Graph<CustomLink, CustomNode>
-        graph={graph}
-        nodeComponent={Node}
-        linkComponent={({ link: { source, target } }) => (
-          <line
-            x1={source.x}
-            y1={source.y}
-            x2={target.x}
-            y2={target.y}
-            strokeWidth={1}
-            stroke="#979797"
-            strokeOpacity={0.6}
-          />
-        )}
-      />
-    </svg>
+    <div className='w-screen h-[calc(100vh-70px)] overflow-hidden relative'>
+      {
+        (notes.length > 0) ? (
+          <>
+            <div
+              ref={cyContainerRef}
+              className='w-screen h-[calc(100vh-70px)]'
+            />
+            <div className='absolute bottom-3 right-3 z-10 flex flex-col gap-1'>
+              <Button size='icon' onClick={zoomIn}><PlusIcon /></Button>
+              <Button size='icon' onClick={zoomOut}><MinusIcon /></Button>
+              <Button size='icon' onClick={recenter}><FocusIcon /></Button>
+            </div>
+          </>
+        ) : <CreateNoteCard />
+      }
+    </div>
   )
 }

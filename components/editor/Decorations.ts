@@ -75,7 +75,7 @@ export class Decorations {
   // the document, viewport, or selection set changes.
   update(update : ViewUpdate) {
     this.decorations = (update.docChanged || update.selectionSet ||
-      update.viewportChanged) ?
+      update.viewportChanged || update.focusChanged) ?
       this.createDecorations(update.view) : this.decorations
   }
 
@@ -84,14 +84,16 @@ export class Decorations {
   private createContext(view: EditorView, line: Line, builder: RangeSetBuilder<Decoration>): DecorationContext {
     const lineRange : Range = { from: line.from, to: line.to }
     const mainSelect = view.state.selection.main
-    const selection : Range | undefined = (mainSelect.from <= lineRange.to &&
-      mainSelect.to >= lineRange.from) ? {
-        from : Math.max(lineRange.from, Math.min(mainSelect.from, mainSelect.to)) - line.from,
-        to : Math.min(lineRange.to, Math.max(mainSelect.from, mainSelect.to)) - line.from
-      } : undefined
+    const selection: Range | undefined =
+      view.hasFocus && mainSelect.from <= lineRange.to && mainSelect.to >= lineRange.from
+        ? {
+            from: Math.max(lineRange.from, mainSelect.from, mainSelect.to) - line.from,
+            to: Math.min(lineRange.to, mainSelect.from, mainSelect.to) - line.from
+          }
+        : undefined
 
     const cursorOnLine = view.state.selection.ranges.some(
-      range => range.from >= lineRange.from && range.from <= lineRange.to
+      range => range.from >= lineRange.from && range.from <= lineRange.to && view.hasFocus
     )
 
     return { view, line, lineRange, selection, cursorOnLine, builder}
