@@ -71,7 +71,7 @@ class NoteController extends Database {
     const query = `DELETE FROM Notes WHERE id = ?;`
     await this.execute(query, [id])
   }
-  
+
   // deleteAll removes all records in the Notes table.
   async deleteAll() : Promise<void> {
     await this.ensureConnected()
