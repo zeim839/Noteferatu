@@ -7,9 +7,6 @@ export type Message = {
   content : string,
 }
 
-// Model choices, which map to specific OpenRouter model releases.
-export type Model = 'ChatGPT' | 'DeepSeek' | 'Claude'
-
 // StreamFn is a callback function that consumes tokens from a chat
 // completion's stream.
 export type StreamFn = (chunk: string, index: number) => void
@@ -22,22 +19,14 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true,
 })
 
-// Convert model aliases to their official OpenRouter release names.
-const modelMap : Record<string, string> = {
-  'ChatGPT'  : "openai/gpt-3.5-turbo",
-  'DeepSeek' : "deepseek/deepseek-r1:free",
-  'Claude'   : "anthropic/claude-instant:free",
-}
-
 // systemPrompt is the first message prepended to a chat completions
 // request.
 const systemPrompt = "You are NoteFeratu, a note-taking app with a built-in helpful AI assistant"
 
 // Chat sends a chat completions API request and returns response.
-export const Chat = async (messages: Message[], model?: Model) => {
+export const Chat = async (messages: Message[], model?: string) => {
   const completion = await client.chat.completions.create({
-    model: (typeof model !== 'undefined') ?
-      modelMap[model] : 'deepseek/deepseek-r1:free',
+    model: model || 'deepseek/deepseek-r1:free',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
@@ -48,10 +37,9 @@ export const Chat = async (messages: Message[], model?: Model) => {
 
 // Stream sends a chat completions API request and streams the token
 // responses. cb consumes the tokens as they arrive.
-export const Stream = async (messages: Message[], model?: Model, cb?: StreamFn) => {
+export const Stream = async (messages: Message[], model?: string, cb?: StreamFn) => {
   const stream = await client.chat.completions.create({
-    model: (typeof model !== 'undefined') ?
-      modelMap[model] : 'deepseek/deepseek-r1:free',
+    model: model || 'deepseek/deepseek-r1:free',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages

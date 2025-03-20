@@ -1,16 +1,17 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Stream, Message, Model } from "@/lib/OpenRouter"
-import { MessageView } from "./messages"
+import { Stream, Message } from "@/lib/OpenRouter"
 import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
+import SourceDropdown from "./SourceDropdown"
+import { MessageView } from "./Messages"
 import { toast } from "sonner"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
-  const [source/*, setSource */] = useState<Model>('ChatGPT')
+  const [source, setSource] = useState<string>('deepseek/deepseek-r1:free')
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
@@ -43,10 +44,10 @@ export default function Chat() {
         (chunk: string, i: number) => {
           res += chunk
           if (i == 0) {
-            setIsTyping(false)
             setMessages((prev) => [...prev, {
               role: 'assistant', content: res
             }])
+            setIsTyping(false)
             return
           }
           // Update the last message to include new chunks.
@@ -72,6 +73,12 @@ export default function Chat() {
 
   return (
     <div className="pt-12 min-h-full grid grid-rows-[auto_40px]">
+      <div className="absolute top-2">
+        <SourceDropdown
+          onValueChange={(v) => setSource(v)}
+          value={source}
+        />
+      </div>
       { MessageView(messages, isTyping, bottomRef) }
       <div className="grid grid-cols-[24px_auto_24px] gap-2 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none bg-white">
         <WandSparklesIcon className="text-[#ADADAD]"/>

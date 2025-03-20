@@ -8,7 +8,7 @@ import { useDB } from "@/components/DatabaseProvider"
 import { cn } from "@/lib/utils"
 
 import Recents from "@/components/recents/Recents"
-import Chat from "@/components/chat/chat"
+import Chat from "@/components/chat/Chat"
 
 import {
   AlignJustifyIcon,
