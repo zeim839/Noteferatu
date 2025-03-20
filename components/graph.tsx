@@ -58,7 +58,7 @@ export default function GraphView() {
       { data: { id: note.id?.toString(), title: note.title } }
     ))
     return elements.concat(edges.map(edge => (
-      { data: { id: edge.id?.toString(), source: edge.src.toString(),
+      { data: { source: edge.src.toString(),
         target: edge.dst.toString() } }
     ))) as ElementDefinition[]
   }
