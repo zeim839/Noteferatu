@@ -2,6 +2,7 @@
 
 import NoteController from '@/lib/controller/NoteController'
 import { appLocalDataDir, join } from '@tauri-apps/api/path'
+import { toast } from "sonner"
 
 import {
   createContext,
@@ -27,8 +28,11 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
       const notesController = new NoteController(dbPath)
       setDatabase({notes: notesController})
     } catch (error) {
-      // TODO: build a notification feature for errors.
-      console.error("Failed to initialize database:", error)
+      let description = 'an unknown database error has occurred'
+      if (error instanceof Error) {
+        description = error.message
+      }
+      toast("Error: Failed to Initialize Database", {description})
     }
   }
 

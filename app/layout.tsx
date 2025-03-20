@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { DatabaseProvider } from "@/components/DatabaseProvider"
 import Navigation from "@/components/Navigation"
+import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -21,6 +22,13 @@ export default function RootLayout({
             {children}
           </Navigation>
         </DatabaseProvider>
+        <Toaster toastOptions={{
+          style: {
+            border: '2px solid black',
+            fontSize: '14px',
+          },
+          closeButton: true
+        }} />
       </body>
     </html>
   )
