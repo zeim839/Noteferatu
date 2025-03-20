@@ -22,6 +22,9 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // onSubmit sends a chat completion request to the OpenRouter API.
+  // It streams the response or shows a 'typing' placeholder whenever
+  // the response is still loading.
   const onSubmit = async () => {
     if (!input.trim()) return
     const userMessage = { role: "user", content: input }
@@ -30,7 +33,11 @@ export default function Chat() {
     setInput("")
     setIsTyping(true)
     setIsStreaming(true)
+
+    // Chunks are appended to res because reading the 'messages'
+    // does not return the latest data.
     let res : string = ""
+
     try {
       await Stream(updatedMessages, source,
         (chunk: string, i: number) => {
@@ -42,6 +49,7 @@ export default function Chat() {
             }])
             return
           }
+          // Update the last message to include new chunks.
           setMessages((prev) => {
             const newMessages = [...prev]
             newMessages[newMessages.length - 1] = {
