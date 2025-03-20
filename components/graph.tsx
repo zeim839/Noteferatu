@@ -1,17 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react'
-import cytoscape from 'cytoscape'
+import { useEffect, useRef, useState } from 'react'
+import { FocusIcon, PlusIcon, MinusIcon } from "lucide-react"
+import cytoscape, { ElementDefinition } from 'cytoscape'
 import { useRouter } from "next/navigation"
 import { Note } from '@/lib/controller/NoteController'
+import { Edge } from '@/lib/controller/EdgeController'
 import { Button } from "@/components/ui/button"
 import { useDB } from '@/components/DatabaseProvider'
 import { toast } from "sonner"
 
-import {
-  FocusIcon,
-  PlusIcon,
-  MinusIcon,
-} from "lucide-react"
-
+// CreateNoteCard asks a user to create a new note. It is shown in place
+// of the graph whenever there are no notes available.
 const CreateNoteCard = () => {
   const router = useRouter()
   return (
@@ -27,16 +25,23 @@ const CreateNoteCard = () => {
   )
 }
 
+// GraphView renders notes in a graph, with hyperlinks between graphs
+// serving as edges.
 export default function GraphView() {
   const [notes, setNotes] = useState<Note[]>([])
+  const [edges, setEdges] = useState<Edge[]>([])
   const cyInstanceRef = useRef<cytoscape.Core | null>(null)
   const cyContainerRef = useRef(null)
   const router = useRouter()
   const db = useDB()
 
-  const fetchNotes = async () => {
+  // Fetch notes and edges from the database controllers.
+  const fetchData = async () => {
     if (!db) return
-    try {setNotes(await db.notes.readAll())} catch (error) {
+    try {
+      setNotes(await db.notes.readAll())
+      setEdges(await db.edges.readAll())
+    } catch (error) {
       let description = 'an unknown database error has occurred'
       if (error instanceof Error) {
         description = error.message
@@ -45,25 +50,43 @@ export default function GraphView() {
     }
   }
 
-  useEffect(() => { fetchNotes() }, [db])
+  useEffect(() => { fetchData() }, [db, fetchData])
 
+  // graphElements transforms nodes and edges into cytoscape elements.
+  const graphElements = () => {
+    const elements : object[] = notes.map(note => (
+      { data: { id: note.id?.toString(), title: note.title } }
+    ))
+    return elements.concat(edges.map(edge => (
+      { data: { id: edge.id?.toString(), source: edge.src.toString(),
+        target: edge.dst.toString() } }
+    ))) as ElementDefinition[]
+  }
+
+  // Render the graph view.
   useEffect(() => {
     if (!cyContainerRef.current || notes.length == 0) return
+
+    // The grid layout makes the graph look more organized
+    // when there are no edges between nodes.
+    const layout = (edges.length > 0) ? {
+      name: 'cose',
+      randomize: true,
+      animate: false,
+      padding: 20,
+    } : {
+      name: 'grid',
+      animate: false,
+      avoidOverlap: true,
+      avoidOverlapPadding: 50,
+      padding: 50,
+      condense: true,
+    }
+
+    // Create the cytoscape graph object.
     const cy = cytoscape({
       container: cyContainerRef.current,
-      elements: [
-        { data: { id: 'a', title: 'Skibidi Toilet Lore' } },
-        { data: { id: 'b', title: 'Quandale Dingle' } },
-        { data: { id: 'c', title: 'TikTok Rizz party' } },
-        { data: { id: 'd', title: 'Open Source Club' } },
-        { data: { id: 'e', title: 'WICSE' } },
-        { data: { id: 'f', title: 'Bytes of Love' } },
-        { data: { id: 'ab', source: 'a', target: 'b' } },
-        { data: { id: 'de', source: 'd', target: 'e' } },
-        { data: { id: 'df', source: 'd', target: 'f' } },
-        { data: { id: 'ce', source: 'c', target: 'e' } },
-        { data: { id: 'dc', source: 'd', target: 'c' } },
-      ],
+      elements: graphElements(),
       style: [
         {
           selector: 'node',
@@ -91,14 +114,10 @@ export default function GraphView() {
           },
         },
       ],
-      layout: {
-        name: 'cose',
-        randomize: true,
-        animate: false,
-        padding: 20,
-      },
+      layout
     })
 
+    // Redirect to the note page when user clicks/taps on a node.
     cy.on('tap', 'node', (event) => {
       const node = event.target
       router.push(`/note?id=${node.id()}`)
@@ -107,7 +126,8 @@ export default function GraphView() {
     cyInstanceRef.current = cy
 
     return () => { cy.destroy() }
-  }, [notes, router])
+
+  }, [notes, router, edges])
 
   // Zoom in: multiply the current zoom level by 1.2.
   const zoomIn = () => {

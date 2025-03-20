@@ -86,6 +86,7 @@ const RightNavigation = ({ state } : { state: NavigationState }) => {
     })
 
     await db.notes.create({
+      id: 420,
       title: 'Quandale Dingle Lore',
       content: "Quandale Dingle Lore: The Movie may contain material that could be considered sensitive or inappropriate for certain audiences, such as content related to the story behind the subject. If you are sensitive to this type of material, you should refrain from proceeding further.",
       atime: Math.floor(Date.now() / 1000),
@@ -93,11 +94,14 @@ const RightNavigation = ({ state } : { state: NavigationState }) => {
     })
 
     await db.notes.create({
+      id: 69,
       title: 'Skibidi Toilet Lore',
       content: "skibidi toilet is the very first episode Episode in the Skibidi Toilet series, created by DaFuq!?Boom!. It marks the start of the war between The Alliance and Skibidi Toilets.",
       atime: Math.floor(Date.now() / 1000),
       mtime: Math.floor(Date.now() / 1000)
     })
+
+    await db.edges.create({src: 420, dst: 69})
   }
 
   return (
