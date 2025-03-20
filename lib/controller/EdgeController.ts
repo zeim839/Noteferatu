@@ -3,8 +3,8 @@ import Database from "@/lib/Database"
 // Edge is the TypeScript type for the Edges database schema.
 export type Edge = {
   id?  : number
-  src : number
-  dst : number
+  src  : number
+  dst  : number
 }
 
 // EdgeController manages edge in the database.
@@ -56,16 +56,19 @@ class EdgeController extends Database {
     return await this.select<Edge>(`SELECT * FROM Edges;`)
   }
 
-  async getByID(id: number) : Promise<Edge[]> {
-    await this.ensureConnected()
-    const query = `SELECT * FROM Edges WHERE id = ? LIMIT 1;`
-    return await this.select<Edge>(query, [id])
-  }
   // delete the edge with the specified ID.
   async delete(id: number) : Promise<void> {
     await this.ensureConnected()
     const query = `DELETE FROM Edges WHERE id = ?;`
     await this.execute(query, [id])
+  }
+
+  // count returns the number of records in the Edges table.
+  async count() : Promise<number> {
+    await this.ensureConnected()
+    const query = `SELECT COUNT(*) FROM Edges;`
+    const result = await this.select<{'COUNT(*)': number}>(query)
+    return result[0]['COUNT(*)']
   }
 }
 

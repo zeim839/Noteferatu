@@ -1,6 +1,10 @@
 "use client"
 
 import NoteController from '@/lib/controller/NoteController'
+import EdgeController from '@/lib/controller/EdgeController'
+import KeyController from '@/lib/controller/KeyController'
+import ChatHistoryController from '@/lib/controller/ChatHistoryController'
+
 import { appLocalDataDir, join } from '@tauri-apps/api/path'
 import { toast } from "sonner"
 
@@ -13,7 +17,10 @@ import {
 } from 'react'
 
 type DatabaseContextType = {
-  notes: NoteController
+  notes   : NoteController,
+  edges   : EdgeController,
+  keys    : KeyController,
+  history : ChatHistoryController,
 }
 
 // DatabaseContext exposes initialized database controllers.
@@ -25,8 +32,12 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
   const initDatabase = async () => {
     try {
       const dbPath = await join(await appLocalDataDir(), 'db.sqlite')
-      const notesController = new NoteController(dbPath)
-      setDatabase({notes: notesController})
+      setDatabase({
+        notes   : new NoteController(dbPath),
+        edges   : new EdgeController(dbPath),
+        keys    : new KeyController(dbPath),
+        history : new ChatHistoryController(dbPath)
+      })
     } catch (error) {
       let description = 'an unknown database error has occurred'
       if (error instanceof Error) {
