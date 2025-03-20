@@ -15,6 +15,8 @@ const eslintConfig = [
     rules: {
       "no-trailing-spaces": "error",
       "semi": ["error", "never"],
+      "no-console": "warn",
+      "react-hooks/exhaustive-deps": "off",
     },
   },
 ]
