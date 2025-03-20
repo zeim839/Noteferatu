@@ -50,7 +50,7 @@ export default function GraphView() {
     }
   }
 
-  useEffect(() => { fetchData() }, [db, fetchData])
+  useEffect(() => { fetchData() }, [db])
 
   // graphElements transforms nodes and edges into cytoscape elements.
   const graphElements = () => {
