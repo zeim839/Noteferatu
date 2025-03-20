@@ -9,7 +9,6 @@ import { defaultKeymap, indentWithTab } from "@codemirror/commands"
 import { syntaxHighlighting } from "@codemirror/language"
 import { markdownHighlightStyle, codeMirrorTheme } from "./theme"
 import Decorations from "./Decorations"
-import { useEditorBackground } from "@/components/background"
 import { placeholder } from '@codemirror/view'
 import NoteTitle from "./NoteTitle"
 import { useDB } from "@/components/DatabaseProvider"
@@ -24,7 +23,6 @@ export default function Editor() {
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
   const editorViewRef = useRef<EditorView | null>(null)
-  const { setEditorMode } = useEditorBackground()
   const onUpdate = useMemo(() =>
     EditorView.updateListener.of((v) => {
       setText(v.state.doc.toString())
@@ -73,7 +71,6 @@ export default function Editor() {
 
       if (!isMounted) return
       setTitle(noteTitle)
-      setEditorMode(true)
       focusTitle()
       const state = EditorState.create({
         doc: content,
@@ -120,13 +117,12 @@ export default function Editor() {
       isMounted = false
       if (view) {
         view.destroy()
-        setEditorMode(false)
       }
     }
-  }, [onUpdate, setEditorMode, noteID, db.notes])
+  }, [onUpdate, noteID, db.notes])
 
   return (
-    <div className='h-[calc(100vh-66px)] overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
+    <div className='pt-12 h-screen overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
       <div ref={editorRef} className='w-full h-full overflow-auto'>
         <NoteTitle
           ref={titleRef}

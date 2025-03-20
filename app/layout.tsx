@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
-import { LayoutProvider, Layout } from "@/components/layout"
-import { EditorBackgroundProvider } from "@/components/background"
-import "./globals.css"
 import { DatabaseProvider } from "@/components/DatabaseProvider"
+import Navigation from "@/components/Navigation"
+import "./globals.css"
 
 export const metadata: Metadata = {
   title: "NoteFeratu",
@@ -17,15 +16,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <EditorBackgroundProvider>
-          <DatabaseProvider>
-            <LayoutProvider>
-              <Layout>
-                {children}
-              </Layout>
-            </LayoutProvider>
-          </DatabaseProvider>
-        </EditorBackgroundProvider>
+        <DatabaseProvider>
+          <Navigation>
+            {children}
+          </Navigation>
+        </DatabaseProvider>
       </body>
     </html>
   )
