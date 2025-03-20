@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { Note } from '@/lib/controller/NoteController'
 import { Button } from "@/components/ui/button"
 import { useDB } from '@/components/DatabaseProvider'
+import { toast } from "sonner"
 
 import {
   FocusIcon,
@@ -35,7 +36,13 @@ export default function GraphView() {
 
   const fetchNotes = async () => {
     if (!db) return
-    setNotes(await db.notes.readAll())
+    try {setNotes(await db.notes.readAll())} catch (error) {
+      let description = 'an unknown database error has occurred'
+      if (error instanceof Error) {
+        description = error.message
+      }
+      toast("Error: Could Not Fetch Notes", {description})
+    }
   }
 
   useEffect(() => { fetchNotes() }, [db])

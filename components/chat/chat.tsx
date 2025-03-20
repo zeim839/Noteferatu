@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Stream, Message, Model } from "@/lib/OpenRouter"
 import { MessageView } from "./messages"
 import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
+import { toast } from "sonner"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
@@ -30,22 +31,34 @@ export default function Chat() {
     setIsTyping(true)
     setIsStreaming(true)
     let res : string = ""
-    await Stream(updatedMessages, source, (chunk: string, i: number) => {
-      res += chunk
-      if (i == 0) {
-        setIsTyping(false)
-        setMessages((prev) => [...prev, { role: 'assistant', content: res }])
-        return
+    try {
+      await Stream(updatedMessages, source,
+        (chunk: string, i: number) => {
+          res += chunk
+          if (i == 0) {
+            setIsTyping(false)
+            setMessages((prev) => [...prev, {
+              role: 'assistant', content: res
+            }])
+            return
+          }
+          setMessages((prev) => {
+            const newMessages = [...prev]
+            newMessages[newMessages.length - 1] = {
+              ...newMessages[newMessages.length - 1],
+              content: res,
+            }
+            return newMessages
+          })
+        })
+    } catch (error: unknown) {
+      let description = 'An unknown error has occurred'
+      if (error instanceof Error) {
+        description = error.message
       }
-      setMessages((prev) => {
-        const newMessages = [...prev]
-        newMessages[newMessages.length - 1] = {
-          ...newMessages[newMessages.length - 1],
-          content: res,
-        }
-        return newMessages
-      })
-    })
+      toast('Error: Could not Send Message', {description})
+      setIsTyping(false)
+    }
     setIsStreaming(false)
   }
 

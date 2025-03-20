@@ -13,6 +13,7 @@ import { placeholder } from '@codemirror/view'
 import NoteTitle from "./NoteTitle"
 import { useDB } from "@/components/DatabaseProvider"
 import { useSearchParams } from 'next/navigation'
+import { toast } from "sonner"
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
@@ -34,7 +35,8 @@ export default function Editor() {
     const view = editorViewRef.current
     view.focus()
     view.dispatch({
-      selection: { anchor: view.state.doc.line(1).to }, // Move cursor to the end of the first line
+      // Move cursor to the end of the first line
+      selection: { anchor: view.state.doc.line(1).to },
     })
   }
 
@@ -63,7 +65,11 @@ export default function Editor() {
       let noteTitle = ''
       if (noteID) {
         const note = await db.notes.read(Number(noteID))
-        if (note) {
+        if (!note) {
+          toast('Error: Note Not Found', {
+            description: 'The current note no longer exists or could not be found.'
+          })
+        } else {
           content = note.content
           noteTitle = note.title
         }
