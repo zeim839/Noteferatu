@@ -135,13 +135,13 @@ export default function GraphView() {
   }
 
   return (
-    <div className='w-screen h-[calc(100vh-70px)] overflow-hidden relative'>
+    <div className='w-full h-screen overflow-hidden relative'>
       {
         (notes.length > 0) ? (
           <>
             <div
               ref={cyContainerRef}
-              className='w-screen h-[calc(100vh-70px)]'
+              className='w-screen h-screen'
             />
             <div className='absolute bottom-3 right-3 z-10 flex flex-col gap-1'>
               <Button size='icon' onClick={zoomIn}><PlusIcon /></Button>
