@@ -1,6 +1,7 @@
 import { EditorView } from "@codemirror/view"
 import { HighlightStyle } from "@codemirror/language";
 import { tags } from "@lezer/highlight"
+import { Pointer } from "lucide-react";
 
 export const codeMirrorTheme = EditorView.theme({
   ".cm-hidden-characters": {
@@ -34,6 +35,13 @@ export const codeMirrorTheme = EditorView.theme({
   ".cm-styled-bold": {
     fontWeight: "bold",
   },
+  ".cm-styled-italic": {
+    fontStyle: "italic",
+  },
+  ".cm-styled-bold-italic": {
+    fontStyle: "italic",
+    fontWeight:"bold"
+  },
   ".cm-styled-link": {
     color: "#3477eb",
   },
@@ -41,7 +49,32 @@ export const codeMirrorTheme = EditorView.theme({
     color: "inherit"
   },
   ".cm-styled-quote": {
-    borderLeft: "3px solid #a8dadc"
+    position: "relative",
+    color: "transparent",
+    display: "inline-block",
+  },
+  ".cm-styled-quote::before": {
+    content: '""',
+    position: "absolute",
+    top: "0",
+    bottom: "0",
+    left: "-5px",
+    width: "3px",
+    backgroundColor: "#a8dadc",
+  },
+  ".cm-styled-quote-focused": {
+    position: "relative",
+    color: "inherit",
+    display: "inline-block",
+  },
+  ".cm-styled-quote-focused::before": {
+    content: '""',
+    position: "absolute",
+    top: "0",
+    bottom: "0",
+    left: "-5px",
+    width: "3px",
+    backgroundColor: "#a8dadc",
   },
   ".cm-lineNumbers": {
     width: "0"
@@ -73,9 +106,9 @@ export const codeMirrorTheme = EditorView.theme({
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
-  { tag: tags.emphasis, fontStyle: "italic", color: "#e76f51" },
-  { tag: tags.link, textDecoration: "underline", color: "#264653" },
-  { tag: tags.quote, fontStyle: "italic", color: "#555" },
+  // { tag: tags.emphasis, fontStyle: "italic", color: "#e76f51" },
+  // { tag: tags.link, textDecoration: "underline", color: "#264653" },
+  // { tag: tags.quote, fontStyle: "italic", color: "#555" },
   { tag: tags.monospace, backgroundColor: "#f4f4f4", fontFamily: "monospace", padding: "0 2px", borderRadius: "3px" },
   { tag: tags.deleted, textDecoration: "line-through", color: "#6c757d" },
   { tag: tags.list, color: "#457b9d" },

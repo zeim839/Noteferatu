@@ -1,285 +1,343 @@
-import { Line, RangeSetBuilder } from "@codemirror/state"
-
+import { RangeSetBuilder } from "@codemirror/state";
 import {
   Decoration,
   DecorationSet,
   EditorView,
   ViewPlugin,
   ViewUpdate,
-  WidgetType
-} from "@codemirror/view"
+  WidgetType,
+} from "@codemirror/view";
+import { syntaxTree } from "@codemirror/language";
+import { TreeCursor } from "@lezer/common";
 
-// Range is a (from, to)-tuple type.
-export type Range = {
-  from : number
-  to   : number
-}
-
-// DecorationContext helps decorate lines by passing editor, line
-// selection, and decoration builder information to each line of the
-// editor whilst parsing the document's contents.
-export type DecorationContext = {
-  view         : EditorView
-  line         : Line
-  lineRange    : Range
-  selection?   : Range
-  cursorOnLine : boolean
-  builder      : RangeSetBuilder<Decoration>
-}
-
-// LinkWidget defines an HTML hyperlink component, which is used to
-// replace markdown hyperlink expressions with HTML hyperlinks when
-// parsing notes.
+// ✅ **Link Widget**
 class LinkWidget extends WidgetType {
   constructor(readonly text: string, readonly url: string) {
-    super()
+    super();
   }
 
   toDOM() {
-    const link = document.createElement("a")
-    link.textContent = this.text
-    link.href = this.url
-    link.target = "_blank"
-    link.rel = "noopener noreferrer"
-    link.classList.add("cm-styled-link")
-    return link
+    const link = document.createElement("a");
+    link.textContent = this.text;
+    link.href = this.url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.classList.add("cm-styled-link");
+    return link;
   }
 }
 
-// ImageWidget defines an HTML img component, which is used to replace
-// markdown image expressions with HTML images when parsing notes.
 class ImageWidget extends WidgetType {
   constructor(readonly src: string, readonly altText: string) {
-    super()
+    super();
   }
 
   toDOM() {
-    const img = document.createElement("img")
-    img.src = this.src
-    img.alt = this.altText
-    return img
+    const img = document.createElement("img");
+    img.src = this.src;
+    img.alt = this.altText;
+    return img;
   }
 }
 
-// Decorations is the markdown parser definition. It tries to match
-// markdown expressions and parses them into decorations (i.e. widgets
-// or styled HTML elements).
 export class Decorations {
-  decorations : DecorationSet
+  decorations: DecorationSet;
 
   constructor(view: EditorView) {
-    this.decorations = this.createDecorations(view)
+    this.decorations = this.createDecorations(view);
   }
 
-  // update the editor view by calling createDecorations whenever
-  // the document, viewport, or selection set changes.
-  update(update : ViewUpdate) {
-    this.decorations = (update.docChanged || update.selectionSet ||
-      update.viewportChanged) ?
-      this.createDecorations(update.view) : this.decorations
+  update(update: ViewUpdate) {
+    this.decorations = update.docChanged || update.selectionSet || update.viewportChanged
+      ? this.createDecorations(update.view)
+      : this.decorations;
   }
 
-  // createContext is a helper function for creating a DecorationContext
-  // to be passed to a decorateX function.
-  private createContext(view: EditorView, line: Line, builder: RangeSetBuilder<Decoration>): DecorationContext {
-    const lineRange : Range = { from: line.from, to: line.to }
-    const mainSelect = view.state.selection.main
-    const selection : Range | undefined = (mainSelect.from <= lineRange.to &&
-      mainSelect.to >= lineRange.from) ? {
-        from : Math.max(lineRange.from, Math.min(mainSelect.from, mainSelect.to)) - line.from,
-        to : Math.min(lineRange.to, Math.max(mainSelect.from, mainSelect.to)) - line.from
-      } : undefined
+  private createDecorations(view: EditorView) {
+    const builder = new RangeSetBuilder<Decoration>();
+    const tree = syntaxTree(view.state);
+    const cursor = tree.cursor();
 
-    const cursorOnLine = view.state.selection.ranges.some(
-      range => range.from >= lineRange.from && range.from <= lineRange.to
-    )
+    const decorations: { from: number; to: number; decoration: Decoration }[] = [];
 
-    return { view, line, lineRange, selection, cursorOnLine, builder}
-  }
-
-  // createDecorations iterates over every line and attempts to transform
-  // markdown expressions into decorations.
-  private createDecorations(view : EditorView) {
-    const builder = new RangeSetBuilder<Decoration>()
-    for (const {from, to} of view.visibleRanges) {
-      let pos = from
-      while (pos < to) {
-        const line = view.state.doc.lineAt(pos)
-        const ctx = this.createContext(view, line, builder)
-        Decorations.decorateHeaders(ctx)
-        Decorations.decorateBold(ctx)
-        Decorations.decorateLink(ctx)
-        Decorations.decorateQuote(ctx)
-        Decorations.decorateImage(ctx)
-        pos = line.to + 1
+    do {
+      console.log(cursor.name)
+      if (cursor.name.startsWith("ATXHeading")) {
+        this.decorateHeaders(cursor, decorations, view);
+      } else if (cursor.name === "StrongEmphasis") {
+        this.decorateBold(cursor, decorations, view);
+      } else if (cursor.name === "Emphasis") {
+        this.decorateItalic(cursor, decorations, view);
+      } else if (cursor.name === "Link") {
+        this.decorateLinks(cursor, decorations, view);
+      } else if (cursor.name === "QuoteMark") {
+        this.decorateQuotes(cursor, decorations, view);
+      } else if (cursor.name === "Image") {
+        this.decorateImages(cursor, decorations, view);
       }
+    } while (cursor.next());
+
+    decorations.sort((a, b) => a.from - b.from);
+
+    for (const { from, to, decoration } of decorations) {
+      builder.add(from, to, decoration);
     }
-    return builder.finish()
+
+    return builder.finish();
   }
 
-  // decorateHeaders transforms a markdown header expression into an
-  // HTML header element.
-  static decorateHeaders(ctx : DecorationContext) {
-    const { line, selection, cursorOnLine, builder } = ctx
-    const headerMatch = line.text.match(/^(#{1,6})(\s)(.*)/)
-    if (headerMatch) {
-      const hashLevel = headerMatch[1].length
-      const hashStart = line.from + headerMatch.index!
-      const spaceEnd = hashStart + headerMatch[1].length + 1
-      if (!(selection || cursorOnLine)) {
-        if (hashLevel == 1) {
-          builder.add(
-            line.from,
-            line.from,
-            Decoration.line({ class: "cm-line-h1" })
-          )
-        } else {
-          builder.add(
-            line.from,
-            line.from,
-            Decoration.line({ class: "cm-line-higher-headers" })
-          )
+  // ✅ **Decorate Headers (`# Header`)**
+  private decorateHeaders(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+    const start = cursor.from;
+    const end = cursor.to;
+    const level = parseInt(cursor.name.replace("ATXHeading", ""), 10);
+    let headerMarkEnd = start;
+
+    if (cursor.firstChild()) {
+      do {
+        if (cursor.name === "HeaderMark") {
+          headerMarkEnd = cursor.to; // End of `###`
+        }
+      } while (cursor.nextSibling());
+      cursor.parent();
+    }
+
+    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: `cm-styled-header level-${level}` }) });
+
+    if (!this.isCursorInside(cursor, view)) {
+      decorations.push({ from: start, to: headerMarkEnd+1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+    }
+  }
+
+  // **Decorate Bold (`**bold**`)**
+  private decorateBold(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+    const start = cursor.from;
+    const end = cursor.to;
+
+    let markers: number[] = []; // Stores positions of `**` or `__`
+
+    // Move inside `StrongEmphasis` node to find `EmphasisMark`
+    if (cursor.firstChild()) {
+        do {
+            if (cursor.name === "EmphasisMark") {
+                markers.push(cursor.from);
+            }
+        } while (cursor.nextSibling());
+        cursor.parent(); // Move back to the `StrongEmphasis` node
+    }
+
+    // Ensure valid bold (`**text**` → at least two `EmphasisMark`s)
+    if (markers.length !== 2) {
+        return; // Invalid bold formatting
+    }
+
+    const cursorInside = this.isCursorInside(cursor, view);
+
+    // **Apply bold styling**
+    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-styled-bold" }) });
+
+    // **Hide `**` or `__` markers if the cursor is NOT inside**
+    if (!cursorInside) {
+        decorations.push({ from: markers[0], to: markers[0] + 2, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+        decorations.push({ from: markers[1], to: markers[1] + 2, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+    }
+  }
+
+
+  // **Decorate Italic (`*italic*`)**
+  private decorateItalic(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+    const start = cursor.from;
+    const end = cursor.to;
+
+    let markers: number[] = []; // Stores positions of `*` or `_`
+
+    // Move inside `Emphasis` node to find `EmphasisMark`
+    if (cursor.firstChild()) {
+        do {
+            if (cursor.name === "EmphasisMark") {
+                markers.push(cursor.from);
+            }
+        } while (cursor.nextSibling());
+        cursor.parent(); // Move back to the `Emphasis` node
+    }
+
+    // Ensure valid emphasis (`*text*` → at least two `EmphasisMark`s)
+    if (markers.length !== 2) {
+        return; // Invalid emphasis
+    }
+
+    const cursorInside = this.isCursorInside(cursor, view);
+
+    // **Apply italics styling**
+    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-styled-italic" }) });
+
+    // **Hide `*` or `_` markers if the cursor is NOT inside**
+    if (!cursorInside) {
+        decorations.push({ from: markers[0], to: markers[0] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+        decorations.push({ from: markers[1], to: markers[1] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+    }
+  }
+
+
+  private decorateLinks(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+    const start = cursor.from;
+    const end = cursor.to;
+
+    let labelStart = -1, labelEnd = -1;
+    let urlStart = -1, urlEnd = -1;
+    let marks: number[] = []; // Stores positions of `LinkMark` nodes
+
+    // Move inside the link node to find `LinkMark` and `URL`
+    if (cursor.firstChild()) {
+        do {
+            if (cursor.name === "LinkMark") {
+                marks.push(cursor.from); // Store positions of `LinkMark`
+            } else if (cursor.name === "URL") {
+                urlStart = cursor.from;
+                urlEnd = cursor.to;
+            }
+        } while (cursor.nextSibling());
+        cursor.parent(); // Move back to the link node
+    }
+
+    // Ensure we have at least `[label]`
+    if (marks.length < 2) {
+        return; // Not a valid link
+    }
+
+    // Assign positions for label and optional URL
+    labelStart = marks[0] + 1;
+    labelEnd = marks[1];
+
+    // Extract link text (label)
+    const label = view.state.sliceDoc(labelStart, labelEnd);
+
+    // Extract link destination (URL)
+    let url = urlStart !== -1 && urlEnd !== -1 ? view.state.sliceDoc(urlStart, urlEnd) : "";
+
+    // Remove enclosing `< >` for valid URIs
+    if (url.startsWith("<") && url.endsWith(">")) {
+        url = url.slice(1, -1);
+    }
+
+    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-styled-link" }) });
+
+    if (!this.isCursorInside(cursor, view)) {
+        // Hide `[`, `]`, `(`, `)`, but only if `()` exists
+        decorations.push({ from: marks[0], to: labelStart, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+        decorations.push({ from: labelEnd, to: marks[1] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+
+        if (marks.length >= 4) {
+            decorations.push({ from: marks[2], to: marks[3] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
         }
 
-        builder.add(
-          hashStart,
-          spaceEnd,
-          Decoration.mark({ class: "cm-hidden-characters" })
-        )
-
-        builder.add(
-          spaceEnd,
-          line.to,
-          Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
-        )
-      }
-      else {
-        builder.add(
-          hashStart,
-          line.to,
-          Decoration.mark({ class: `cm-styled-header level-${hashLevel}` })
-        )
-      }
+        if (url.trim().length > 0) {
+            decorations.push({
+                from: labelStart,
+                to: labelEnd,
+                decoration: Decoration.widget({ widget: new LinkWidget(label, url) })
+            });
+        }
     }
   }
 
-  // decorateBold transforms markdown bold expressions into bold text.
-  static decorateBold(ctx : DecorationContext) {
-    const { line, selection, builder } = ctx
-    const boldMatches = line.text.matchAll(/\*\*(.*?)\*\*/g)
-    for (const boldMatch of boldMatches) {
 
-      const start = line.from + boldMatch.index!
-      const end = start + boldMatch[0].length
-      const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from
-      builder.add(
-        start,
-        end,
-        Decoration.mark({ class: "cm-styled-bold" })
-      )
 
-      if (!intersectingSelection) {
-        // hide the asterisks
-        const firstAsteriskSet = boldMatch.index! + line.from
-        const secondAsteriskSet = line.from + boldMatch.index! + boldMatch[0].length - 2
-        builder.add(
-          firstAsteriskSet,
-          firstAsteriskSet + 2,
-          Decoration.mark({ class: "cm-hidden-characters" })
-        )
-        builder.add(
-          secondAsteriskSet,
-          secondAsteriskSet + 2,
-          Decoration.mark({ class: "cm-hidden-characters" })
-        )
+
+  // **Decorate Quotes (`> Quote`)**
+  private decorateQuotes(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+
+    const selectedLines = new Set<number>();
+    const doc = view.state.doc;
+    for (const range of view.state.selection.ranges) {
+        let line = doc.lineAt(range.from).number;
+        selectedLines.add(line);
+    }
+
+    // **Process each `QuoteMark`**
+    const lineNumber = doc.lineAt(cursor.from).number;
+    const cursorOnLine = selectedLines.has(lineNumber);
+
+    // **Hide `>` if cursor is not on this line, but show vertical bar**
+    if (!cursorOnLine) {
+        decorations.push({
+            from: cursor.from,
+            to: cursor.from + 1,
+            decoration: Decoration.mark({ class: "cm-styled-quote" })
+        });
+    }
+    else {
+        decorations.push({
+            from: cursor.from,
+            to: cursor.from + 1,
+            decoration: Decoration.mark({ class: "cm-styled-quote-focused" })
+        });
+    }
+  }
+
+
+
+
+  // **Decorate Images (`![alt](url)`)**
+  private decorateImages(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+    const start = cursor.from;
+    const end = cursor.to;
+
+    let altStart = -1, altEnd = -1;
+    let urlStart = -1, urlEnd = -1;
+    let marks: number[] = []; // Store positions of `LinkMark` nodes
+
+    // Move inside the image node to find `LinkMark` (for `[]()`) and `URL`
+    if (cursor.firstChild()) {
+        do {
+            if (cursor.name === "LinkMark") {
+                marks.push(cursor.from); // Store positions of `LinkMark` (`![`, `]`, `(`, `)`)
+            } else if (cursor.name === "URL") {
+                urlStart = cursor.from;
+                urlEnd = cursor.to;
+            }
+        } while (cursor.nextSibling());
+        cursor.parent(); // Move back to the image node
+    }
+
+    if (marks.length < 2) {
+        return; // Not a valid image yet
+    }
+
+    altStart = marks[0] + 2; // Start after `![`
+    altEnd = marks[1];
+
+    let altText = view.state.sliceDoc(altStart, altEnd).trim();
+
+    let url = urlStart !== -1 && urlEnd !== -1 ? view.state.sliceDoc(urlStart, urlEnd).trim() : "";
+
+    if (altText.length === 0) {
+        altText = "Image"; // Default placeholder if alt is missing
+    }
+
+    const cursorOnLine = this.isCursorInside(cursor, view);
+
+    if (!cursorOnLine) {
+        decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
       }
-    }
+    decorations.push({
+        from: end,
+        to: end,
+        decoration: Decoration.widget({ widget: new ImageWidget(url, altText) }),
+    });
   }
 
-  // decorateLink transforms a markdown hyperlink into a LinkWidget.
-  static decorateLink(ctx : DecorationContext) {
-    const { line, selection, builder } = ctx
-    const linkMatches = line.text.matchAll(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g);
-    for (const linkMatch of linkMatches) {
-      const start = line.from + linkMatch.index!
-      const textStart = start + 1
-      const textEnd = start + linkMatch[1].length + 1
-      const end = start + linkMatch[0].length
-      const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from;
-      builder.add(
-        start,
-        end,
-        Decoration.mark({ class: "cm-styled-link" })
-      )
-      if (!intersectingSelection) {
-        builder.add(
-          start,
-          start + 1,
-          Decoration.mark({ class: "cm-hidden-characters" })
-        )
-        builder.add(
-          textStart,
-          textEnd,
-          Decoration.widget({ widget: new LinkWidget(linkMatch[1], linkMatch[2]) })
-        )
-        builder.add(
-          textEnd,
-          end,
-          Decoration.mark({ class: "cm-hidden-characters" })
-        )
-      }
-    }
-  }
 
-  // decorateQuote transforms a markdown quote expression into a quote
-  // block element.
-  static decorateQuote(ctx : DecorationContext) {
-    const { line, selection, cursorOnLine, builder } = ctx
-    const quoteMatch = line.text.match(/>\s.+/)
-    if (!quoteMatch) {
-      return
-    }
-    const start = line.from + quoteMatch.index!
-    const end = start + quoteMatch[0].length
-    if (!(selection || cursorOnLine)) {
-      builder.add(
-        start,
-        start + 1,
-        Decoration.mark({ class: "cm-hidden-characters" })
-      )
-      builder.add(
-        start + 1,
-        end,
-        Decoration.mark({ class: "cm-styled-quote" })
-      )
-    }
-  }
-
-  // decorateImage transforms a markdown embedded image expression into
-  // an HTML image component (ImageWidget).
-  static decorateImage(ctx : DecorationContext) {
-    const { line, selection, builder } = ctx
-    const imageMatch = line.text.match(/!\[(.+?)\]\((.+?)(?:\s"(.+?)")?\)(?=\s|$)/);
-    if (!imageMatch) {
-      return
-    }
-    const start = line.from + imageMatch.index!;
-    const end = start + imageMatch[0].length;
-    const intersectingSelection = selection && selection.from < end - line.from && selection.to > start - line.from;
-    if (!intersectingSelection) {
-      builder.add(
-        start,
-        end,
-        Decoration.mark({ class: "cm-hidden-characters" })
-      )
-      builder.add(
-        end,
-        end,
-        Decoration.widget({ widget: new ImageWidget(imageMatch[2], imageMatch[1]) })
-      )
-    }
+  private isCursorInside(cursor: TreeCursor, view: EditorView) {
+    const cursorPos = view.state.selection.main.head;
+    const selection = view.state.selection.main;
+    const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to;
+    const selectionInside =
+        selection.from <= cursor.to && selection.to >= cursor.from;
+    return cursorInside || selectionInside;
   }
 }
 
-export default ViewPlugin.fromClass(Decorations,
-  { decorations: (v) => v.decorations })
+export default ViewPlugin.fromClass(Decorations, {
+  decorations: (v) => v.decorations,
+});
