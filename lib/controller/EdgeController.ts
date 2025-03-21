@@ -29,8 +29,9 @@ class EdgeController extends Database {
     this.ready = true
   }
 
-  // Create a new edge or update an existing one if src and dst already exists.
-  // Changed ON CONFLICT action to DO NOTHING since there are only primary keys.
+  // Create a new edge or update an existing one if src and dst
+  // already exists. ON CONFLICT action to DO NOTHING since there are
+  // only primary keys.
   async create(edge: Edge) : Promise<void> {
     await this.ensureConnected()
     const query = `INSERT INTO Edges (src, dst)
