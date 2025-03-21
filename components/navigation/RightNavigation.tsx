@@ -1,61 +1,15 @@
-"use client"
-
-import { ReactNode, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Command, CommandInput } from "@/components/ui/command"
-import { useRouter, usePathname } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useDB } from "@/components/DatabaseProvider"
-import { cn } from "@/lib/utils"
-
-import Recents from "@/components/recents/Recents"
 import Chat from "@/components/chat/Chat"
+import { NavigationState } from "./NavigationState"
 
 import {
-  AlignJustifyIcon,
   BeanIcon,
-  HouseIcon,
   MessageSquareIcon,
   PlusIcon,
   SettingsIcon
 } from "lucide-react"
-
-// NavigationState conveniently exposes the state of the Navigation
-// component to LeftNavigation and RightNavigation.
-type NavigationState = {
-  isLeftOpen   : boolean
-  isRightOpen  : boolean
-  setLeftOpen  : (open: boolean) => void
-  setRightOpen : (open: boolean) => void
-}
-
-// LeftNavigation consists of the 'recents' hamburger menu and search bar.
-const LeftNavigation = ({ state } : { state: NavigationState }) => {
-  const isNotePage = usePathname() === '/note'
-  const router = useRouter()
-  return (
-    <div className='flex flex-row gap-1 z-20 fixed left-2 top-2'>
-      { /* Show a 'home' button when on the note page */ }
-      { (isNotePage) ? (
-        <Button size='icon' onClick={() => router.push('/')}>
-          <HouseIcon />
-        </Button>
-      ) : null
-      }
-      { /* Toggles the left sidebar */ }
-      <Button
-        onClick={() => state.setLeftOpen(!state.isLeftOpen)}
-        size='icon'
-      >
-        <AlignJustifyIcon />
-      </Button>
-      { /* Shrink the search bar when the 'home' button is shown */ }
-      { /* @ts-expect-error: Don't care. */ }
-      <Command className={`${isNotePage ? 'w-[263px]' : 'w-[305px]'}`}>
-        <CommandInput placeholder="Search Notes" />
-      </Command>
-    </div>
-  )
-}
 
 // RightNavigation consists of the create note, LLM chat, and
 // settings buttons.
@@ -127,18 +81,6 @@ const RightNavigation = ({ state } : { state: NavigationState }) => {
   )
 }
 
-// LeftSidebar shows recently accessed notes or search results.
-const LeftSidebar = () => {
-  // Use fixed positioning for the GraphView to prevent shifting
-  // nodes and edges.
-  const fixedPos = usePathname() === '/' ? 'fixed left-0' : ''
-  return (
-    <div className={cn(fixedPos, 'min-w-[366px] w-[366px] h-screen bg-[rgba(245,245,245,0.75)] p-2 border border-r-gray-300 z-10')}>
-      <Recents />
-    </div>
-  )
-}
-
 // RightSidebar shows the LLM chat sidebar.
 const RightSidebar = () => (
   <div className='min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-2 border border-l-gray-300'>
@@ -146,34 +88,4 @@ const RightSidebar = () => (
   </div>
 )
 
-const Navigation = ({ children } : { children?: ReactNode }) => {
-  const [isLeftOpen, setLeftOpen] = useState<boolean>(false)
-  const [isRightOpen, setRightOpen] = useState<boolean>(false)
-
-  // Use a solid background color for notes page otherwise text
-  // visibility is poor.
-  const background = usePathname() === '/note' ?
-    'bg-[#FBF9F3]' : 'bg-transparent'
-
-  // Wrap Navigation state to conveniently pass it to LeftNavigation
-  // and RightNavigation.
-  const navState = () => ({
-    isLeftOpen, setLeftOpen, isRightOpen, setRightOpen
-  } as NavigationState)
-
-  return (
-    <div>
-      <LeftNavigation state={navState()} />
-      <RightNavigation state={navState()} />
-      <div className={cn(background, 'flex justify-between')}>
-        { isLeftOpen ? <LeftSidebar /> : null }
-        <div className='w-full h-full overflow-hidden'>
-          {children}
-        </div>
-        { isRightOpen ? <RightSidebar /> : null }
-      </div>
-    </div>
-  )
-}
-
-export default Navigation
+export { RightNavigation, RightSidebar }
