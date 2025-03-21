@@ -142,7 +142,6 @@ export class Decorations {
             })
         }
     }
-
     // **Decorate Bold (`**bold**`)**
     private decorateBold(
         cursor: TreeCursor,
@@ -333,7 +332,6 @@ export class Decorations {
             }
         }
     }
-
     // **Decorate Quotes (`> Quote`)**
     private decorateQuotes(
         cursor: TreeCursor,

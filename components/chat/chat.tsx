@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
 import { Stream, Message, Model } from "@/lib/OpenRouter"
 import { MessageView } from "./messages"
+import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
+import { toast } from "sonner"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
@@ -12,6 +13,7 @@ export default function Chat() {
   const [source/*, setSource */] = useState<Model>('ChatGPT')
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(false)
+  const [isStreaming, setIsStreaming] = useState<boolean>(false)
 
   // Ref for the dummy div at the bottom of the message list.
   // allows us to automatically scroll to bottom.
@@ -20,6 +22,9 @@ export default function Chat() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
+  // onSubmit sends a chat completion request to the OpenRouter API.
+  // It streams the response or shows a 'typing' placeholder whenever
+  // the response is still loading.
   const onSubmit = async () => {
     if (!input.trim()) return
     const userMessage = { role: "user", content: input }
@@ -27,33 +32,54 @@ export default function Chat() {
     setMessages(updatedMessages)
     setInput("")
     setIsTyping(true)
+    setIsStreaming(true)
+
+    // Chunks are appended to res because reading the 'messages'
+    // does not return the latest data.
     let res : string = ""
-    await Stream(updatedMessages, source, (chunk: string, i: number) => {
-      res += chunk
-      if (i == 0) {
-        setIsTyping(false)
-        setMessages((prev) => [...prev, { role: 'assistant', content: res }])
-        return
+
+    try {
+      await Stream(updatedMessages, source,
+        (chunk: string, i: number) => {
+          res += chunk
+          if (i == 0) {
+            setIsTyping(false)
+            setMessages((prev) => [...prev, {
+              role: 'assistant', content: res
+            }])
+            return
+          }
+          // Update the last message to include new chunks.
+          setMessages((prev) => {
+            const newMessages = [...prev]
+            newMessages[newMessages.length - 1] = {
+              ...newMessages[newMessages.length - 1],
+              content: res,
+            }
+            return newMessages
+          })
+        })
+    } catch (error: unknown) {
+      let description = 'An unknown error has occurred'
+      if (error instanceof Error) {
+        description = error.message
       }
-      setMessages((prev) => {
-        const newMessages = [...prev]
-        newMessages[newMessages.length - 1] = {
-          ...newMessages[newMessages.length - 1],
-          content: res,
-        }
-        return newMessages
-      })
-    })
+      toast('Error: Could not Send Message', {description})
+      setIsTyping(false)
+    }
+    setIsStreaming(false)
   }
 
   return (
     <div className="pt-12 min-h-full grid grid-rows-[auto_40px]">
       { MessageView(messages, isTyping, bottomRef) }
-      <div className="flex items-center">
+      <div className="grid grid-cols-[24px_auto_24px] gap-2 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none bg-white">
+        <WandSparklesIcon className="text-[#ADADAD]"/>
         <input
           type="text"
-          placeholder={`Message ${source}`}
-          className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none"
+          disabled={isTyping || isStreaming}
+          placeholder={(isTyping || isStreaming) ? "Processing..." : `Message ${source}`}
+          className="flex-1 focus:outline-none focus:ring-0"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(event: FormEvent) => {
@@ -64,7 +90,7 @@ export default function Chat() {
             onSubmit()
           }}
         />
-        <Button className="ml-2 text-sm" onClick={onSubmit}>Send</Button>
+        <SendHorizontalIcon onClick={onSubmit} className="cursor-pointer text-[#ADADAD]"/>
       </div>
     </div>
   )
