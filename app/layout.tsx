@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { DatabaseProvider } from "@/components/DatabaseProvider"
-import Navigation from "@/components/Navigation"
+import Navigation from "@/components/navigation/Navigation"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
