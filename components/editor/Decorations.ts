@@ -66,7 +66,6 @@ export class Decorations {
         }[] = []
 
         do {
-            console.log(cursor.name)
             if (cursor.name.startsWith('ATXHeading')) {
                 this.decorateHeaders(cursor, decorations, view)
             } else if (cursor.name === 'StrongEmphasis') {
@@ -111,6 +110,22 @@ export class Decorations {
             cursor.parent()
         }
 
+        if (level == 1) {
+            decorations.push({
+                from: start,
+                to: start,
+                decoration: Decoration.line({ class: 'cm-line-h1' }),
+            })
+        } else {
+            decorations.push({
+                from: start,
+                to: start,
+                decoration: Decoration.line({
+                    class: 'cm-line-higher-headers',
+                }),
+            })
+        }
+
         decorations.push({
             from: start,
             to: end,
@@ -137,7 +152,7 @@ export class Decorations {
         const start = cursor.from
         const end = cursor.to
 
-        let markers: number[] = [] // Stores positions of `**` or `__`
+        const markers: number[] = [] // Stores positions of `**` or `__`
 
         // Move inside `StrongEmphasis` node to find `EmphasisMark`
         if (cursor.firstChild()) {
@@ -187,7 +202,7 @@ export class Decorations {
         const start = cursor.from
         const end = cursor.to
 
-        let markers: number[] = [] // Stores positions of `*` or `_`
+        const markers: number[] = [] // Stores positions of `*` or `_`
 
         // Move inside `Emphasis` node to find `EmphasisMark`
         if (cursor.firstChild()) {
@@ -240,13 +255,13 @@ export class Decorations {
             labelEnd = -1
         let urlStart = -1,
             urlEnd = -1
-        let marks: number[] = [] // Stores positions of `LinkMark` nodes
+        const markers: number[] = [] // Stores positions of `LinkMark` nodes
 
         // Move inside the link node to find `LinkMark` and `URL`
         if (cursor.firstChild()) {
             do {
                 if (cursor.name === 'LinkMark') {
-                    marks.push(cursor.from) // Store positions of `LinkMark`
+                    markers.push(cursor.from) // Store positions of `LinkMark`
                 } else if (cursor.name === 'URL') {
                     urlStart = cursor.from
                     urlEnd = cursor.to
@@ -256,13 +271,13 @@ export class Decorations {
         }
 
         // Ensure we have at least `[label]`
-        if (marks.length < 2) {
+        if (markers.length < 2) {
             return // Not a valid link
         }
 
         // Assign positions for label and optional URL
-        labelStart = marks[0] + 1
-        labelEnd = marks[1]
+        labelStart = markers[0] + 1
+        labelEnd = markers[1]
 
         // Extract link text (label)
         const label = view.state.sliceDoc(labelStart, labelEnd)
@@ -287,20 +302,20 @@ export class Decorations {
         if (!this.isCursorInside(cursor, view)) {
             // Hide `[`, `]`, `(`, `)`, but only if `()` exists
             decorations.push({
-                from: marks[0],
+                from: markers[0],
                 to: labelStart,
                 decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
             })
             decorations.push({
                 from: labelEnd,
-                to: marks[1] + 1,
+                to: markers[1] + 1,
                 decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
             })
 
-            if (marks.length >= 4) {
+            if (markers.length >= 4) {
                 decorations.push({
-                    from: marks[2],
-                    to: marks[3] + 1,
+                    from: markers[2],
+                    to: markers[3] + 1,
                     decoration: Decoration.mark({
                         class: 'cm-hidden-characters',
                     }),
@@ -328,7 +343,7 @@ export class Decorations {
         const selectedLines = new Set<number>()
         const doc = view.state.doc
         for (const range of view.state.selection.ranges) {
-            let line = doc.lineAt(range.from).number
+            const line = doc.lineAt(range.from).number
             selectedLines.add(line)
         }
 
@@ -367,13 +382,13 @@ export class Decorations {
             altEnd = -1
         let urlStart = -1,
             urlEnd = -1
-        let marks: number[] = [] // Store positions of `LinkMark` nodes
+        const markers: number[] = [] // Store positions of `LinkMark` nodes
 
         // Move inside the image node to find `LinkMark` (for `[]()`) and `URL`
         if (cursor.firstChild()) {
             do {
                 if (cursor.name === 'LinkMark') {
-                    marks.push(cursor.from) // Store positions of `LinkMark` (`![`, `]`, `(`, `)`)
+                    markers.push(cursor.from) // Store positions of `LinkMark` (`![`, `]`, `(`, `)`)
                 } else if (cursor.name === 'URL') {
                     urlStart = cursor.from
                     urlEnd = cursor.to
@@ -382,16 +397,16 @@ export class Decorations {
             cursor.parent() // Move back to the image node
         }
 
-        if (marks.length < 2) {
+        if (markers.length < 2) {
             return // Not a valid image yet
         }
 
-        altStart = marks[0] + 2 // Start after `![`
-        altEnd = marks[1]
+        altStart = markers[0] + 2 // Start after `![`
+        altEnd = markers[1]
 
         let altText = view.state.sliceDoc(altStart, altEnd).trim()
 
-        let url =
+        const url =
             urlStart !== -1 && urlEnd !== -1
                 ? view.state.sliceDoc(urlStart, urlEnd).trim()
                 : ''

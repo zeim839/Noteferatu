@@ -1,7 +1,6 @@
 import { EditorView } from '@codemirror/view'
 import { HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
-import { Pointer } from 'lucide-react'
 
 export const codeMirrorTheme = EditorView.theme({
     '.cm-hidden-characters': {
