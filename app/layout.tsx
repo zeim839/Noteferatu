@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
-import { LayoutProvider, Layout } from "@/components/layout"
+import { DatabaseProvider } from "@/components/DatabaseProvider"
+import Navigation from "@/components/Navigation"
+import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -15,11 +17,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <LayoutProvider>
-          <Layout>
+        <DatabaseProvider>
+          <Navigation>
             {children}
-          </Layout>
-        </LayoutProvider>
+          </Navigation>
+        </DatabaseProvider>
+        <Toaster toastOptions={{
+          style: {
+            border: '2px solid black',
+            fontSize: '14px',
+          },
+          closeButton: true
+        }} />
       </body>
     </html>
   )

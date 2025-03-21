@@ -66,7 +66,6 @@ export class Decorations {
         }[] = []
 
         do {
-            console.log(cursor.name)
             if (cursor.name.startsWith('ATXHeading')) {
                 this.decorateHeaders(cursor, decorations, view)
             } else if (cursor.name === 'StrongEmphasis') {
@@ -127,7 +126,6 @@ export class Decorations {
             })
         }
     }
-
     // **Decorate Bold (`**bold**`)**
     private decorateBold(
         cursor: TreeCursor,
@@ -318,7 +316,6 @@ export class Decorations {
             }
         }
     }
-
     // **Decorate Quotes (`> Quote`)**
     private decorateQuotes(
         cursor: TreeCursor,
