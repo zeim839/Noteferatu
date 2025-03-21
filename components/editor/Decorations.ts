@@ -1,343 +1,433 @@
-import { RangeSetBuilder } from "@codemirror/state";
+import { RangeSetBuilder } from '@codemirror/state'
 import {
-  Decoration,
-  DecorationSet,
-  EditorView,
-  ViewPlugin,
-  ViewUpdate,
-  WidgetType,
-} from "@codemirror/view";
-import { syntaxTree } from "@codemirror/language";
-import { TreeCursor } from "@lezer/common";
+    Decoration,
+    DecorationSet,
+    EditorView,
+    ViewPlugin,
+    ViewUpdate,
+    WidgetType,
+} from '@codemirror/view'
+import { syntaxTree } from '@codemirror/language'
+import { TreeCursor } from '@lezer/common'
 
-// ✅ **Link Widget**
+// **Link Widget**
 class LinkWidget extends WidgetType {
-  constructor(readonly text: string, readonly url: string) {
-    super();
-  }
+    constructor(readonly text: string, readonly url: string) {
+        super()
+    }
 
-  toDOM() {
-    const link = document.createElement("a");
-    link.textContent = this.text;
-    link.href = this.url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.classList.add("cm-styled-link");
-    return link;
-  }
+    toDOM() {
+        const link = document.createElement('a')
+        link.textContent = this.text
+        link.href = this.url
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        link.classList.add('cm-styled-link')
+        return link
+    }
 }
 
 class ImageWidget extends WidgetType {
-  constructor(readonly src: string, readonly altText: string) {
-    super();
-  }
+    constructor(readonly src: string, readonly altText: string) {
+        super()
+    }
 
-  toDOM() {
-    const img = document.createElement("img");
-    img.src = this.src;
-    img.alt = this.altText;
-    return img;
-  }
+    toDOM() {
+        const img = document.createElement('img')
+        img.src = this.src
+        img.alt = this.altText
+        return img
+    }
 }
 
 export class Decorations {
-  decorations: DecorationSet;
+    decorations: DecorationSet
 
-  constructor(view: EditorView) {
-    this.decorations = this.createDecorations(view);
-  }
-
-  update(update: ViewUpdate) {
-    this.decorations = update.docChanged || update.selectionSet || update.viewportChanged
-      ? this.createDecorations(update.view)
-      : this.decorations;
-  }
-
-  private createDecorations(view: EditorView) {
-    const builder = new RangeSetBuilder<Decoration>();
-    const tree = syntaxTree(view.state);
-    const cursor = tree.cursor();
-
-    const decorations: { from: number; to: number; decoration: Decoration }[] = [];
-
-    do {
-      console.log(cursor.name)
-      if (cursor.name.startsWith("ATXHeading")) {
-        this.decorateHeaders(cursor, decorations, view);
-      } else if (cursor.name === "StrongEmphasis") {
-        this.decorateBold(cursor, decorations, view);
-      } else if (cursor.name === "Emphasis") {
-        this.decorateItalic(cursor, decorations, view);
-      } else if (cursor.name === "Link") {
-        this.decorateLinks(cursor, decorations, view);
-      } else if (cursor.name === "QuoteMark") {
-        this.decorateQuotes(cursor, decorations, view);
-      } else if (cursor.name === "Image") {
-        this.decorateImages(cursor, decorations, view);
-      }
-    } while (cursor.next());
-
-    decorations.sort((a, b) => a.from - b.from);
-
-    for (const { from, to, decoration } of decorations) {
-      builder.add(from, to, decoration);
+    constructor(view: EditorView) {
+        this.decorations = this.createDecorations(view)
     }
 
-    return builder.finish();
-  }
-
-  // ✅ **Decorate Headers (`# Header`)**
-  private decorateHeaders(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
-    const start = cursor.from;
-    const end = cursor.to;
-    const level = parseInt(cursor.name.replace("ATXHeading", ""), 10);
-    let headerMarkEnd = start;
-
-    if (cursor.firstChild()) {
-      do {
-        if (cursor.name === "HeaderMark") {
-          headerMarkEnd = cursor.to; // End of `###`
-        }
-      } while (cursor.nextSibling());
-      cursor.parent();
+    update(update: ViewUpdate) {
+        this.decorations =
+            update.docChanged || update.selectionSet || update.viewportChanged
+                ? this.createDecorations(update.view)
+                : this.decorations
     }
 
-    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: `cm-styled-header level-${level}` }) });
+    private createDecorations(view: EditorView) {
+        const builder = new RangeSetBuilder<Decoration>()
+        const tree = syntaxTree(view.state)
+        const cursor = tree.cursor()
 
-    if (!this.isCursorInside(cursor, view)) {
-      decorations.push({ from: start, to: headerMarkEnd+1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-    }
-  }
+        const decorations: {
+            from: number
+            to: number
+            decoration: Decoration
+        }[] = []
 
-  // **Decorate Bold (`**bold**`)**
-  private decorateBold(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
-    const start = cursor.from;
-    const end = cursor.to;
-
-    let markers: number[] = []; // Stores positions of `**` or `__`
-
-    // Move inside `StrongEmphasis` node to find `EmphasisMark`
-    if (cursor.firstChild()) {
         do {
-            if (cursor.name === "EmphasisMark") {
-                markers.push(cursor.from);
+            console.log(cursor.name)
+            if (cursor.name.startsWith('ATXHeading')) {
+                this.decorateHeaders(cursor, decorations, view)
+            } else if (cursor.name === 'StrongEmphasis') {
+                this.decorateBold(cursor, decorations, view)
+            } else if (cursor.name === 'Emphasis') {
+                this.decorateItalic(cursor, decorations, view)
+            } else if (cursor.name === 'Link') {
+                this.decorateLinks(cursor, decorations, view)
+            } else if (cursor.name === 'QuoteMark') {
+                this.decorateQuotes(cursor, decorations, view)
+            } else if (cursor.name === 'Image') {
+                this.decorateImages(cursor, decorations, view)
             }
-        } while (cursor.nextSibling());
-        cursor.parent(); // Move back to the `StrongEmphasis` node
-    }
+        } while (cursor.next())
 
-    // Ensure valid bold (`**text**` → at least two `EmphasisMark`s)
-    if (markers.length !== 2) {
-        return; // Invalid bold formatting
-    }
+        decorations.sort((a, b) => a.from - b.from)
 
-    const cursorInside = this.isCursorInside(cursor, view);
-
-    // **Apply bold styling**
-    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-styled-bold" }) });
-
-    // **Hide `**` or `__` markers if the cursor is NOT inside**
-    if (!cursorInside) {
-        decorations.push({ from: markers[0], to: markers[0] + 2, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-        decorations.push({ from: markers[1], to: markers[1] + 2, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-    }
-  }
-
-
-  // **Decorate Italic (`*italic*`)**
-  private decorateItalic(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
-    const start = cursor.from;
-    const end = cursor.to;
-
-    let markers: number[] = []; // Stores positions of `*` or `_`
-
-    // Move inside `Emphasis` node to find `EmphasisMark`
-    if (cursor.firstChild()) {
-        do {
-            if (cursor.name === "EmphasisMark") {
-                markers.push(cursor.from);
-            }
-        } while (cursor.nextSibling());
-        cursor.parent(); // Move back to the `Emphasis` node
-    }
-
-    // Ensure valid emphasis (`*text*` → at least two `EmphasisMark`s)
-    if (markers.length !== 2) {
-        return; // Invalid emphasis
-    }
-
-    const cursorInside = this.isCursorInside(cursor, view);
-
-    // **Apply italics styling**
-    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-styled-italic" }) });
-
-    // **Hide `*` or `_` markers if the cursor is NOT inside**
-    if (!cursorInside) {
-        decorations.push({ from: markers[0], to: markers[0] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-        decorations.push({ from: markers[1], to: markers[1] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-    }
-  }
-
-
-  private decorateLinks(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
-    const start = cursor.from;
-    const end = cursor.to;
-
-    let labelStart = -1, labelEnd = -1;
-    let urlStart = -1, urlEnd = -1;
-    let marks: number[] = []; // Stores positions of `LinkMark` nodes
-
-    // Move inside the link node to find `LinkMark` and `URL`
-    if (cursor.firstChild()) {
-        do {
-            if (cursor.name === "LinkMark") {
-                marks.push(cursor.from); // Store positions of `LinkMark`
-            } else if (cursor.name === "URL") {
-                urlStart = cursor.from;
-                urlEnd = cursor.to;
-            }
-        } while (cursor.nextSibling());
-        cursor.parent(); // Move back to the link node
-    }
-
-    // Ensure we have at least `[label]`
-    if (marks.length < 2) {
-        return; // Not a valid link
-    }
-
-    // Assign positions for label and optional URL
-    labelStart = marks[0] + 1;
-    labelEnd = marks[1];
-
-    // Extract link text (label)
-    const label = view.state.sliceDoc(labelStart, labelEnd);
-
-    // Extract link destination (URL)
-    let url = urlStart !== -1 && urlEnd !== -1 ? view.state.sliceDoc(urlStart, urlEnd) : "";
-
-    // Remove enclosing `< >` for valid URIs
-    if (url.startsWith("<") && url.endsWith(">")) {
-        url = url.slice(1, -1);
-    }
-
-    decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-styled-link" }) });
-
-    if (!this.isCursorInside(cursor, view)) {
-        // Hide `[`, `]`, `(`, `)`, but only if `()` exists
-        decorations.push({ from: marks[0], to: labelStart, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-        decorations.push({ from: labelEnd, to: marks[1] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-
-        if (marks.length >= 4) {
-            decorations.push({ from: marks[2], to: marks[3] + 1, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
+        for (const { from, to, decoration } of decorations) {
+            builder.add(from, to, decoration)
         }
 
-        if (url.trim().length > 0) {
+        return builder.finish()
+    }
+
+    // **Decorate Headers (`# Header`)**
+    private decorateHeaders(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const start = cursor.from
+        const end = cursor.to
+        const level = parseInt(cursor.name.replace('ATXHeading', ''), 10)
+        let headerMarkEnd = start
+
+        if (cursor.firstChild()) {
+            do {
+                if (cursor.name === 'HeaderMark') {
+                    headerMarkEnd = cursor.to // End of `###`
+                }
+            } while (cursor.nextSibling())
+            cursor.parent()
+        }
+
+        decorations.push({
+            from: start,
+            to: end,
+            decoration: Decoration.mark({
+                class: `cm-styled-header level-${level}`,
+            }),
+        })
+
+        if (!this.isCursorInside(cursor, view)) {
             decorations.push({
-                from: labelStart,
-                to: labelEnd,
-                decoration: Decoration.widget({ widget: new LinkWidget(label, url) })
-            });
+                from: start,
+                to: headerMarkEnd + 1,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
         }
     }
-  }
 
+    // **Decorate Bold (`**bold**`)**
+    private decorateBold(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const start = cursor.from
+        const end = cursor.to
 
+        let markers: number[] = [] // Stores positions of `**` or `__`
 
+        // Move inside `StrongEmphasis` node to find `EmphasisMark`
+        if (cursor.firstChild()) {
+            do {
+                if (cursor.name === 'EmphasisMark') {
+                    markers.push(cursor.from)
+                }
+            } while (cursor.nextSibling())
+            cursor.parent() // Move back to the `StrongEmphasis` node
+        }
 
-  // **Decorate Quotes (`> Quote`)**
-  private decorateQuotes(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
+        // Ensure valid bold (`**text**` → at least two `EmphasisMark`s)
+        if (markers.length !== 2) {
+            return // Invalid bold formatting
+        }
 
-    const selectedLines = new Set<number>();
-    const doc = view.state.doc;
-    for (const range of view.state.selection.ranges) {
-        let line = doc.lineAt(range.from).number;
-        selectedLines.add(line);
-    }
+        const cursorInside = this.isCursorInside(cursor, view)
 
-    // **Process each `QuoteMark`**
-    const lineNumber = doc.lineAt(cursor.from).number;
-    const cursorOnLine = selectedLines.has(lineNumber);
-
-    // **Hide `>` if cursor is not on this line, but show vertical bar**
-    if (!cursorOnLine) {
+        // **Apply bold styling**
         decorations.push({
-            from: cursor.from,
-            to: cursor.from + 1,
-            decoration: Decoration.mark({ class: "cm-styled-quote" })
-        });
+            from: start,
+            to: end,
+            decoration: Decoration.mark({ class: 'cm-styled-bold' }),
+        })
+
+        // **Hide `**` or `__` markers if the cursor is NOT inside**
+        if (!cursorInside) {
+            decorations.push({
+                from: markers[0],
+                to: markers[0] + 2,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+            decorations.push({
+                from: markers[1],
+                to: markers[1] + 2,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+        }
     }
-    else {
+
+    // **Decorate Italic (`*italic*`)**
+    private decorateItalic(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const start = cursor.from
+        const end = cursor.to
+
+        let markers: number[] = [] // Stores positions of `*` or `_`
+
+        // Move inside `Emphasis` node to find `EmphasisMark`
+        if (cursor.firstChild()) {
+            do {
+                if (cursor.name === 'EmphasisMark') {
+                    markers.push(cursor.from)
+                }
+            } while (cursor.nextSibling())
+            cursor.parent() // Move back to the `Emphasis` node
+        }
+
+        // Ensure valid emphasis (`*text*` → at least two `EmphasisMark`s)
+        if (markers.length !== 2) {
+            return // Invalid emphasis
+        }
+
+        const cursorInside = this.isCursorInside(cursor, view)
+
+        // **Apply italics styling**
         decorations.push({
-            from: cursor.from,
-            to: cursor.from + 1,
-            decoration: Decoration.mark({ class: "cm-styled-quote-focused" })
-        });
+            from: start,
+            to: end,
+            decoration: Decoration.mark({ class: 'cm-styled-italic' }),
+        })
+
+        // **Hide `*` or `_` markers if the cursor is NOT inside**
+        if (!cursorInside) {
+            decorations.push({
+                from: markers[0],
+                to: markers[0] + 1,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+            decorations.push({
+                from: markers[1],
+                to: markers[1] + 1,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+        }
     }
-  }
 
+    private decorateLinks(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const start = cursor.from
+        const end = cursor.to
 
+        let labelStart = -1,
+            labelEnd = -1
+        let urlStart = -1,
+            urlEnd = -1
+        let marks: number[] = [] // Stores positions of `LinkMark` nodes
 
+        // Move inside the link node to find `LinkMark` and `URL`
+        if (cursor.firstChild()) {
+            do {
+                if (cursor.name === 'LinkMark') {
+                    marks.push(cursor.from) // Store positions of `LinkMark`
+                } else if (cursor.name === 'URL') {
+                    urlStart = cursor.from
+                    urlEnd = cursor.to
+                }
+            } while (cursor.nextSibling())
+            cursor.parent() // Move back to the link node
+        }
 
-  // **Decorate Images (`![alt](url)`)**
-  private decorateImages(cursor: TreeCursor, decorations: { from: number; to: number; decoration: Decoration; }[], view: EditorView) {
-    const start = cursor.from;
-    const end = cursor.to;
+        // Ensure we have at least `[label]`
+        if (marks.length < 2) {
+            return // Not a valid link
+        }
 
-    let altStart = -1, altEnd = -1;
-    let urlStart = -1, urlEnd = -1;
-    let marks: number[] = []; // Store positions of `LinkMark` nodes
+        // Assign positions for label and optional URL
+        labelStart = marks[0] + 1
+        labelEnd = marks[1]
 
-    // Move inside the image node to find `LinkMark` (for `[]()`) and `URL`
-    if (cursor.firstChild()) {
-        do {
-            if (cursor.name === "LinkMark") {
-                marks.push(cursor.from); // Store positions of `LinkMark` (`![`, `]`, `(`, `)`)
-            } else if (cursor.name === "URL") {
-                urlStart = cursor.from;
-                urlEnd = cursor.to;
+        // Extract link text (label)
+        const label = view.state.sliceDoc(labelStart, labelEnd)
+
+        // Extract link destination (URL)
+        let url =
+            urlStart !== -1 && urlEnd !== -1
+                ? view.state.sliceDoc(urlStart, urlEnd)
+                : ''
+
+        // Remove enclosing `< >` for valid URIs
+        if (url.startsWith('<') && url.endsWith('>')) {
+            url = url.slice(1, -1)
+        }
+
+        decorations.push({
+            from: start,
+            to: end,
+            decoration: Decoration.mark({ class: 'cm-styled-link' }),
+        })
+
+        if (!this.isCursorInside(cursor, view)) {
+            // Hide `[`, `]`, `(`, `)`, but only if `()` exists
+            decorations.push({
+                from: marks[0],
+                to: labelStart,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+            decorations.push({
+                from: labelEnd,
+                to: marks[1] + 1,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+
+            if (marks.length >= 4) {
+                decorations.push({
+                    from: marks[2],
+                    to: marks[3] + 1,
+                    decoration: Decoration.mark({
+                        class: 'cm-hidden-characters',
+                    }),
+                })
             }
-        } while (cursor.nextSibling());
-        cursor.parent(); // Move back to the image node
+
+            if (url.trim().length > 0) {
+                decorations.push({
+                    from: labelStart,
+                    to: labelEnd,
+                    decoration: Decoration.widget({
+                        widget: new LinkWidget(label, url),
+                    }),
+                })
+            }
+        }
     }
 
-    if (marks.length < 2) {
-        return; // Not a valid image yet
+    // **Decorate Quotes (`> Quote`)**
+    private decorateQuotes(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const selectedLines = new Set<number>()
+        const doc = view.state.doc
+        for (const range of view.state.selection.ranges) {
+            let line = doc.lineAt(range.from).number
+            selectedLines.add(line)
+        }
+
+        // **Process each `QuoteMark`**
+        const lineNumber = doc.lineAt(cursor.from).number
+        const cursorOnLine = selectedLines.has(lineNumber)
+
+        // **Hide `>` if cursor is not on this line, but show vertical bar**
+        if (!cursorOnLine) {
+            decorations.push({
+                from: cursor.from,
+                to: cursor.from + 1,
+                decoration: Decoration.mark({ class: 'cm-styled-quote' }),
+            })
+        } else {
+            decorations.push({
+                from: cursor.from,
+                to: cursor.from + 1,
+                decoration: Decoration.mark({
+                    class: 'cm-styled-quote-focused',
+                }),
+            })
+        }
     }
 
-    altStart = marks[0] + 2; // Start after `![`
-    altEnd = marks[1];
+    // **Decorate Images (`![alt](url)`)**
+    private decorateImages(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const start = cursor.from
+        const end = cursor.to
 
-    let altText = view.state.sliceDoc(altStart, altEnd).trim();
+        let altStart = -1,
+            altEnd = -1
+        let urlStart = -1,
+            urlEnd = -1
+        let marks: number[] = [] // Store positions of `LinkMark` nodes
 
-    let url = urlStart !== -1 && urlEnd !== -1 ? view.state.sliceDoc(urlStart, urlEnd).trim() : "";
+        // Move inside the image node to find `LinkMark` (for `[]()`) and `URL`
+        if (cursor.firstChild()) {
+            do {
+                if (cursor.name === 'LinkMark') {
+                    marks.push(cursor.from) // Store positions of `LinkMark` (`![`, `]`, `(`, `)`)
+                } else if (cursor.name === 'URL') {
+                    urlStart = cursor.from
+                    urlEnd = cursor.to
+                }
+            } while (cursor.nextSibling())
+            cursor.parent() // Move back to the image node
+        }
 
-    if (altText.length === 0) {
-        altText = "Image"; // Default placeholder if alt is missing
+        if (marks.length < 2) {
+            return // Not a valid image yet
+        }
+
+        altStart = marks[0] + 2 // Start after `![`
+        altEnd = marks[1]
+
+        let altText = view.state.sliceDoc(altStart, altEnd).trim()
+
+        let url =
+            urlStart !== -1 && urlEnd !== -1
+                ? view.state.sliceDoc(urlStart, urlEnd).trim()
+                : ''
+
+        if (altText.length === 0) {
+            altText = 'Image' // Default placeholder if alt is missing
+        }
+
+        const cursorOnLine = this.isCursorInside(cursor, view)
+
+        if (!cursorOnLine) {
+            decorations.push({
+                from: start,
+                to: end,
+                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+            })
+        }
+        decorations.push({
+            from: end,
+            to: end,
+            decoration: Decoration.widget({
+                widget: new ImageWidget(url, altText),
+            }),
+        })
     }
 
-    const cursorOnLine = this.isCursorInside(cursor, view);
-
-    if (!cursorOnLine) {
-        decorations.push({ from: start, to: end, decoration: Decoration.mark({ class: "cm-hidden-characters" }) });
-      }
-    decorations.push({
-        from: end,
-        to: end,
-        decoration: Decoration.widget({ widget: new ImageWidget(url, altText) }),
-    });
-  }
-
-
-  private isCursorInside(cursor: TreeCursor, view: EditorView) {
-    const cursorPos = view.state.selection.main.head;
-    const selection = view.state.selection.main;
-    const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to;
-    const selectionInside =
-        selection.from <= cursor.to && selection.to >= cursor.from;
-    return cursorInside || selectionInside;
-  }
+    private isCursorInside(cursor: TreeCursor, view: EditorView) {
+        const cursorPos = view.state.selection.main.head
+        const selection = view.state.selection.main
+        const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to
+        const selectionInside =
+            selection.from <= cursor.to && selection.to >= cursor.from
+        return cursorInside || selectionInside
+    }
 }
 
 export default ViewPlugin.fromClass(Decorations, {
-  decorations: (v) => v.decorations,
-});
+    decorations: (v) => v.decorations,
+})
