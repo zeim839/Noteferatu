@@ -85,6 +85,19 @@ class NoteController extends Database {
     const result = await this.select<{'COUNT(*)': number}>(query)
     return result[0]['COUNT(*)']
   }
+
+  // returns content that matches user inputted search
+  // If data integrity is a concern we can do an inner join with Notes in FROM clause
+  // This should be handled by triggers though
+  async search(searchContent: string, count: number) : Promise<Note[]> {
+    await this.ensureConnected()
+    const query = `SELECT *
+    FROM Search
+    WHERE Search MATCH ?
+    LIMIT ?;
+    `
+    return await this.select<Note>(query, [searchContent, count])
+  }
 }
 
 export default NoteController

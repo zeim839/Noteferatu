@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import Recents from "@/components/recents/Recents"
 import { NavigationState } from "./NavigationState"
 import { cn } from "@/lib/utils"
+import { Note } from "@/lib/controller/NoteController"
+import { useDB } from "@/components/DatabaseProvider"
 
 import {
   Command,
@@ -27,6 +29,7 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
   const isNotePage = usePathname() === '/note'
   const router = useRouter()
 
+  const db = useDB()
   // Pressing the meta/ctrl + K keybinding opens the Command menu.
   // It automatically focuses on the CommandInput.
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,10 +40,26 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
     }
   }
 
+  // Logs search results in console.
+  const testSearch = async (searchValue: string) => {
+    try {console.log(await db.notes.search(searchValue,4))}
+    catch (error) {
+      let description = 'An unknown error has occurred'
+      if (error instanceof Error) {
+        description = error.message
+      }
+    }
+  }
+
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen])
+
+  useEffect (() => {
+    if (!db) return
+    console.log(testSearch(searchValue))
+  }, [searchValue, db])
 
   // Clicking outside of the CommandInput closes the CommandList.
   const handleClickOutside = (event: MouseEvent) => {
