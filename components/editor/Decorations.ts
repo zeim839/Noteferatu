@@ -49,7 +49,10 @@ export class Decorations {
 
     update(update: ViewUpdate) {
         this.decorations =
-            update.docChanged || update.selectionSet || update.viewportChanged
+            update.docChanged ||
+            update.selectionSet ||
+            update.viewportChanged ||
+            update.focusChanged
                 ? this.createDecorations(update.view)
                 : this.decorations
     }

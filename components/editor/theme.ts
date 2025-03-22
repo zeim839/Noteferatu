@@ -102,12 +102,12 @@ export const codeMirrorTheme = EditorView.theme({
         display: 'flex',
         justifyContent: 'start',
     },
+    '&:not(.cm-focused) .cm-activeLine': {
+        background: 'transparent',
+    },
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
-    // { tag: tags.emphasis, fontStyle: "italic", color: "#e76f51" },
-    // { tag: tags.link, textDecoration: "underline", color: "#264653" },
-    // { tag: tags.quote, fontStyle: "italic", color: "#555" },
     {
         tag: tags.monospace,
         backgroundColor: '#f4f4f4',
