@@ -91,9 +91,14 @@ class NoteController extends Database {
   // This should be handled by triggers though
   async search(searchContent: string, count: number) : Promise<Note[]> {
     await this.ensureConnected()
-    const query = `SELECT *
+
+    // To add wild card to operator so query matches even if its not a full word
+    searchContent = searchContent + '*'
+
+    const query = `SELECT *, rank
     FROM Search
     WHERE Search MATCH ?
+    ORDER BY rank
     LIMIT ?;
     `
     return await this.select<Note>(query, [searchContent, count])
