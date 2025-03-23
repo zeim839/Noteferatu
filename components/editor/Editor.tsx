@@ -63,10 +63,11 @@ export default function Editor() {
     const initEditor = async () => {
       if (!editorRef.current) return
 
+      const allNotes = await db.notes.readAll()
       let content = ''
       let noteTitle = ''
       if (noteID) {
-        const note = await db.notes.read(Number(noteID))
+        const note = allNotes.find(n => n.id === Number(noteID))
         if (!note) {
           toast('Error: Note Not Found', {
             description: 'The current note no longer exists or could not be found.'
@@ -93,7 +94,7 @@ export default function Editor() {
           Decorations,
           placeholder('Start typing here...'),
           autocompletion({
-            override: [NoteLinkMenu]
+            override: [NoteLinkMenu(allNotes)]
           })
         ],
       })
