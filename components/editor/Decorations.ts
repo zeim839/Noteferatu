@@ -27,7 +27,11 @@ class LinkWidget extends WidgetType {
     link.addEventListener('click', async (event) => {
       event.preventDefault()
       const dest = this.dest
-      if (/^https?:\/\//.test(dest)) {
+      if (dest.startsWith('node:')) {
+        const nodeId = dest.substring(5) // Remove the 'node:' prefix
+        window.location.href = `/note?id=${nodeId}`
+      }
+      else if (/^https?:\/\//.test(dest)) {
         await openUrl(dest)
       }
     })
