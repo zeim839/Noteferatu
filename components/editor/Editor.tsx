@@ -14,6 +14,8 @@ import NoteTitle from "./NoteTitle"
 import { useDB } from "@/components/DatabaseProvider"
 import { useSearchParams } from 'next/navigation'
 import { toast } from "sonner"
+import { autocompletion } from "@codemirror/autocomplete"
+import { NoteLinkMenu } from "./NoteLinkMenu"
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
@@ -89,7 +91,10 @@ export default function Editor() {
           EditorView.lineWrapping,
           codeMirrorTheme,
           Decorations,
-          placeholder('Start typing here...')
+          placeholder('Start typing here...'),
+          autocompletion({
+            override: [NoteLinkMenu]
+          })
         ],
       })
 
