@@ -13,7 +13,7 @@ import { toast } from "sonner"
 const CreateNoteCard = () => {
   const router = useRouter()
   return (
-    <div className='w-full h-full flex items-center justify-center pb-32'>
+    <div className='w-full h-full flex items-center justify-center pb-8'>
       <div>
         <p className='mb-2'>Create a note to get started</p>
         <Button onClick={() => router.push('/note')} className='w-full'>
@@ -58,7 +58,7 @@ export default function GraphView() {
       { data: { id: note.id?.toString(), title: note.title } }
     ))
     return elements.concat(edges.map(edge => (
-      { data: { id: edge.id?.toString(), source: edge.src.toString(),
+      { data: { source: edge.src.toString(),
         target: edge.dst.toString() } }
     ))) as ElementDefinition[]
   }

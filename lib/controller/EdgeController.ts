@@ -2,7 +2,6 @@ import Database from "@/lib/Database"
 
 // Edge is the TypeScript type for the Edges database schema.
 export type Edge = {
-  id?  : number
   src  : number
   dst  : number
 }
@@ -30,23 +29,22 @@ class EdgeController extends Database {
     this.ready = true
   }
 
-  // create a new edge or update an existing one if ID already exists.
+  // Create a new edge or update an existing one if src and dst
+  // already exists. ON CONFLICT action to DO NOTHING since there are
+  // only primary keys.
   async create(edge: Edge) : Promise<void> {
     await this.ensureConnected()
-    const query = `INSERT INTO Edges (id,src,dst)
-    VALUES (?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-    id  = excluded.id,
-    src = excluded.src,
-    dst = excluded.dst;`
-    await this.execute(query, [edge.id, edge.src, edge.dst])
+    const query = `INSERT INTO Edges (src, dst)
+    VALUES (?, ?)
+    ON CONFLICT(src, dst) DO NOTHING`
+    await this.execute(query, [edge.src, edge.dst])
   }
 
-  // read fetches the edge with the specified ID, if it exists.
-  async read(id: number) : Promise<Edge | null> {
+  // read fetches the edge with the specified src and dst, if it exists.
+  async read(src: number, dst: number) : Promise<Edge | null> {
     await this.ensureConnected()
-    const query = `SELECT * FROM Edges WHERE id = ?;`
-    const result = await this.select<Edge>(query, [id])
+    const query = `SELECT * FROM Edges WHERE src = ? AND dst = ?;`
+    const result = await this.select<Edge>(query, [src, dst])
     return result.length > 0 ? result[0] as Edge : null
   }
 
@@ -56,11 +54,11 @@ class EdgeController extends Database {
     return await this.select<Edge>(`SELECT * FROM Edges;`)
   }
 
-  // delete the edge with the specified ID.
-  async delete(id: number) : Promise<void> {
+  // delete the edge with the specified src and dst.
+  async delete(src: number, dst: number) : Promise<void> {
     await this.ensureConnected()
-    const query = `DELETE FROM Edges WHERE id = ?;`
-    await this.execute(query, [id])
+    const query = `DELETE FROM Edges WHERE src = ? AND dst = ?;`
+    await this.execute(query, [src, dst])
   }
 
   // count returns the number of records in the Edges table.
