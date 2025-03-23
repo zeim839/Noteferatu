@@ -1,6 +1,7 @@
 import { RangeSetBuilder } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { TreeCursor } from '@lezer/common'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 import {
   Decoration,
@@ -15,17 +16,21 @@ import {
 // replace markdown hyperlink expressions with HTML hyperlinks when
 // parsing notes.
 class LinkWidget extends WidgetType {
-  constructor(readonly text: string, readonly url: string) {
+  constructor(readonly text: string, readonly dest: string) {
     super()
   }
 
   toDOM() {
     const link = document.createElement('a')
     link.textContent = this.text
-    link.href = this.url
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    link.classList.add('cm-styled-link')
+    link.style.cursor = 'pointer'
+    link.addEventListener('click', async (event) => {
+      event.preventDefault()
+      const dest = this.dest
+      if (/^https?:\/\//.test(dest)) {
+        await openUrl(dest)
+      }
+    })
     return link
   }
 }
