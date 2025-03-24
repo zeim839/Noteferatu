@@ -10,6 +10,8 @@ import {
 import { syntaxTree } from '@codemirror/language'
 import { TreeCursor } from '@lezer/common'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { Note } from '@/lib/controller/NoteController'
+import { dbField, noteIDField } from './State'
 
 // **Link Widget**
 class LinkWidget extends WidgetType {
@@ -18,23 +20,25 @@ class LinkWidget extends WidgetType {
     }
 
     toDOM() {
-        const link = document.createElement('a')
-        link.textContent = this.text
-        link.style.cursor = 'pointer'
-        link.addEventListener('click', async (event) => {
-            event.preventDefault()
-            const dest = this.dest
-            if (dest.startsWith('node:')) {
-                const nodeId = dest.substring(5) // Remove the 'node:' prefix
-                window.location.href = `/note?id=${nodeId}`
-            }
-            else if (/^https?:\/\//.test(dest)) {
-                await openUrl(dest)
-            }
+      const link = document.createElement('a')
+      link.textContent = this.text
+      link.style.cursor = 'pointer'
+
+      if (this.dest.startsWith('node:')) {
+        const nodeID = this.dest.substring(5)
+        link.addEventListener('click', (event) => {
+          event.preventDefault()
+          window.location.href = `/note?id=${nodeID}`
         })
-        return link
+      } else if (/^https?:\/\//.test(this.dest)) {
+        link.addEventListener('click', async (event) => {
+          event.preventDefault()
+          await openUrl(this.dest)
+        })
+      }
+      return link
     }
-}
+  }
 
 class ImageWidget extends WidgetType {
     constructor(readonly src: string, readonly altText: string) {
@@ -302,6 +306,24 @@ export class Decorations {
         // Remove enclosing `< >` for valid URIs
         if (url.startsWith('<') && url.endsWith('>')) {
             url = url.slice(1, -1)
+        }
+
+        const noteID = view.state.field(noteIDField)
+        if (url.startsWith('node:')) {
+          const nodeID = url.substring(5)
+          if (nodeID && !isNaN(Number(nodeID))) {
+            const src = Number(noteID)
+            const dst = Number(nodeID)
+            const db = view.state.field(dbField)
+            if(db) {
+                db.notes.read(dst)
+                .then((note: Note | null) => {
+                  if (note) {
+                    return db.edges.create({ src, dst })
+                  }
+                })
+            }
+          }
         }
 
         decorations.push({
