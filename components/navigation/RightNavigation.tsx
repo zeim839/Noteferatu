@@ -33,29 +33,31 @@ const RightNavigation = ({ state } : { state: NavigationState }) => {
     })
 
     await db.notes.create({
-      title: 'TikTok Rizz Party',
-      content: "A Rizz party is a group of friends having fun on prom night, dancing to the song Carnival by Kanye and it went super viral to the point where",
+      id: 42,
+      title: 'Abstract Syntax Tree',
+      content: "An abstract syntax tree (AST) is a data structure used in computer science to represent the structure of a program or code snippet. It is a tree representation of the abstract syntactic structure of text (often source code) written in a formal language. Each node of the tree denotes a construct occurring in the text. It is sometimes called just a syntax tree.",
       atime: Math.floor(Date.now() / 1000),
       mtime: Math.floor(Date.now() / 1000)
     })
 
     await db.notes.create({
       id: 420,
-      title: 'Quandale Dingle Lore',
-      content: "Quandale Dingle Lore: The Movie may contain material that could be considered sensitive or inappropriate for certain audiences, such as content related to the story behind the subject. If you are sensitive to this type of material, you should refrain from proceeding further.",
+      title: 'Regular Expression',
+      content: "A regular expression (shortened as regex or regexp), sometimes referred to as rational expression, is a sequence of characters that specifies a match pattern in text.",
       atime: Math.floor(Date.now() / 1000),
       mtime: Math.floor(Date.now() / 1000)
     })
 
     await db.notes.create({
       id: 69,
-      title: 'Skibidi Toilet Lore',
-      content: "skibidi toilet is the very first episode Episode in the Skibidi Toilet series, created by DaFuq!?Boom!. It marks the start of the war between The Alliance and Skibidi Toilets.",
+      title: 'Formal Language Theory',
+      content: "In logic, mathematics, computer science, and linguistics, a formal language consists of words whose letters are taken from an alphabet and are well-formed according to a specific set of rules called a formal grammar.",
       atime: Math.floor(Date.now() / 1000),
       mtime: Math.floor(Date.now() / 1000)
     })
 
     await db.edges.create({src: 420, dst: 69})
+    await db.edges.create({src: 42, dst: 69})
   }
 
   return (
