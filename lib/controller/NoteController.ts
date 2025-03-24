@@ -93,7 +93,8 @@ class NoteController extends Database {
     await this.ensureConnected()
 
     // To add wild card to operator so query matches even if its not a full word
-    searchContent = searchContent + '*'
+    searchContent = searchContent.replace(/"/g, '""')
+    searchContent = `"${searchContent}"*`
 
     const query = `SELECT *, rank
     FROM Search

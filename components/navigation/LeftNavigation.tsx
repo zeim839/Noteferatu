@@ -24,12 +24,17 @@ import {
 const LeftNavigation = ({ state } : { state: NavigationState }) => {
   const [searchValue, setSearchValue] = useState<string>("")
   const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [searchResults, setSearchResults] = useState<Note[]>([])
+  const [testSearchResults, setTestSearchResults] = useState<string[]>(['Recents','leen'])
+  const [isLoading, setIsLoading] = useState(false)
+
   const commandRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const isNotePage = usePathname() === '/note'
   const router = useRouter()
 
   const db = useDB()
+
   // Pressing the meta/ctrl + K keybinding opens the Command menu.
   // It automatically focuses on the CommandInput.
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,12 +47,28 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
 
   // Logs search results in console.
   const testSearch = async (searchValue: string) => {
-    try {console.log(await db.notes.search(searchValue,4))}
+    try {
+      setIsLoading(true)
+      // If search is only whitespace clear the search results
+      if (!searchValue.trim()){
+        console.log('cleared searchResults')
+        setSearchResults([])
+        return
+      }
+      const results = await db.notes.search(searchValue, 4)
+      setSearchResults(results)
+      console.log("Search results updated:", results)
+    }
     catch (error) {
       let description = 'An unknown error has occurred'
       if (error instanceof Error) {
         description = error.message
       }
+      console.error("Search error:", description)
+      setSearchResults([])
+    }
+    finally {
+      setIsLoading(false)
     }
   }
 
@@ -58,8 +79,8 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
 
   useEffect (() => {
     if (!db) return
-    console.log(testSearch(searchValue))
-  }, [searchValue, db])
+    testSearch(searchValue)
+  }, [searchValue])
 
   // Clicking outside of the CommandInput closes the CommandList.
   const handleClickOutside = (event: MouseEvent) => {
@@ -115,7 +136,17 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
           ref={inputRef}
         />
         <CommandList className={cn(!isOpen && "hidden")}>
-          <CommandEmpty>No results found.</CommandEmpty>
+        {searchResults.length === 0 && <CommandEmpty>No results found</CommandEmpty>}
+        <CommandGroup heading="Notes" className={cn(searchResults.length !== 0 ? "block" : "hidden")}>
+          {searchResults.map((note) => {
+            console.log("Rendering note:", note.title);
+            return (
+              <CommandItem key={note.id}>
+                  {note.title}
+              </CommandItem>
+            );
+          })}
+          </CommandGroup>
           <CommandGroup heading="Suggestions">
             <CommandItem
               onSelect={() => handleSelect(() => state.setLeftOpen(!state.isLeftOpen))}>

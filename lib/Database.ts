@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS Chat_History (
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS Search USING fts5(
-  id, title, content
+  id, title, content, tokenize="unicode61"
 );
 
 CREATE TRIGGER IF NOT EXISTS insert_search
