@@ -2,6 +2,8 @@ import { RangeSetBuilder } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { TreeCursor } from '@lezer/common'
 import { openUrl } from '@tauri-apps/plugin-opener'
+import { Note } from '@/lib/controller/NoteController'
+import { dbField, noteIDField } from './State'
 
 import {
   Decoration,
@@ -24,17 +26,19 @@ class LinkWidget extends WidgetType {
     const link = document.createElement('a')
     link.textContent = this.text
     link.style.cursor = 'pointer'
-    link.addEventListener('click', async (event) => {
-      event.preventDefault()
-      const dest = this.dest
-      if (dest.startsWith('node:')) {
-        const nodeId = dest.substring(5) // Remove the 'node:' prefix
-        window.location.href = `/note?id=${nodeId}`
-      }
-      else if (/^https?:\/\//.test(dest)) {
-        await openUrl(dest)
-      }
-    })
+
+    if (this.dest.startsWith('node:')) {
+      const nodeID = this.dest.substring(5)
+      link.addEventListener('click', (event) => {
+        event.preventDefault()
+        window.location.href = `/note?id=${nodeID}`
+      })
+    } else if (/^https?:\/\//.test(this.dest)) {
+      link.addEventListener('click', async (event) => {
+        event.preventDefault()
+        await openUrl(this.dest)
+      })
+    }
     return link
   }
 }
@@ -290,102 +294,6 @@ export class Decorations {
     }
   }
 
-  // decorateLink transforms a markdown hyperlink into a LinkWidget.
-  private decorateLinks(
-    cursor: TreeCursor,
-    decorations: { from: number; to: number; decoration: Decoration }[],
-    view: EditorView
-  ) {
-    const start = cursor.from
-    const end = cursor.to
-
-    let labelStart = -1,
-        labelEnd = -1
-    let urlStart = -1,
-        urlEnd = -1
-
-    // Stores positions of `LinkMark` nodes.
-    const markers: number[] = []
-
-    // Move inside the link node to find `LinkMark` and `URL`.
-    if (cursor.firstChild()) {
-      do {
-        if (cursor.name === 'LinkMark') {
-          // Store positions of `LinkMark`.
-          markers.push(cursor.from)
-        } else if (cursor.name === 'URL') {
-          urlStart = cursor.from
-          urlEnd = cursor.to
-        }
-      } while (cursor.nextSibling())
-      // Move back to the link node.
-      cursor.parent()
-    }
-
-    // Ensure we have at least `[label]`
-    if (markers.length < 2) {
-      return // Not a valid link
-    }
-
-    // Assign positions for label and optional URL
-    labelStart = markers[0] + 1
-    labelEnd = markers[1]
-
-    // Extract link text (label)
-    const label = view.state.sliceDoc(labelStart, labelEnd)
-
-    // Extract link destination (URL)
-    let url =
-        urlStart !== -1 && urlEnd !== -1
-          ? view.state.sliceDoc(urlStart, urlEnd)
-          : ''
-
-    // Remove enclosing `< >` for valid URIs
-    if (url.startsWith('<') && url.endsWith('>')) {
-      url = url.slice(1, -1)
-    }
-
-    decorations.push({
-      from: start,
-      to: end,
-      decoration: Decoration.mark({ class: 'cm-styled-link' }),
-    })
-
-    if (!this.isCursorInside(cursor, view)) {
-      // Hide `[`, `]`, `(`, `)`, but only if `()` exists
-      decorations.push({
-        from: markers[0],
-        to: labelStart,
-        decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
-      })
-      decorations.push({
-        from: labelEnd,
-        to: markers[1] + 1,
-        decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
-      })
-
-      if (markers.length >= 4) {
-        decorations.push({
-          from: markers[2],
-          to: markers[3] + 1,
-          decoration: Decoration.mark({
-            class: 'cm-hidden-characters',
-          }),
-        })
-      }
-
-      if (url.trim().length > 0) {
-        decorations.push({
-          from: labelStart,
-          to: labelEnd,
-          decoration: Decoration.widget({
-            widget: new LinkWidget(label, url),
-          }),
-        })
-      }
-    }
-  }
-
   // decorateQuotes transforms markdown quote expressions into quote
   // blocks (e.g. `> Quote`).
   private decorateQuotes(
@@ -492,6 +400,120 @@ export class Decorations {
         to: end,
         decoration: this.imageDecorationMap[url][altText],
       })
+    }
+  }
+
+  // decorateLink transforms a markdown hyperlink into a LinkWidget.
+  private decorateLinks(
+    cursor: TreeCursor,
+    decorations: { from: number; to: number; decoration: Decoration }[],
+    view: EditorView
+  ) {
+    const start = cursor.from
+    const end = cursor.to
+
+    let labelStart = -1,
+        labelEnd = -1
+    let urlStart = -1,
+        urlEnd = -1
+
+    // Stores positions of `LinkMark` nodes.
+    const markers: number[] = []
+
+    // Move inside the link node to find `LinkMark` and `URL`.
+    if (cursor.firstChild()) {
+      do {
+        if (cursor.name === 'LinkMark') {
+          // Store positions of `LinkMark`.
+          markers.push(cursor.from)
+        } else if (cursor.name === 'URL') {
+          urlStart = cursor.from
+          urlEnd = cursor.to
+        }
+      } while (cursor.nextSibling())
+      // Move back to the link node.
+      cursor.parent()
+    }
+
+    // Ensure we have at least `[label]`.
+    if (markers.length < 2) {
+      return // Not a valid link
+    }
+
+    // Assign positions for label and optional URL.
+    labelStart = markers[0] + 1
+    labelEnd = markers[1]
+
+    // Extract link text (label).
+    const label = view.state.sliceDoc(labelStart, labelEnd)
+
+    // Extract link destination (URL).
+    let url =
+        urlStart !== -1 && urlEnd !== -1
+          ? view.state.sliceDoc(urlStart, urlEnd)
+          : ''
+
+    // Remove enclosing `< >` for valid URIs.
+    if (url.startsWith('<') && url.endsWith('>')) {
+      url = url.slice(1, -1)
+    }
+
+    const noteID = view.state.field(noteIDField)
+    if (url.startsWith('node:')) {
+      const nodeID = url.substring(5)
+      if (nodeID && !isNaN(Number(nodeID))) {
+        const src = Number(noteID)
+        const dst = Number(nodeID)
+        const db = view.state.field(dbField)
+        if(db) {
+          db.notes.read(dst)
+            .then((note: Note | null) => {
+              if (note) {
+                return db.edges.create({ src, dst })
+              }
+            })
+        }
+      }
+    }
+
+    decorations.push({
+      from: start,
+      to: end,
+      decoration: Decoration.mark({ class: 'cm-styled-link' }),
+    })
+
+    if (!this.isCursorInside(cursor, view)) {
+      // Hide `[`, `]`, `(`, `)`, but only if `()` exists.
+      decorations.push({
+        from: markers[0],
+        to: labelStart,
+        decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+      })
+      decorations.push({
+        from: labelEnd,
+        to: markers[1] + 1,
+        decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+      })
+
+      if (markers.length >= 4) {
+        decorations.push({
+          from: markers[2],
+          to: markers[3] + 1,
+          decoration: Decoration.mark({
+            class: 'cm-hidden-characters',
+          }),
+        })
+      }
+
+      if (url.trim().length > 0) {
+        decorations.push({
+          from: labelStart,
+          to: labelEnd,
+          decoration: Decoration.widget({
+            widget: new LinkWidget(label, url),
+          }),
+        })
+      }
     }
   }
 
