@@ -34,9 +34,7 @@ class EdgeController extends Database {
   // only primary keys.
   async create(edge: Edge) : Promise<void> {
     await this.ensureConnected()
-    const query = `INSERT INTO Edges (src, dst)
-    VALUES (?, ?)
-    ON CONFLICT(src, dst) DO NOTHING`
+    const query = `INSERT INTO Edges (src, dst) VALUES (?, ?);`
     await this.execute(query, [edge.src, edge.dst])
   }
 

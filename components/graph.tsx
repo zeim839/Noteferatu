@@ -71,9 +71,9 @@ export default function GraphView() {
     // when there are no edges between nodes.
     const layout = (edges.length > 0) ? {
       name: 'cose',
-      randomize: true,
+      randomize: false,
       animate: false,
-      padding: 20,
+      padding: 50,
     } : {
       name: 'grid',
       animate: false,
@@ -94,15 +94,15 @@ export default function GraphView() {
             'background-color': '#0074D9',
             'text-valign': 'bottom',
             'text-halign': 'center',
-            'text-margin-y': 5,
+            'text-margin-y': 3,
             'font-family': 'Iosevka Comfy, monospace',
             'font-weight': 'lighter',
             'text-wrap': 'wrap',
             'text-max-width': '80px',
-            'font-size': 5,
+            'font-size': 3,
             label: 'data(title)',
-            width: 10,
-            height: 10,
+            width: 5,
+            height: 5,
           },
         },
         {
