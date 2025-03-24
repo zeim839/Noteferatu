@@ -16,6 +16,7 @@ import { useSearchParams } from 'next/navigation'
 import { toast } from "sonner"
 import { autocompletion } from "@codemirror/autocomplete"
 import { NoteLinkMenu } from "./NoteLinkMenu"
+import { dbField, noteIDField, setDbEffect, setNoteIDEffect } from "./State"
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
@@ -95,7 +96,9 @@ export default function Editor() {
           placeholder('Start typing here...'),
           autocompletion({
             override: [NoteLinkMenu(allNotes)]
-          })
+          }),
+          noteIDField,
+          dbField
         ],
       })
 
@@ -104,6 +107,12 @@ export default function Editor() {
         parent: editorRef.current,
       })
       editorViewRef.current = view
+      view.dispatch({
+        effects: [
+          setNoteIDEffect.of(noteID),
+          setDbEffect.of(db)
+        ]
+      })
 
       const editorDom = view.dom
       const keyDownHandler = (e: KeyboardEvent) => {

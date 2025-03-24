@@ -16,7 +16,7 @@ import {
   useEffect
 } from 'react'
 
-type DatabaseContextType = {
+export type DatabaseContextType = {
   notes   : NoteController,
   edges   : EdgeController,
   keys    : KeyController,
