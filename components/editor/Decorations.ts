@@ -53,38 +53,6 @@ class ImageWidget extends WidgetType {
     }
 }
 
-class ConfirmImageWidget extends WidgetType {
-    constructor(private onConfirm: () => void) {
-        super()
-    }
-
-    toDOM(): HTMLElement {
-        const button = document.createElement('button')
-        button.textContent = 'Confirm Image'
-        button.style.fontSize = '0.8em'
-        button.style.padding = '2px 6px'
-        button.style.cursor = 'pointer'
-        button.style.marginLeft = '6px'
-        button.style.pointerEvents = 'auto'
-        button.style.zIndex = '1000'
-        button.style.position = 'relative'
-        button.style.border = '1px solid #ccc'
-        button.style.borderRadius = '3px'
-        button.style.backgroundColor = '#f9f9f9'
-        button.style.color = '#333'
-        button.style.fontWeight = '500'
-        button.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)'
-
-        button.onmousedown = (event) => {
-            event.preventDefault()
-            event.stopPropagation()
-            this.onConfirm()
-        }
-
-        return button
-    }
-}
-
 export class Decorations {
     decorations: DecorationSet
     imageDecorationMap: { [key: string]: { [key: string]: Decoration } } = {}
@@ -415,7 +383,6 @@ export class Decorations {
                 }),
             })
         }
-        const lineEnd = doc.lineAt(cursor.to).to
         decorations.push({
             from: cursor.from + 1,
             to: doc.lineAt(cursor.to).to,
