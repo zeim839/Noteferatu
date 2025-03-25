@@ -26,7 +26,6 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false)
   const [searchResults, setSearchResults] = useState<Note[]>([])
   const [testSearchResults, setTestSearchResults] = useState<string[]>(['Recents','leen'])
-  const [isLoading, setIsLoading] = useState(false)
 
   const commandRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -48,10 +47,8 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
   // Logs search results in console.
   const testSearch = async (searchValue: string) => {
     try {
-      setIsLoading(true)
       // If search is only whitespace clear the search results
       if (!searchValue.trim()){
-        console.log('cleared searchResults')
         setSearchResults([])
         return
       }
@@ -66,9 +63,6 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
       }
       console.error("Search error:", description)
       setSearchResults([])
-    }
-    finally {
-      setIsLoading(false)
     }
   }
 
@@ -139,9 +133,9 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
         {searchResults.length === 0 && <CommandEmpty>No results found</CommandEmpty>}
         <CommandGroup heading="Notes" className={cn(searchResults.length !== 0 ? "block" : "hidden")}>
           {searchResults.map((note) => {
-            console.log("Rendering note:", note.title);
             return (
-              <CommandItem key={note.id}>
+              <CommandItem key={note.id}
+              onSelect={() => handleSelect(() =>router.push(`/note?id=${note.id}`))}>
                   {note.title}
               </CommandItem>
             );

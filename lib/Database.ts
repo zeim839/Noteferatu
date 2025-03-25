@@ -33,8 +33,9 @@ CREATE TABLE IF NOT EXISTS Chat_History (
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS Search USING fts5(
-  id, title, content, tokenize="unicode61"
+  id, title, content, tokenize = "unicode61 tokenchars '!@#$%^&*()_-+=<>,.?~''\"\"'"
 );
+
 
 CREATE TRIGGER IF NOT EXISTS insert_search
   AFTER INSERT ON Notes

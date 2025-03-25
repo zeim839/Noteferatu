@@ -49,7 +49,7 @@ const RightNavigation = ({ state } : { state: NavigationState }) => {
 
     await db.notes.create({
       id: 69,
-      title: '$ ( * & "',
+      title: '"',
       content: "skibidi toilet is the very first episode Episode in the Skibidi Toilet series, created by DaFuq!?Boom!. It marks the start of the war between The Alliance and Skibidi Toilets.",
       atime: Math.floor(Date.now() / 1000),
       mtime: Math.floor(Date.now() / 1000)

@@ -95,7 +95,7 @@ class NoteController extends Database {
     // To add wild card to operator so query matches even if its not a full word
     searchContent = searchContent.replace(/"/g, '""')
     searchContent = `"${searchContent}"*`
-
+    console.log(searchContent)
     const query = `SELECT *, rank
     FROM Search
     WHERE Search MATCH ?
