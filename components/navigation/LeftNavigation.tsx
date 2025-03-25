@@ -128,12 +128,13 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
 }
 
 // LeftSidebar shows recently accessed notes or search results.
-const LeftSidebar = () => {
+const LeftSidebar = ({isOpen}: { isOpen: boolean }) => {
   // Use fixed positioning for the GraphView to prevent shifting
   // nodes and edges.
   const fixedPos = usePathname() === '/' ? 'fixed left-0' : ''
   return (
-    <div className={cn(fixedPos, 'min-w-[366px] w-[366px] h-screen bg-[rgba(245,245,245,0.75)] p-2 border border-r-gray-300 z-10')}>
+    <div className={cn(fixedPos, "min-w-[366px] w-[366px] h-screen bg-[rgba(245,245,245,0.75)] p-2 border border-r-gray-300 z-10 transition-transform duration-300 ease-in-out transform",
+    isOpen ? "translate-x-0" : "-translate-x-full")}>
       <Recents />
     </div>
   )

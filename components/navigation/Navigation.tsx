@@ -27,11 +27,11 @@ const Navigation = ({ children } : { children?: ReactNode }) => {
       <LeftNavigation state={navState()} />
       <RightNavigation state={navState()} />
       <div className={cn(background, 'flex justify-between')}>
-        { isLeftOpen ? <LeftSidebar /> : null }
+        <LeftSidebar isOpen={isLeftOpen}/>
         <div className='w-full h-full overflow-hidden'>
           {children}
         </div>
-        { isRightOpen ? <RightSidebar /> : null }
+        <RightSidebar isOpen={isRightOpen}/>
       </div>
     </div>
   )
