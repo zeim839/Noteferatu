@@ -28,7 +28,11 @@ class LinkWidget extends WidgetType {
 }
 
 class ImageWidget extends WidgetType {
-    constructor(readonly src: string, readonly altText: string) {
+    constructor(
+        readonly src: string,
+        readonly altText: string,
+        private onClickReveal?: () => void
+    ) {
         super()
     }
 
@@ -36,15 +40,58 @@ class ImageWidget extends WidgetType {
         const img = document.createElement('img')
         img.src = this.src
         img.alt = this.altText
+
+        if (this.onClickReveal) {
+            img.onclick = (event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                this.onClickReveal?.()
+            }
+        }
+
         return img
+    }
+}
+
+class ConfirmImageWidget extends WidgetType {
+    constructor(private onConfirm: () => void) {
+        super()
+    }
+
+    toDOM(): HTMLElement {
+        const button = document.createElement('button')
+        button.textContent = 'Confirm Image'
+        button.style.fontSize = '0.8em'
+        button.style.padding = '2px 6px'
+        button.style.cursor = 'pointer'
+        button.style.marginLeft = '6px'
+        button.style.pointerEvents = 'auto'
+        button.style.zIndex = '1000'
+        button.style.position = 'relative'
+        button.style.border = '1px solid #ccc'
+        button.style.borderRadius = '3px'
+        button.style.backgroundColor = '#f9f9f9'
+        button.style.color = '#333'
+        button.style.fontWeight = '500'
+        button.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)'
+
+        button.onmousedown = (event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            this.onConfirm()
+        }
+
+        return button
     }
 }
 
 export class Decorations {
     decorations: DecorationSet
+    imageDecorationMap: { [key: string]: { [key: string]: Decoration } } = {}
 
     constructor(view: EditorView) {
         this.decorations = this.createDecorations(view)
+        this.imageDecorationMap = {}
     }
 
     update(update: ViewUpdate) {
@@ -368,6 +415,12 @@ export class Decorations {
                 }),
             })
         }
+        const lineEnd = doc.lineAt(cursor.to).to
+        decorations.push({
+            from: cursor.from + 1,
+            to: doc.lineAt(cursor.to).to,
+            decoration: Decoration.mark({ class: 'cm-styled-quote-text' }),
+        })
     }
 
     // **Decorate Images (`![alt](url)`)**
@@ -378,60 +431,63 @@ export class Decorations {
     ) {
         const start = cursor.from
         const end = cursor.to
-
         let altStart = -1,
             altEnd = -1
         let urlStart = -1,
             urlEnd = -1
-        const markers: number[] = [] // Store positions of `LinkMark` nodes
+        const markers: number[] = []
 
-        // Move inside the image node to find `LinkMark` (for `[]()`) and `URL`
         if (cursor.firstChild()) {
             do {
                 if (cursor.name === 'LinkMark') {
-                    markers.push(cursor.from) // Store positions of `LinkMark` (`![`, `]`, `(`, `)`)
+                    markers.push(cursor.from)
                 } else if (cursor.name === 'URL') {
                     urlStart = cursor.from
                     urlEnd = cursor.to
                 }
             } while (cursor.nextSibling())
-            cursor.parent() // Move back to the image node
+            cursor.parent()
         }
 
-        if (markers.length < 2) {
-            return // Not a valid image yet
-        }
+        if (markers.length < 2 || urlStart === -1 || urlEnd === -1) return
 
-        altStart = markers[0] + 2 // Start after `![`
+        altStart = markers[0] + 2 // After `![`
         altEnd = markers[1]
-
         let altText = view.state.sliceDoc(altStart, altEnd).trim()
-
-        const url =
-            urlStart !== -1 && urlEnd !== -1
-                ? view.state.sliceDoc(urlStart, urlEnd).trim()
-                : ''
-
-        if (altText.length === 0) {
-            altText = 'Image' // Default placeholder if alt is missing
-        }
+        const url = view.state.sliceDoc(urlStart, urlEnd).trim()
+        if (!url) return
+        if (altText.length === 0) altText = 'Image'
 
         const cursorOnLine = this.isCursorInside(cursor, view)
 
         if (!cursorOnLine) {
+            const imageDecoration = this.imageDecorationMap[url]?.[altText]
+            if (!imageDecoration) {
+                if (!this.imageDecorationMap[url])
+                    this.imageDecorationMap[url] = {}
+                this.imageDecorationMap[url][altText] = Decoration.widget({
+                    widget: new ImageWidget(url, altText, () => {
+                        const line = view.state.doc.lineAt(altStart)
+                        view.dispatch({
+                            selection: { anchor: line.from, head: line.to }, // highlights the whole line
+                            scrollIntoView: true,
+                        })
+                    }),
+                })
+            }
             decorations.push({
                 from: start,
                 to: end,
-                decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+                decoration: Decoration.mark({
+                    class: 'cm-hide-image-line',
+                }),
+            })
+            decorations.push({
+                from: end,
+                to: end,
+                decoration: this.imageDecorationMap[url][altText],
             })
         }
-        decorations.push({
-            from: end,
-            to: end,
-            decoration: Decoration.widget({
-                widget: new ImageWidget(url, altText),
-            }),
-        })
     }
 
     private isCursorInside(cursor: TreeCursor, view: EditorView) {

@@ -52,6 +52,10 @@ export const codeMirrorTheme = EditorView.theme({
         color: 'transparent',
         display: 'inline-block',
     },
+    '.cm-styled-quote-text': {
+        color: '#555',
+        fontStyle: 'italic',
+    },
     '.cm-styled-quote::before': {
         content: '""',
         position: 'absolute',
@@ -63,7 +67,7 @@ export const codeMirrorTheme = EditorView.theme({
     },
     '.cm-styled-quote-focused': {
         position: 'relative',
-        color: 'inherit',
+        color: '#555',
         display: 'inline-block',
     },
     '.cm-styled-quote-focused::before': {
@@ -105,10 +109,20 @@ export const codeMirrorTheme = EditorView.theme({
     '&:not(.cm-focused) .cm-activeLine': {
         background: 'transparent',
     },
+    '.cm-widgetBuffer': {
+        pointerEvents: 'none',
+        position: 'relative',
+        zIndex: '0',
+    },
+    '.cm-hide-image-line': {
+        color: 'transparent',
+        fontSize: '0',
+        display: 'block',
+        width: '100%',
+    },
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
-    { tag: tags.quote, color: '#555', fontStyle: 'italic' },
     {
         tag: tags.monospace,
         backgroundColor: '#f4f4f4',
