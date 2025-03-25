@@ -108,6 +108,7 @@ export const codeMirrorTheme = EditorView.theme({
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
+    { tag: tags.quote, color: '#555', fontStyle: 'italic' },
     {
         tag: tags.monospace,
         backgroundColor: '#f4f4f4',
