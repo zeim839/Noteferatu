@@ -2,11 +2,12 @@ import Database from "@/lib/Database"
 
 // Note is the TypeScript type for the Notes database schema.
 export type Note = {
-  id?     : number
-  title   : string
-  content : string
-  atime   : number
-  mtime   : number
+  id?             : number
+  title           : string
+  content         : string
+  atime           : number
+  mtime           : number
+  snippetContent? : string
 }
 
 // NoteController manages notes in the database.
@@ -84,6 +85,27 @@ class NoteController extends Database {
     const query = `SELECT COUNT(*) FROM Notes;`
     const result = await this.select<{'COUNT(*)': number}>(query)
     return result[0]['COUNT(*)']
+  }
+
+  // search note titles and content matching user input. An optional
+  // snippet is returned indicating the matched substring in the note
+  // contents.
+  async search(searchContent: string) : Promise<Note[]> {
+      await this.ensureConnected()
+
+      // Escaping "
+      searchContent = searchContent.replace(/"/g, '""')
+      // To add wild card to operator so query matches even if it's not a full word
+      searchContent = `"${searchContent}"*`
+      const query = `
+        SELECT *, snippet(Search, 2, '[', ']', '', 4) as snippetContent
+        FROM Search
+        WHERE Search.title MATCH ? OR Search.content MATCH ?
+        ORDER BY rank
+        LIMIT 5;
+      `
+      const result = await this.select<Note>(query, [searchContent,searchContent])
+      return result
   }
 }
 
