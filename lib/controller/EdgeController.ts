@@ -68,6 +68,13 @@ class EdgeController extends Database {
     const result = await this.select<{'COUNT(*)': number}>(query)
     return result[0]['COUNT(*)']
   }
+
+  // deleteEdgesBySrc removes all edges where the source (src) is equal to the given value.
+  async deleteEdgesBySrc(src: number): Promise<void> {
+    await this.ensureConnected()
+    const query = `DELETE FROM Edges WHERE src = ?;`
+    await this.execute(query, [src])
+  }
 }
 
 export default EdgeController
