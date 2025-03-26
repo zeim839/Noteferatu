@@ -26,11 +26,39 @@ CREATE TABLE IF NOT EXISTS Keys (
 );
 
 CREATE TABLE IF NOT EXISTS Chat_History (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  is_user BOOLEAN NOT NULL,
-  content TEXT NOT NULL,
-  time INTEGER
+  id      INTEGER  PRIMARY KEY AUTOINCREMENT,
+  is_user BOOLEAN  NOT NULL,
+  content TEXT     NOT NULL,
+  time    INTEGER
 );
+
+CREATE VIRTUAL TABLE IF NOT EXISTS Search USING fts5(
+  id, title, content, tokenize = "unicode61 tokenchars '!@#$%^&*()_-+=<>,.?~''\"\"'"
+);
+
+CREATE TRIGGER IF NOT EXISTS insert_search
+  AFTER INSERT ON Notes
+  BEGIN
+    INSERT INTO Search (id, title, content)
+    VALUES (NEW.id, NEW.title, NEW.content);
+  END;
+
+CREATE TRIGGER IF NOT EXISTS update_search
+  AFTER UPDATE ON Notes
+  BEGIN
+    UPDATE Search
+    SET
+      title   = NEW.title,
+      content = NEW.content
+    WHERE id = NEW.id;
+  END;
+
+CREATE TRIGGER IF NOT EXISTS delete_search
+  AFTER DELETE ON Notes
+  BEGIN
+    DELETE FROM Search
+    WHERE id = OLD.id;
+  END;
 `
 
 // Database wraps the Tauri SQLite database API into a class. It can be
