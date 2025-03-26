@@ -2,8 +2,6 @@ import { RangeSetBuilder } from '@codemirror/state'
 import { syntaxTree } from '@codemirror/language'
 import { TreeCursor } from '@lezer/common'
 import { openUrl } from '@tauri-apps/plugin-opener'
-import { Note } from '@/lib/controller/NoteController'
-import { dbField, noteIDField } from './State'
 
 import {
   Decoration,
@@ -29,9 +27,9 @@ class LinkWidget extends WidgetType {
 
     if (this.dest.startsWith('node:')) {
       const nodeID = this.dest.substring(5)
-      link.addEventListener('click', (event) => {
-        event.preventDefault()
-        window.location.href = `/note?id=${nodeID}`
+      link.addEventListener('click', () => {
+        const navigateEvent = new CustomEvent('navigate', { detail: { path: `/note?id=${nodeID}` } })
+        document.dispatchEvent(navigateEvent)
       })
     } else if (/^https?:\/\//.test(this.dest)) {
       link.addEventListener('click', async (event) => {
@@ -416,64 +414,42 @@ export class Decorations {
         labelEnd = -1
     let urlStart = -1,
         urlEnd = -1
+    const markers: number[] = [] // Stores positions of `LinkMark` nodes
 
-    // Stores positions of `LinkMark` nodes.
-    const markers: number[] = []
-
-    // Move inside the link node to find `LinkMark` and `URL`.
+    // Move inside the link node to find `LinkMark` and `URL`
     if (cursor.firstChild()) {
       do {
         if (cursor.name === 'LinkMark') {
-          // Store positions of `LinkMark`.
-          markers.push(cursor.from)
+          markers.push(cursor.from) // Store positions of `LinkMark`
         } else if (cursor.name === 'URL') {
           urlStart = cursor.from
           urlEnd = cursor.to
         }
       } while (cursor.nextSibling())
-      // Move back to the link node.
-      cursor.parent()
+      cursor.parent() // Move back to the link node
     }
 
-    // Ensure we have at least `[label]`.
+    // Ensure we have at least `[label]`
     if (markers.length < 2) {
       return // Not a valid link
     }
 
-    // Assign positions for label and optional URL.
+    // Assign positions for label and optional URL
     labelStart = markers[0] + 1
     labelEnd = markers[1]
 
-    // Extract link text (label).
+    // Extract link text (label)
     const label = view.state.sliceDoc(labelStart, labelEnd)
 
-    // Extract link destination (URL).
+    // Extract link destination (URL)
     let url =
         urlStart !== -1 && urlEnd !== -1
           ? view.state.sliceDoc(urlStart, urlEnd)
           : ''
 
-    // Remove enclosing `< >` for valid URIs.
+    // Remove enclosing `< >` for valid URIs
     if (url.startsWith('<') && url.endsWith('>')) {
       url = url.slice(1, -1)
-    }
-
-    const noteID = view.state.field(noteIDField)
-    if (url.startsWith('node:')) {
-      const nodeID = url.substring(5)
-      if (nodeID && !isNaN(Number(nodeID))) {
-        const src = Number(noteID)
-        const dst = Number(nodeID)
-        const db = view.state.field(dbField)
-        if(db) {
-          db.notes.read(dst)
-            .then((note: Note | null) => {
-              if (note) {
-                return db.edges.create({ src, dst })
-              }
-            })
-        }
-      }
     }
 
     decorations.push({
@@ -483,7 +459,7 @@ export class Decorations {
     })
 
     if (!this.isCursorInside(cursor, view)) {
-      // Hide `[`, `]`, `(`, `)`, but only if `()` exists.
+      // Hide `[`, `]`, `(`, `)`, but only if `()` exists
       decorations.push({
         from: markers[0],
         to: labelStart,

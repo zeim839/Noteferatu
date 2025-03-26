@@ -16,11 +16,14 @@ import { useSearchParams } from 'next/navigation'
 import { toast } from "sonner"
 import { autocompletion } from "@codemirror/autocomplete"
 import { NoteLinkMenu } from "./NoteLinkMenu"
-import { dbField, noteIDField, setDbEffect, setNoteIDEffect } from "./State"
+import { edgesField, noteIDField, setNoteIDEffect } from "./State"
+import { EdgesPlugin } from "./Edges"
+import { useRouter } from "next/navigation"
 
 export default function Editor() {
   const [/*text*/, setText] = useState<string>('')
   const db = useDB()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const noteID = searchParams.get('id')
   const [title, setTitle] = useState('')
@@ -67,6 +70,7 @@ export default function Editor() {
       const allNotes = await db.notes.readAll()
       let content = ''
       let noteTitle = ''
+      db.edges.deleteEdgesBySrc(Number(noteID))
       if (noteID) {
         const note = allNotes.find(n => n.id === Number(noteID))
         if (!note) {
@@ -98,7 +102,8 @@ export default function Editor() {
             override: [NoteLinkMenu(allNotes)]
           }),
           noteIDField,
-          dbField
+          edgesField,
+          EdgesPlugin
         ],
       })
 
@@ -107,12 +112,7 @@ export default function Editor() {
         parent: editorRef.current,
       })
       editorViewRef.current = view
-      view.dispatch({
-        effects: [
-          setNoteIDEffect.of(noteID),
-          setDbEffect.of(db)
-        ]
-      })
+      view.dispatch({ effects: setNoteIDEffect.of(noteID) })
 
       const editorDom = view.dom
       const keyDownHandler = (e: KeyboardEvent) => {
@@ -128,8 +128,15 @@ export default function Editor() {
         }
       }
       editorDom.addEventListener('keydown', keyDownHandler, true) // ensure custom keydown handler runs first
+      // custom event to use nextjs react component only router
+      const handleNavigate = (event: CustomEvent) => {
+        const { path } = event.detail
+        router.push(path)
+      }
+      document.addEventListener('navigate', handleNavigate as EventListener)
       return () => {
         editorDom.removeEventListener('keydown', keyDownHandler, true)
+        document.removeEventListener('navigate', handleNavigate as EventListener)
       }
     }
 
@@ -137,6 +144,15 @@ export default function Editor() {
     return () => {
       isMounted = false
       if (view) {
+        const edges = view.state.field(edgesField)
+        if (edges && db) {
+          edges.forEach(edge => {
+            db.notes.read(edge.dst)
+              .then((note) => {
+                if (note) db.edges.create(edge)
+              })
+          })
+        }
         view.destroy()
       }
     }
