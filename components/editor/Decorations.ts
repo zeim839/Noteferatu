@@ -16,30 +16,30 @@ import {
 // replace markdown hyperlink expressions with HTML hyperlinks when
 // parsing notes.
 class LinkWidget extends WidgetType {
-    constructor(readonly text: string, readonly dest: string) {
-        super()
-    }
-
-    toDOM() {
-      const link = document.createElement('a')
-      link.textContent = this.text
-      link.style.cursor = 'pointer'
-
-      if (this.dest.startsWith('node:')) {
-        const nodeID = this.dest.substring(5)
-        link.addEventListener('click', () => {
-            const navigateEvent = new CustomEvent('navigate', { detail: { path: `/note?id=${nodeID}` } })
-            document.dispatchEvent(navigateEvent)
-        })
-      } else if (/^https?:\/\//.test(this.dest)) {
-        link.addEventListener('click', async (event) => {
-          event.preventDefault()
-          await openUrl(this.dest)
-        })
-      }
-      return link
-    }
+  constructor(readonly text: string, readonly dest: string) {
+    super()
   }
+
+  toDOM() {
+    const link = document.createElement('a')
+    link.textContent = this.text
+    link.style.cursor = 'pointer'
+
+    if (this.dest.startsWith('node:')) {
+      const nodeID = this.dest.substring(5)
+      link.addEventListener('click', () => {
+        const navigateEvent = new CustomEvent('navigate', { detail: { path: `/note?id=${nodeID}` } })
+        document.dispatchEvent(navigateEvent)
+      })
+    } else if (/^https?:\/\//.test(this.dest)) {
+      link.addEventListener('click', async (event) => {
+        event.preventDefault()
+        await openUrl(this.dest)
+      })
+    }
+    return link
+  }
+}
 
 // ImageWidget defines an HTML img component, which is used to replace
 // markdown image expressions with HTML images when parsing notes.
@@ -401,104 +401,105 @@ export class Decorations {
     }
   }
 
+  // decorateLink transforms a markdown hyperlink into a LinkWidget.
   private decorateLinks(
-      cursor: TreeCursor,
-      decorations: { from: number; to: number; decoration: Decoration }[],
-      view: EditorView
+    cursor: TreeCursor,
+    decorations: { from: number; to: number; decoration: Decoration }[],
+    view: EditorView
   ) {
-      const start = cursor.from
-      const end = cursor.to
+    const start = cursor.from
+    const end = cursor.to
 
-      let labelStart = -1,
-          labelEnd = -1
-      let urlStart = -1,
-          urlEnd = -1
-      const markers: number[] = [] // Stores positions of `LinkMark` nodes
+    let labelStart = -1,
+        labelEnd = -1
+    let urlStart = -1,
+        urlEnd = -1
+    const markers: number[] = [] // Stores positions of `LinkMark` nodes
 
-      // Move inside the link node to find `LinkMark` and `URL`
-      if (cursor.firstChild()) {
-          do {
-              if (cursor.name === 'LinkMark') {
-                  markers.push(cursor.from) // Store positions of `LinkMark`
-              } else if (cursor.name === 'URL') {
-                  urlStart = cursor.from
-                  urlEnd = cursor.to
-              }
-          } while (cursor.nextSibling())
-          cursor.parent() // Move back to the link node
-      }
+    // Move inside the link node to find `LinkMark` and `URL`
+    if (cursor.firstChild()) {
+      do {
+        if (cursor.name === 'LinkMark') {
+          markers.push(cursor.from) // Store positions of `LinkMark`
+        } else if (cursor.name === 'URL') {
+          urlStart = cursor.from
+          urlEnd = cursor.to
+        }
+      } while (cursor.nextSibling())
+      cursor.parent() // Move back to the link node
+    }
 
-      // Ensure we have at least `[label]`
-      if (markers.length < 2) {
-          return // Not a valid link
-      }
+    // Ensure we have at least `[label]`
+    if (markers.length < 2) {
+      return // Not a valid link
+    }
 
-      // Assign positions for label and optional URL
-      labelStart = markers[0] + 1
-      labelEnd = markers[1]
+    // Assign positions for label and optional URL
+    labelStart = markers[0] + 1
+    labelEnd = markers[1]
 
-      // Extract link text (label)
-      const label = view.state.sliceDoc(labelStart, labelEnd)
+    // Extract link text (label)
+    const label = view.state.sliceDoc(labelStart, labelEnd)
 
-      // Extract link destination (URL)
-      let url =
-          urlStart !== -1 && urlEnd !== -1
-              ? view.state.sliceDoc(urlStart, urlEnd)
-              : ''
+    // Extract link destination (URL)
+    let url =
+        urlStart !== -1 && urlEnd !== -1
+          ? view.state.sliceDoc(urlStart, urlEnd)
+          : ''
 
-      // Remove enclosing `< >` for valid URIs
-      if (url.startsWith('<') && url.endsWith('>')) {
-          url = url.slice(1, -1)
-      }
+    // Remove enclosing `< >` for valid URIs
+    if (url.startsWith('<') && url.endsWith('>')) {
+      url = url.slice(1, -1)
+    }
 
+    decorations.push({
+      from: start,
+      to: end,
+      decoration: Decoration.mark({ class: 'cm-styled-link' }),
+    })
+
+    if (!this.isCursorInside(cursor, view)) {
+      // Hide `[`, `]`, `(`, `)`, but only if `()` exists
       decorations.push({
-          from: start,
-          to: end,
-          decoration: Decoration.mark({ class: 'cm-styled-link' }),
+        from: markers[0],
+        to: labelStart,
+        decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
+      })
+      decorations.push({
+        from: labelEnd,
+        to: markers[1] + 1,
+        decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
       })
 
-      if (!this.isCursorInside(cursor, view)) {
-          // Hide `[`, `]`, `(`, `)`, but only if `()` exists
-          decorations.push({
-              from: markers[0],
-              to: labelStart,
-              decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
-          })
-          decorations.push({
-              from: labelEnd,
-              to: markers[1] + 1,
-              decoration: Decoration.mark({ class: 'cm-hidden-characters' }),
-          })
-
-          if (markers.length >= 4) {
-              decorations.push({
-                  from: markers[2],
-                  to: markers[3] + 1,
-                  decoration: Decoration.mark({
-                      class: 'cm-hidden-characters',
-                  }),
-              })
-          }
-
-          if (url.trim().length > 0) {
-              decorations.push({
-                  from: labelStart,
-                  to: labelEnd,
-                  decoration: Decoration.widget({
-                      widget: new LinkWidget(label, url),
-                  }),
-              })
-          }
+      if (markers.length >= 4) {
+        decorations.push({
+          from: markers[2],
+          to: markers[3] + 1,
+          decoration: Decoration.mark({
+            class: 'cm-hidden-characters',
+          }),
+        })
       }
+
+      if (url.trim().length > 0) {
+        decorations.push({
+          from: labelStart,
+          to: labelEnd,
+          decoration: Decoration.widget({
+            widget: new LinkWidget(label, url),
+          }),
+        })
+      }
+    }
   }
 
   private isCursorInside(cursor: TreeCursor, view: EditorView) {
-      const cursorPos = view.state.selection.main.head
-      const selection = view.state.selection.main
-      const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to
-      const selectionInside =
+    const cursorPos = view.state.selection.main.head
+    const selection = view.state.selection.main
+    const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to
+    const selectionInside =
           selection.from <= cursor.to && selection.to >= cursor.from
-      return cursorInside || selectionInside
+    return cursorInside || selectionInside
   }
 }
 
