@@ -10,6 +10,7 @@ import {
   PlusIcon,
   SettingsIcon
 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // RightNavigation consists of the create note, LLM chat, and
 // settings buttons.
@@ -84,8 +85,8 @@ const RightNavigation = ({ state } : { state: NavigationState }) => {
 }
 
 // RightSidebar shows the LLM chat sidebar.
-const RightSidebar = () => (
-  <div className='min-w-[420px] w-[420px] h-screen bg-[rgba(245,245,245,0.75)] p-2 border border-l-gray-300'>
+const RightSidebar = ({isOpen}: {isOpen: boolean}) => (
+  <div className={cn("fixed top-0 right-0 z-10 h-screen w-[420px] border-l border-l-gray-300 p-2 bg-[rgba(245,245,245,0.75)] transform transition-transform duration-300 ease-in-out", isOpen ? "translate-x-0" : "translate-x-full")}>
     <Chat />
   </div>
 )
