@@ -8,9 +8,7 @@ import { markdown } from "@codemirror/lang-markdown"
 import { defaultKeymap, indentWithTab } from "@codemirror/commands"
 import { syntaxHighlighting } from "@codemirror/language"
 import { markdownHighlightStyle, codeMirrorTheme } from "./theme"
-import Decorations from "./Decorations"
 import { placeholder } from '@codemirror/view'
-import NoteTitle from "./NoteTitle"
 import { useDB } from "@/components/DatabaseProvider"
 import { useSearchParams } from 'next/navigation'
 import { toast } from "sonner"
@@ -19,22 +17,42 @@ import { NoteLinkMenu } from "./NoteLinkMenu"
 import { edgesField, noteIDField, setNoteIDEffect } from "./State"
 import { EdgesPlugin } from "./Edges"
 import { useRouter } from "next/navigation"
+import { SavingIndicator, SavedIndicator } from "./Autosave"
+
+import NoteTitle from "./NoteTitle"
+import Decorations from "./Decorations"
+
+// UUID generates a unique note primary key id.
+const UUID = () : number => {
+  const buffer = new Uint32Array(2)
+  crypto.getRandomValues(buffer)
+  return (buffer[0] & 0x001fffff) * 0x100000000 + buffer[1]
+}
 
 export default function Editor() {
-  const [/*text*/, setText] = useState<string>('')
-  const db = useDB()
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const noteID = searchParams.get('id')
-  const [title, setTitle] = useState('')
+  const idParam = searchParams.get('id')
+
+  const [showSavedMsg, setShowSavedMsg] = useState<boolean>(false)
+  const [isSaving, setIsSaving] = useState<boolean>(false)
+  const [text, setText] = useState<string>('')
+  const [title, setTitle] = useState<string>('')
+  const [noteID,] = useState<number>(
+    idParam ? Number(idParam) : UUID()
+  )
+
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
   const editorViewRef = useRef<EditorView | null>(null)
+
+  const router = useRouter()
+  const db = useDB()
+
   const onUpdate = useMemo(() =>
     EditorView.updateListener.of((v) => {
+      if (!v.docChanged) return
       setText(v.state.doc.toString())
-    }),
-  [])
+    }), [])
 
   const focusEditor = () => {
     if (!editorViewRef.current) return
@@ -60,6 +78,7 @@ export default function Editor() {
     sel?.addRange(range)
   }
 
+  // Initialize editor.
   useEffect(() => {
     let isMounted = true
     let view: EditorView | null = null
@@ -68,11 +87,11 @@ export default function Editor() {
       if (!editorRef.current) return
 
       const allNotes = await db.notes.readAll()
-      let content = ''
-      let noteTitle = ''
       db.edges.deleteEdgesBySrc(Number(noteID))
-      if (noteID) {
-        const note = allNotes.find(n => n.id === Number(noteID))
+      let [content, noteTitle] = ['', '']
+
+      if (idParam) {
+        const note = allNotes.find(n => n.id === noteID)
         if (!note) {
           toast('Error: Note Not Found', {
             description: 'The current note no longer exists or could not be found.'
@@ -84,7 +103,8 @@ export default function Editor() {
       }
 
       if (!isMounted) return
-      setTitle(noteTitle)
+      setTitle(noteTitle === 'Untitled' ? '' : noteTitle)
+      setText(content)
       focusTitle()
       const state = EditorState.create({
         doc: content,
@@ -112,7 +132,7 @@ export default function Editor() {
         parent: editorRef.current,
       })
       editorViewRef.current = view
-      view.dispatch({ effects: setNoteIDEffect.of(noteID) })
+      view.dispatch({ effects: setNoteIDEffect.of(noteID.toString()) })
 
       const editorDom = view.dom
       const keyDownHandler = (e: KeyboardEvent) => {
@@ -156,7 +176,32 @@ export default function Editor() {
         view.destroy()
       }
     }
-  }, [onUpdate, noteID, db.notes])
+  }, [])
+
+  // Autosave.
+  useEffect(() => {
+    if (text === '' && title === '') return
+    setIsSaving(true)
+    const timeout = setTimeout(async () => {
+      try {
+        await db.notes.create({
+          id      : noteID,
+          title   : title === '' ? "Untitled" : title,
+          content : text,
+          atime   : Math.floor(Date.now() / 1000),
+          mtime   : Math.floor(Date.now() / 1000)
+        })
+      } catch {
+        toast('Error: Could not save note', {
+          description: 'A database error prevented the note from being saved.'
+        })
+      }
+      setIsSaving(false)
+      setShowSavedMsg(true)
+      setTimeout(() => setShowSavedMsg(false), 2000)
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [text, title])
 
   return (
     <div className='pt-12 h-screen overflow-hidden relative max-w-[800px] w-full m-auto flex flex-col'>
@@ -169,6 +214,9 @@ export default function Editor() {
           onEdit={setTitle}
           onExit={focusEditor}
         />
+      </div>
+      <div className='absolute bottom-3 left-0 text-green-900 flex flex-row items-center'>
+        { (isSaving) ? <SavingIndicator/> : showSavedMsg ? <SavedIndicator /> : null}
       </div>
     </div>
   )
