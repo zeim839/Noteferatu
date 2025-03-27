@@ -25,7 +25,7 @@ export default function Editor() {
   const db = useDB()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const noteID = searchParams.get('id')
+  const noteID = Number(searchParams.get('id'))
   const [title, setTitle] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
   const editorRef = useRef(null)
@@ -70,9 +70,9 @@ export default function Editor() {
       const allNotes = await db.notes.readAll()
       let content = ''
       let noteTitle = ''
-      db.edges.deleteEdgesBySrc(Number(noteID))
+      db.edges.deleteEdgesBySrc(noteID)
       if (noteID) {
-        const note = allNotes.find(n => n.id === Number(noteID))
+        const note = allNotes.find(n => n.id === noteID)
         if (!note) {
           toast('Error: Note Not Found', {
             description: 'The current note no longer exists or could not be found.'
@@ -99,7 +99,7 @@ export default function Editor() {
           Decorations,
           placeholder('Start typing here...'),
           autocompletion({
-            override: [NoteLinkMenu(allNotes)]
+            override: [NoteLinkMenu(allNotes, noteID)]
           }),
           noteIDField,
           edgesField,
@@ -112,7 +112,7 @@ export default function Editor() {
         parent: editorRef.current,
       })
       editorViewRef.current = view
-      view.dispatch({ effects: setNoteIDEffect.of(noteID) })
+      view.dispatch({ effects: setNoteIDEffect.of(noteID.toString())})
 
       const editorDom = view.dom
       const keyDownHandler = (e: KeyboardEvent) => {
