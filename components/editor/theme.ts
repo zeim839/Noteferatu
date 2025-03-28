@@ -148,6 +148,17 @@ export const codeMirrorTheme = EditorView.theme({
         whiteSpace: 'pre',
         userSelect: 'text',
     },
+    '.cm-styled-inline-hr': {
+        height: '2px',
+        backgroundColor: '#888',
+        width: '100%',
+        border: 'none',
+        marginTop: '-10px',
+    },
+    '.cm-styled-horizontal-rule': {
+        color: '#aaa',
+        fontStyle: 'italic',
+    },
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
