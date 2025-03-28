@@ -71,6 +71,18 @@ class ImageWidget extends WidgetType {
     }
 }
 
+class HorizontalRuleWidget extends WidgetType {
+    toDOM(): HTMLElement {
+        const hr = document.createElement('div')
+        hr.className = 'cm-styled-inline-hr'
+        return hr
+    }
+
+    ignoreEvent(): boolean {
+        return false
+    }
+}
+
 // Decorations is the markdown parser definition. It tries to match
 // markdown expressions and parses them into decorations (i.e. widgets
 // or styled HTML elements).
@@ -125,6 +137,8 @@ export class Decorations {
                 this.decorateInlineCode(cursor, decorations, view)
             } else if (cursor.name === 'FencedCode') {
                 this.decorateFencedCode(cursor, decorations, view)
+            } else if (cursor.name === 'HorizontalRule') {
+                this.decorateHorizontalRule(cursor, decorations, view)
             }
         } while (cursor.next())
 
@@ -577,6 +591,41 @@ export class Decorations {
                 }
             } while (cursor.nextSibling())
             cursor.parent()
+        }
+    }
+
+    private decorateHorizontalRule(
+        cursor: TreeCursor,
+        decorations: { from: number; to: number; decoration: Decoration }[],
+        view: EditorView
+    ) {
+        const start = cursor.from
+        const end = cursor.to
+        const cursorOnLine = this.isCursorInside(cursor, view)
+
+        if (cursorOnLine) {
+            decorations.push({
+                from: start,
+                to: end,
+                decoration: Decoration.mark({
+                    class: 'cm-styled-horizontal-rule',
+                }),
+            })
+        } else {
+            decorations.push({
+                from: start,
+                to: end,
+                decoration: Decoration.replace({}),
+            })
+
+            decorations.push({
+                from: end,
+                to: end,
+                decoration: Decoration.widget({
+                    widget: new HorizontalRuleWidget(),
+                    side: -1,
+                }),
+            })
         }
     }
 
