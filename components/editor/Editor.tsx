@@ -215,7 +215,7 @@ export default function Editor() {
           onExit={focusEditor}
         />
       </div>
-      <div className='absolute bottom-3 left-0 text-green-900 flex flex-row items-center'>
+      <div className='absolute bottom-3 left-3 text-green-900 flex flex-row items-center'>
         { (isSaving) ? <SavingIndicator/> : showSavedMsg ? <SavedIndicator /> : null}
       </div>
     </div>

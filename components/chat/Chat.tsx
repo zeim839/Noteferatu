@@ -3,9 +3,11 @@
 import { useState, useEffect, useRef } from "react"
 import { Stream, Message } from "@/lib/OpenRouter"
 import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
-import SourceDropdown from "./SourceDropdown"
 import { MessageView } from "./Messages"
+import { useDB } from "@/components/DatabaseProvider"
 import { toast } from "sonner"
+
+import SourceDropdown from "./SourceDropdown"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
@@ -13,8 +15,22 @@ export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
   const [source, setSource] = useState<string>('deepseek/deepseek-r1:free')
   const [input, setInput] = useState<string>('')
-  const [isTyping, setIsTyping] = useState<boolean>(false)
+  const [isTyping, setIsTyping] = useState<boolean>(true)
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
+  const db = useDB()
+
+  // Fetch messages from database.
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const msgs = await db.history.readAll()
+      setMessages(msgs.map(msg => ({
+        role    : msg.role,
+        content : msg.content
+      } as Message)))
+      setIsTyping(false)
+    }
+    fetchMessages()
+  }, [])
 
   // Ref for the dummy div at the bottom of the message list.
   // allows us to automatically scroll to bottom.
@@ -34,6 +50,13 @@ export default function Chat() {
     setInput("")
     setIsTyping(true)
     setIsStreaming(true)
+
+    // Insert user message into database.
+    await db.history.create({
+      role    : 'user',
+      content : input,
+      time    : Math.floor(Date.now() / 1000)
+    })
 
     // Chunks are appended to res because reading the 'messages'
     // does not return the latest data.
@@ -60,6 +83,14 @@ export default function Chat() {
             return newMessages
           })
         })
+
+      // Insert response into chat history.
+      await db.history.create({
+        role    : 'assistant',
+        content : res,
+        time    : Math.floor(Date.now() / 1000)
+      })
+
     } catch (error: unknown) {
       let description = 'An unknown error has occurred'
       if (error instanceof Error) {

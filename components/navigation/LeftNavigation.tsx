@@ -123,7 +123,7 @@ const LeftNavigation = ({ state } : { state: NavigationState }) => {
               <CommandItem
                 key={note.id}
                 value={`${note.title} ${note.snippetContent}`}
-                onSelect={() => handleSelect(() => router.push(`/note?id=${note.id}`))}>
+                onSelect={() => handleSelect(() => window.location.href = `/note?id=${note.id}`)}>
                 <div className="flex flex-col">
                   <span className="font-medium">{note.title}</span>
                   <span className="text-xs text-muted-foreground">{note.snippetContent}</span>
