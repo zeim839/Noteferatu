@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS Keys (
 
 CREATE TABLE IF NOT EXISTS Chat_History (
   id      INTEGER  PRIMARY KEY AUTOINCREMENT,
-  is_user BOOLEAN  NOT NULL,
+  role    TEXT     NOT NULL,
   content TEXT     NOT NULL,
   time    INTEGER
 );
