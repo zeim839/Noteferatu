@@ -17,7 +17,7 @@ const Settings = () => {
     const [apiKey, setApiKey] = useState("")
 
     const handleSubmit = () => {
-        console.log("here is the open open router key: ", apiKey) //prob use create key
+        // console.log("here is the open open router key: ", apiKey)
         setOpen(false)
     }
 
@@ -38,7 +38,7 @@ const Settings = () => {
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="col-span-3 px-3 py-2 border rounded-md w-full"
-                />        
+                />
                 <DialogFooter className="mr-[35px]">
                     <Button onClick={handleSubmit}>Submit</Button>
                 </DialogFooter>
