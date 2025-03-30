@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { NavigationState } from "./NavigationState"
-import { MessageSquareIcon, PlusIcon, SettingsIcon } from "lucide-react"
+import { MessageSquareIcon, PlusIcon} from "lucide-react"
 import Chat from "@/components/chat/Chat"
 import Settings from "../chat/Settings"
 
