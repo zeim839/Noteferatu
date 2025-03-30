@@ -18,7 +18,7 @@ const RightNavigation = ({ state } : { state: NavigationState }) => (
     >
       <MessageSquareIcon />
     </Button>
-    <Button size='icon'>
+    <Button size='icon' onClick={() => window.location.href = '/note'}>
       <SettingsIcon />
     </Button>
   </div>
