@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { NavigationState } from "./NavigationState"
 import { MessageSquareIcon, PlusIcon, SettingsIcon } from "lucide-react"
 import Chat from "@/components/chat/Chat"
+import Settings from "../chat/Settings"
 
 // RightNavigation consists of the create note, LLM chat, and
 // settings buttons.
@@ -18,9 +19,7 @@ const RightNavigation = ({ state } : { state: NavigationState }) => (
     >
       <MessageSquareIcon />
     </Button>
-    <Button size='icon' onClick={() => window.location.href = '/note'}>
-      <SettingsIcon />
-    </Button>
+    <Settings />
   </div>
 )
 
