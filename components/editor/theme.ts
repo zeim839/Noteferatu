@@ -1,7 +1,6 @@
 import { EditorView } from '@codemirror/view'
 import { HighlightStyle } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
-
 export const codeMirrorTheme = EditorView.theme({
   '.cm-hidden-characters': {
     fontSize: '0',
@@ -120,16 +119,49 @@ export const codeMirrorTheme = EditorView.theme({
     display: 'block',
     width: '100%',
   },
+  '.cm-line': {
+    padding: '0',
+  },
+  '.cm-styled-inline-code': {
+    fontFamily: 'monospace',
+    backgroundColor: 'rgba(230, 230, 230, 0.8)',
+    borderRadius: '4px',
+    padding: '1px 4px',
+    position: 'relative',
+    zIndex: '0',
+  },
+  '.cm-styled-fenced-code': {
+    fontFamily: 'monospace',
+    backgroundColor: 'rgba(230, 230, 230, 0.8)',
+    textIndent: '7px',
+    overflowX: 'auto',
+    display: 'block',
+    whiteSpace: 'pre',
+    userSelect: 'text',
+  },
+  '.cm-styled-fenced-code-active': {
+    fontFamily: 'monospace',
+    backgroundColor: 'rgba(220, 220, 220, 0.8)',
+    textIndent: '7px',
+    overflowX: 'auto',
+    display: 'block',
+    whiteSpace: 'pre',
+    userSelect: 'text',
+  },
+  '.cm-styled-inline-hr': {
+    height: '2px',
+    backgroundColor: '#888',
+    width: '100%',
+    border: 'none',
+    marginTop: '-10px',
+  },
+  '.cm-styled-horizontal-rule': {
+    color: '#aaa',
+    fontStyle: 'italic',
+  },
 })
 
 export const markdownHighlightStyle = HighlightStyle.define([
-  {
-    tag: tags.monospace,
-    backgroundColor: '#f4f4f4',
-    fontFamily: 'monospace',
-    padding: '0 2px',
-    borderRadius: '3px',
-  },
   { tag: tags.deleted, textDecoration: 'line-through', color: '#6c757d' },
   { tag: tags.list, color: '#457b9d' },
   { tag: tags.punctuation, color: '#999' },

@@ -28,7 +28,9 @@ class LinkWidget extends WidgetType {
     if (this.dest.startsWith('node:')) {
       const nodeID = this.dest.substring(5)
       link.addEventListener('click', () => {
-        const navigateEvent = new CustomEvent('navigate', { detail: { path: `/note?id=${nodeID}` } })
+        const navigateEvent = new CustomEvent('navigate', {
+          detail: { path: `/note?id=${nodeID}` },
+        })
         document.dispatchEvent(navigateEvent)
       })
     } else if (/^https?:\/\//.test(this.dest)) {
@@ -69,6 +71,18 @@ class ImageWidget extends WidgetType {
   }
 }
 
+class HorizontalRuleWidget extends WidgetType {
+  toDOM(): HTMLElement {
+    const hr = document.createElement('div')
+    hr.className = 'cm-styled-inline-hr'
+    return hr
+  }
+
+  ignoreEvent(): boolean {
+    return false
+  }
+}
+
 // Decorations is the markdown parser definition. It tries to match
 // markdown expressions and parses them into decorations (i.e. widgets
 // or styled HTML elements).
@@ -85,12 +99,12 @@ export class Decorations {
   // the document, viewport, or selection set changes.
   update(update: ViewUpdate) {
     this.decorations =
-            update.docChanged ||
-              update.selectionSet ||
-              update.viewportChanged ||
-              update.focusChanged
-              ? this.createDecorations(update.view)
-              : this.decorations
+      update.docChanged ||
+      update.selectionSet ||
+      update.viewportChanged ||
+      update.focusChanged
+        ? this.createDecorations(update.view)
+        : this.decorations
   }
 
   // createDecorations traverses the syntax tree and attempts to transform
@@ -119,6 +133,12 @@ export class Decorations {
         this.decorateQuotes(cursor, decorations, view)
       } else if (cursor.name === 'Image') {
         this.decorateImages(cursor, decorations, view)
+      } else if (cursor.name === 'InlineCode') {
+        this.decorateInlineCode(cursor, decorations, view)
+      } else if (cursor.name === 'FencedCode') {
+        this.decorateFencedCode(cursor, decorations, view)
+      } else if (cursor.name === 'HorizontalRule') {
+        this.decorateHorizontalRule(cursor, decorations, view)
       }
     } while (cursor.next())
 
@@ -343,9 +363,9 @@ export class Decorations {
     const start = cursor.from
     const end = cursor.to
     let altStart = -1,
-        altEnd = -1
+      altEnd = -1
     let urlStart = -1,
-        urlEnd = -1
+      urlEnd = -1
     const markers: number[] = []
 
     if (cursor.firstChild()) {
@@ -374,8 +394,7 @@ export class Decorations {
     if (!cursorOnLine) {
       const imageDecoration = this.imageDecorationMap[url]?.[altText]
       if (!imageDecoration) {
-        if (!this.imageDecorationMap[url])
-          this.imageDecorationMap[url] = {}
+        if (!this.imageDecorationMap[url]) this.imageDecorationMap[url] = {}
         this.imageDecorationMap[url][altText] = Decoration.widget({
           widget: new ImageWidget(url, altText, () => {
             const line = view.state.doc.lineAt(altStart)
@@ -411,9 +430,9 @@ export class Decorations {
     const end = cursor.to
 
     let labelStart = -1,
-        labelEnd = -1
+      labelEnd = -1
     let urlStart = -1,
-        urlEnd = -1
+      urlEnd = -1
     const markers: number[] = [] // Stores positions of `LinkMark` nodes
 
     // Move inside the link node to find `LinkMark` and `URL`
@@ -446,9 +465,9 @@ export class Decorations {
 
     // Extract link destination (URL)
     let url =
-        urlStart !== -1 && urlEnd !== -1
-          ? view.state.sliceDoc(urlStart, urlEnd)
-          : ''
+      urlStart !== -1 && urlEnd !== -1
+        ? view.state.sliceDoc(urlStart, urlEnd)
+        : ''
 
     // Remove enclosing `< >` for valid URIs
     if (url.startsWith('<') && url.endsWith('>')) {
@@ -496,12 +515,126 @@ export class Decorations {
     }
   }
 
+  private decorateInlineCode(
+    cursor: TreeCursor,
+    decorations: { from: number; to: number; decoration: Decoration }[],
+    view: EditorView
+  ) {
+    const start = cursor.from
+    const end = cursor.to
+    const cursorOnLine = this.isCursorInside(cursor, view)
+
+    decorations.push({
+      from: start,
+      to: end,
+      decoration: Decoration.mark({ class: 'cm-styled-inline-code' }),
+    })
+
+    if (!cursorOnLine && cursor.firstChild()) {
+      do {
+        if (cursor.name === 'CodeMark') {
+          decorations.push({
+            from: cursor.from,
+            to: cursor.to,
+            decoration: Decoration.mark({
+              class: 'cm-hidden-characters',
+            }),
+          })
+        }
+      } while (cursor.nextSibling())
+      cursor.parent() // Return to parent node
+    }
+  }
+
+  private decorateFencedCode(
+    cursor: TreeCursor,
+    decorations: { from: number; to: number; decoration: Decoration }[],
+    view: EditorView
+  ) {
+    const start = cursor.from
+    const end = cursor.to
+    const cursorOnLine = this.isCursorInside(cursor, view)
+
+    const doc = view.state.doc
+    const startLine = doc.lineAt(start).number
+    const endLine = doc.lineAt(end).number
+
+    for (let lineNumber = startLine; lineNumber <= endLine; lineNumber++) {
+      const line = doc.line(lineNumber)
+      const selectionFrom = view.state.selection.main.from
+      const selectionTo = view.state.selection.main.to
+
+      const intersects =
+        cursorOnLine && selectionFrom <= line.to && selectionTo >= line.from
+
+      decorations.push({
+        from: line.from,
+        to: line.from,
+        decoration: Decoration.line({
+          class: intersects
+            ? 'cm-styled-fenced-code-active'
+            : 'cm-styled-fenced-code',
+        }),
+      })
+    }
+
+    if (cursor.firstChild()) {
+      do {
+        if (cursor.name === 'CodeMark' && !cursorOnLine) {
+          decorations.push({
+            from: cursor.from,
+            to: view.state.doc.lineAt(cursor.to).to,
+            decoration: Decoration.mark({
+              class: 'cm-hidden-characters',
+            }),
+          })
+        }
+      } while (cursor.nextSibling())
+      cursor.parent()
+    }
+  }
+
+  private decorateHorizontalRule(
+    cursor: TreeCursor,
+    decorations: { from: number; to: number; decoration: Decoration }[],
+    view: EditorView
+  ) {
+    const start = cursor.from
+    const end = cursor.to
+    const cursorOnLine = this.isCursorInside(cursor, view)
+
+    if (cursorOnLine) {
+      decorations.push({
+        from: start,
+        to: end,
+        decoration: Decoration.mark({
+          class: 'cm-styled-horizontal-rule',
+        }),
+      })
+    } else {
+      decorations.push({
+        from: start,
+        to: end,
+        decoration: Decoration.replace({}),
+      })
+
+      decorations.push({
+        from: end,
+        to: end,
+        decoration: Decoration.widget({
+          widget: new HorizontalRuleWidget(),
+          side: -1,
+        }),
+      })
+    }
+  }
+
   private isCursorInside(cursor: TreeCursor, view: EditorView) {
     const cursorPos = view.state.selection.main.head
     const selection = view.state.selection.main
     const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to
     const selectionInside =
-          selection.from <= cursor.to && selection.to >= cursor.from
+      selection.from <= cursor.to && selection.to >= cursor.from
     return cursorInside || selectionInside
   }
 }
