@@ -25,29 +25,55 @@ export default function Chat() {
   }))
 
   const db = useDB()
+  
+  //ensure each notification only shows up once
+  const notifInit = useRef(false);
 
   // Fetch messages and API key from database.
   useEffect(() => {
     // TODO: HANDLE DATABASE ERRORS.
+    if (notifInit.current) return; 
+    notifInit.current = true;
+
     const fetchMessages = async () => {
-      const msgs = await db.history.readAll()
-      setMessages(msgs.map(msg => ({
-        role    : msg.role,
-        content : msg.content
-      } as Message)))
-      setIsTyping(false)
+      try{
+        const msgs = await db.history.readAll()
+        setMessages(msgs.map(msg => ({
+          role    : msg.role,
+          content : msg.content
+        } as Message)))
+      }
+      catch{
+        toast('Error: Failed to Load Chat Message', {
+          description: 'The database failed to load chat message'
+        })
+      }
+      finally{
+        setIsTyping(false)
+      }
+
     }
     const fetchKey = async () => {
-      const keys = await db.keys.readAll()
-      if (keys.length === 0) {
-        // TODO: SHOW DIALOG
-        return
+      try{
+        const keys = await db.keys.readAll()
+        if (keys.length === 0) {
+          toast('No API Key Found', {
+            description: 'Please go to settings and add your OpenRouter API Key'
+          })
+          return
+        }
+        setClient(new OpenAI({
+          baseURL: "https://openrouter.ai/api/v1",
+          dangerouslyAllowBrowser: true,
+          apiKey: keys[0].key_hash,
+        }))
       }
-      setClient(new OpenAI({
-        baseURL: "https://openrouter.ai/api/v1",
-        dangerouslyAllowBrowser: true,
-        apiKey: keys[0].key_hash,
-      }))
+      catch(error){
+        toast('Error: Failed to load API Key', {
+          description: 'Ensure your API Key is correct'
+        })
+      }
+
     }
     fetchMessages()
     fetchKey()
