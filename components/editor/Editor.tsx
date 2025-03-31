@@ -121,7 +121,7 @@ export default function Editor() {
           autocompletion({
             override: [NoteLinkMenu(allNotes, noteID)]
           }),
-          noteIDField,
+          noteIDField.init(() => noteID.toString()),
           edgesField,
           EdgesPlugin
         ],
