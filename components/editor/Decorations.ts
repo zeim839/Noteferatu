@@ -459,6 +459,9 @@ export class Decorations {
 
     // Extract link text (label)
     const label = view.state.sliceDoc(labelStart, labelEnd)
+    if (label.trim().length === 0) {
+      return
+    }
 
     // Extract link destination (URL)
     let url =

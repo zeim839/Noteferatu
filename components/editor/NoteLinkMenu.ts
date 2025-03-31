@@ -1,13 +1,13 @@
 import { CompletionContext } from "@codemirror/autocomplete"
 import { Note } from "@/lib/controller/NoteController"
 
-export const NoteLinkMenu = (notes: Note[]) => (context: CompletionContext) => {
+export const NoteLinkMenu = (notes: Note[], currentNoteID: number | null) => (context: CompletionContext) => {
     const before = context.matchBefore(/\[[^\]]*\]\(node:([^)]*)/)
     if (!before) return null
 
     const query = before.text.match(/\[[^\]]*\]\(node:(.*)$/)?.[1] || ""
     const from = before.from + before.text.length - query.length
-    const sortedNotes = [...notes].sort((a, b) => b.mtime - a.mtime)
+    const sortedNotes = [...notes].filter(note => note.id !== currentNoteID).sort((a, b) => b.mtime - a.mtime)
     let filteredNotes: Note[]
     if (query.length === 0) {
         filteredNotes = sortedNotes.slice(0, 3)

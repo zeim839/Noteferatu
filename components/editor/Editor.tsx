@@ -119,9 +119,9 @@ export default function Editor() {
           Decorations,
           placeholder('Start typing here...'),
           autocompletion({
-            override: [NoteLinkMenu(allNotes)]
+            override: [NoteLinkMenu(allNotes, noteID)]
           }),
-          noteIDField,
+          noteIDField.init(() => noteID.toString()),
           edgesField,
           EdgesPlugin
         ],

@@ -1,5 +1,5 @@
 import { EditorView, ViewPlugin, ViewUpdate } from "@codemirror/view"
-import { noteIDField, setEdgesEffect } from "./State"
+import { noteIDField, setEdgesEffect, setNoteIDEffect } from "./State"
 import { Edge } from "@/lib/controller/EdgeController"
 import { syntaxTree } from '@codemirror/language'
 import { TreeCursor } from "@lezer/common"
@@ -11,7 +11,9 @@ export const EdgesPlugin = ViewPlugin.fromClass(
     }
 
     update(update: ViewUpdate) {
-      if (update.docChanged || update.viewportChanged) {
+      if (update.docChanged || update.viewportChanged
+         || update.transactions.some(tr => tr.effects.some(e => e.is(setNoteIDEffect))))
+      {
         this.updateEdges(update.view)
       }
     }
