@@ -8,6 +8,7 @@ import { useDB } from "@/components/DatabaseProvider"
 import { toast } from "sonner"
 
 import SourceDropdown from "./SourceDropdown"
+import OpenAI from "openai"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
@@ -17,10 +18,17 @@ export default function Chat() {
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(true)
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
+  const [client, setClient] = useState<OpenAI>(new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    dangerouslyAllowBrowser: true,
+    apiKey: '',
+  }))
+
   const db = useDB()
 
-  // Fetch messages from database.
+  // Fetch messages and API key from database.
   useEffect(() => {
+    // TODO: HANDLE DATABASE ERRORS.
     const fetchMessages = async () => {
       const msgs = await db.history.readAll()
       setMessages(msgs.map(msg => ({
@@ -29,7 +37,20 @@ export default function Chat() {
       } as Message)))
       setIsTyping(false)
     }
+    const fetchKey = async () => {
+      const keys = await db.keys.readAll()
+      if (keys.length === 0) {
+        // TODO: SHOW DIALOG
+        return
+      }
+      setClient(new OpenAI({
+        baseURL: "https://openrouter.ai/api/v1",
+        dangerouslyAllowBrowser: true,
+        apiKey: keys[0].key_hash,
+      }))
+    }
     fetchMessages()
+    fetchKey()
   }, [])
 
   // Ref for the dummy div at the bottom of the message list.
@@ -63,7 +84,7 @@ export default function Chat() {
     let res : string = ""
 
     try {
-      await Stream(updatedMessages, source,
+      await Stream(client, updatedMessages, source,
         (chunk: string, i: number) => {
           res += chunk
           if (i == 0) {
