@@ -2,7 +2,7 @@ import Database from "@/lib/Database"
 
 // KeysController is the TypeScript type for the keys database schema.
 export type Keys = {
-  id?         : number
+  id?        : number
   key_hash   : string
   created_at : number
 }
