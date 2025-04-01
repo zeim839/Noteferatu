@@ -31,7 +31,7 @@ export const Chat = async (
   impl?    : ToolImplementation
 ) => {
   const completion = await client.chat.completions.create({
-    model: model || 'deepseek/deepseek-r1:free',
+    model: model || 'google/gemini-2.5-pro-exp-03-25:free',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
@@ -62,7 +62,7 @@ export const Stream = async (
   impl?    : ToolImplementation
 ) => {
   const stream = await client.chat.completions.create({
-    model: model || 'deepseek/deepseek-r1:free',
+    model: model || 'google/gemini-2.5-pro-exp-03-25:free',
     messages: [
       { role: 'system', content: systemPrompt },
       ...messages
