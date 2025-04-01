@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Stream, Message } from "@/lib/OpenRouter"
+import { Stream, Message, ToolImplementation } from "@/lib/OpenRouter"
 import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
 import { MessageView } from "./Messages"
 import { useDB } from "@/components/DatabaseProvider"
@@ -9,12 +9,40 @@ import { toast } from "sonner"
 
 import SourceDropdown from "./SourceDropdown"
 import OpenAI from "openai"
+import { ChatCompletionTool } from "openai/resources/index.mjs"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
+// LLM tool-calling function definitions.
+const tools: ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'createNote',
+      description: 'Create a new note',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          content: { type: 'string' },
+        },
+        required: ['title', 'content']
+      }
+    }
+  }
+]
+
+// LLM tool-calling function implementations.
+const toolImplementations: ToolImplementation = {
+  createNote: async (args) => {
+    console.log(`Creating note: ${args.title} - ${args.content}`)
+    return { success: true }
+  }
+}
+
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([])
-  const [source, setSource] = useState<string>('deepseek/deepseek-r1:free')
+  const [source, setSource] = useState<string>('google/gemini-2.5-pro-exp-03-25:free')
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(true)
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
@@ -103,7 +131,7 @@ export default function Chat() {
             }
             return newMessages
           })
-        })
+        }, tools, toolImplementations)
 
       // Insert response into chat history.
       await db.history.create({
