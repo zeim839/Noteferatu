@@ -15,6 +15,7 @@ export type StreamFn = (chunk: string, index: number) => void
 // ToolImplementation defines the structure for tool functions
 // provided by the user.
 export type ToolImplementation = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: (args: Record<string, any>) => Promise<any>
 }
 
