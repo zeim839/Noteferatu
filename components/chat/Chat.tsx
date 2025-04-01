@@ -25,15 +25,15 @@ export default function Chat() {
   }))
 
   const db = useDB()
-  
+
   //ensure each notification only shows up once
-  const notifInit = useRef(false);
+  const notifInit = useRef(false)
 
   // Fetch messages and API key from database.
   useEffect(() => {
     // TODO: HANDLE DATABASE ERRORS.
-    if (notifInit.current) return; 
-    notifInit.current = true;
+    if (notifInit.current) return
+    notifInit.current = true
 
     const fetchMessages = async () => {
       try{
@@ -68,7 +68,7 @@ export default function Chat() {
           apiKey: keys[0].key_hash,
         }))
       }
-      catch(error){
+      catch{
         toast('Error: Failed to load API Key', {
           description: 'Ensure your API Key is correct'
         })
