@@ -2,14 +2,27 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Stream, Message, ToolImplementation } from "@/lib/OpenRouter"
-import { WandSparklesIcon, SendHorizontalIcon } from "lucide-react"
 import { MessageView } from "./Messages"
 import { useDB } from "@/components/DatabaseProvider"
 import { toast } from "sonner"
-
+import { ChatCompletionTool } from "openai/resources/index.mjs"
 import SourceDropdown from "./SourceDropdown"
 import OpenAI from "openai"
-import { ChatCompletionTool } from "openai/resources/index.mjs"
+
+import {
+  WandSparklesIcon,
+  SendHorizontalIcon,
+  GlobeIcon,
+  WrenchIcon,
+  CheckIcon
+} from "lucide-react"
+
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverAnchor
+} from "@/components/ui/popover"
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
@@ -46,6 +59,8 @@ export default function Chat() {
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(true)
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
+  const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false)
+  const [toolCallingEnabled, setToolCallingEnabled] = useState<boolean>(true)
   const [client, setClient] = useState<OpenAI>(new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     dangerouslyAllowBrowser: true,
@@ -160,8 +175,47 @@ export default function Chat() {
         />
       </div>
       { MessageView(messages, isTyping, bottomRef) }
-      <div className="grid grid-cols-[24px_auto_24px] gap-2 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none bg-white">
-        <WandSparklesIcon className="text-[#ADADAD]"/>
+      <div className="grid grid-cols-[24px_auto_24px] gap-2 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none bg-white relative">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex items-center justify-center">
+              <WandSparklesIcon className="text-[#ADADAD] hover:text-gray-600 transition-colors"/>
+            </button>
+          </PopoverTrigger>
+          <PopoverAnchor asChild>
+            <div className="absolute left-0 bottom-full" />
+          </PopoverAnchor>
+          <PopoverContent
+            className="w-[180px] p-0"
+            align="start"
+            alignOffset={0}
+            side="top"
+            sideOffset={0}
+          >
+            <div className="py-1 text-sm">
+              <button
+                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-gray-100"
+              >
+                <div className="flex items-center gap-2">
+                  <GlobeIcon className="h-4 w-4" />
+                  <span>Web Search</span>
+                </div>
+                {webSearchEnabled && <CheckIcon className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={() => setToolCallingEnabled(!toolCallingEnabled)}
+                className="flex items-center justify-between w-full px-2 py-1.5 hover:bg-gray-100"
+              >
+                <div className="flex items-center gap-2">
+                  <WrenchIcon className="h-4 w-4" />
+                  <span>Tool Calling</span>
+                </div>
+                {toolCallingEnabled && <CheckIcon className="h-4 w-4" />}
+              </button>
+            </div>
+          </PopoverContent>
+        </Popover>
         <input
           type="text"
           disabled={isTyping || isStreaming}
