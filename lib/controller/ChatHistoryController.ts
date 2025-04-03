@@ -1,11 +1,13 @@
 import Database from "@/lib/Database"
 
-// Chat_History is the TypeScript type for the Chat_History database schema.
+// Chat_History is the TypeScript type for the Chat_History database
+// schema.
 export type Chat_History = {
-  id?     : number
-  role    : 'assistant' | 'user' | 'tool'
-  content : string
-  time    : number
+  id?        : number
+  role       : 'assistant' | 'user' | 'tool'
+  tool_name? : string,
+  content    : string
+  time       : number
 }
 
 // Controller manages chat_history in the database.
@@ -34,14 +36,15 @@ class ChatHistoryController extends Database {
   // create a new chat_history or update an existing one if ID already exists.
   async create(chat_history: Chat_History) : Promise<void> {
     await this.ensureConnected()
-    const query = `INSERT INTO Chat_History (id, role, content, time)
-    VALUES (?, ?, ?, ?)
+    const query = `INSERT INTO Chat_History (id, role, tool_name, content, time)
+    VALUES (?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET
     role = excluded.role,
+    tool_name = excluded.tool_name,
     content = excluded.content,
     time = excluded.time;`
     await this.execute(query, [chat_history.id, chat_history.role,
-      chat_history.content, chat_history.time])
+      chat_history.tool_name, chat_history.content, chat_history.time])
   }
 
   // read in all chats by time ascending.
