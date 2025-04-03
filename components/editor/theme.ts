@@ -96,19 +96,14 @@ export const codeMirrorTheme = EditorView.theme({
     borderRight: 'none',
   },
   '.cm-line-h1': {
-    // borderBottom: '1px solid grey',
-    // paddingBottom: '10px',
-    // marginBottom: '10px',
     lineHeight: '2',
     background:
       'linear-gradient(grey,grey) 0 calc(100% - 7px)/100% 1px no-repeat',
   },
   '.cm-line-higher-headers': {
-    // paddingTop: '5px',
-    // paddingBottom: '5px',
-    // marginBottom: '5px',
-    // display: 'flex',
-    // justifyContent: 'start',
+    lineHeight: '1.6',
+    background:
+      'linear-gradient(#FBF9F3, #FBF9F3) 0 calc(100% - 7px)/100% 1px no-repeat',
   },
   '&:not(.cm-focused) .cm-activeLine': {
     background: 'transparent',
