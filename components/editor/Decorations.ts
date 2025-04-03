@@ -634,6 +634,7 @@ export class Decorations {
   }
 
   private isCursorInside(cursor: TreeCursor, view: EditorView) {
+    if (!view.hasFocus) return false
     const cursorPos = view.state.selection.main.head
     const selection = view.state.selection.main
     const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to
