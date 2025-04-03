@@ -7,20 +7,20 @@
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run test && npm run build"
   },
   "app": {
     "windows": [
       {
         "title": "Noteferatu",
         "width": 900,
-	"minWidth": 900,
+        "minWidth": 900,
         "height": 600,
-	"minHeight": 600,
+        "minHeight": 600,
         "resizable": true,
         "fullscreen": false,
-	"transparent": true,
-	"decorations": true
+        "transparent": true,
+        "decorations": true
       }
     ],
     "macOSPrivateApi": true,
