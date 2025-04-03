@@ -32,7 +32,7 @@ export default function Editor() {
   const [isSaving, setIsSaving] = useState<boolean>(false)
   const [text, setText] = useState<string>('')
   const [title, setTitle] = useState<string>('')
-  const [noteID,] = useState<number>(
+  const [noteID, setNoteID] = useState<number>(
     idParam ? Number(idParam) : UUID()
   )
 
@@ -72,6 +72,23 @@ export default function Editor() {
     sel?.removeAllRanges()
     sel?.addRange(range)
   }
+
+  useEffect(() => {
+    if (idParam) {
+      setNoteID(Number(idParam))
+    }
+  }, [idParam])
+
+  useEffect(() => {
+    const handleNavigate = (event: CustomEvent) => {
+      const { path } = event.detail
+      router.push(path)
+    }
+    document.addEventListener('navigate', handleNavigate as EventListener)
+    return () => {
+      document.removeEventListener('navigate', handleNavigate as EventListener)
+    }
+  }, [router])
 
   // Initialize editor.
   useEffect(() => {
@@ -143,15 +160,8 @@ export default function Editor() {
         }
       }
       editorDom.addEventListener('keydown', keyDownHandler, true) // ensure custom keydown handler runs first
-      // custom event to use nextjs react component only router
-      const handleNavigate = (event: CustomEvent) => {
-        const { path } = event.detail
-        router.push(path)
-      }
-      document.addEventListener('navigate', handleNavigate as EventListener)
       return () => {
         editorDom.removeEventListener('keydown', keyDownHandler, true)
-        document.removeEventListener('navigate', handleNavigate as EventListener)
       }
     }
 
@@ -171,7 +181,7 @@ export default function Editor() {
         view.destroy()
       }
     }
-  }, [])
+  }, [noteID])
 
   // Autosave.
   useEffect(() => {

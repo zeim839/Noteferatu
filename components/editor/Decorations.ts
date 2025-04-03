@@ -27,6 +27,10 @@ class LinkWidget extends WidgetType {
 
     if (this.dest.startsWith('node:')) {
       const nodeID = this.dest.substring(5)
+      // allow clicking while title is in focus
+      link.addEventListener('mousedown', (event) => {
+        event.preventDefault()
+      })
       link.addEventListener('click', () => {
         const navigateEvent = new CustomEvent('navigate', {
           detail: { path: `/note?id=${nodeID}` },
