@@ -81,6 +81,7 @@ export const Stream = async (
     const delta = chunk.choices[0].delta
     if (delta.content) {
       cb(delta.content, i)
+      i += 1
     }
     if (delta.tool_calls) {
       delta.tool_calls.forEach((toolCallDelta) => {
@@ -105,7 +106,6 @@ export const Stream = async (
     if (chunk.choices[0].finish_reason) {
       finishReason = chunk.choices[0].finish_reason
     }
-    i += 1
   }
   if (finishReason === "tool_calls" && impl) {
     for (const toolCall of toolCalls) {
