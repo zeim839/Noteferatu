@@ -186,9 +186,7 @@ export class Decorations {
       decorations.push({
         from: start,
         to: start,
-        decoration: Decoration.line({
-          class: 'cm-line-higher-headers',
-        }),
+        decoration: Decoration.line({ class: 'cm-line-higher-headers' }),
       })
     }
 

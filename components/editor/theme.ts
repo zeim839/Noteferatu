@@ -11,6 +11,8 @@ export const codeMirrorTheme = EditorView.theme({
   },
   '.cm-styled-header': {
     fontWeight: '500',
+    display: 'flex',
+    justifyContent: 'start'
   },
   '.cm-styled-header.level-1': {
     fontSize: '175%',
