@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Stream, Message, ToolImplementation } from "@/lib/OpenRouter"
+import { toolDefinitions, toolImplementations, ToolCall } from "./tools"
+import { Stream, Message } from "@/lib/OpenRouter"
 import { MessageView } from "./Messages"
 import { useDB } from "@/components/DatabaseProvider"
 import { toast } from "sonner"
-import { ChatCompletionTool } from "openai/resources/index.mjs"
 import SourceDropdown from "./SourceDropdown"
 import OpenAI from "openai"
 
@@ -26,35 +26,8 @@ import {
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
-// LLM tool-calling function definitions.
-const tools: ChatCompletionTool[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'createNote',
-      description: 'Create a new note',
-      parameters: {
-        type: 'object',
-        properties: {
-          title: { type: 'string' },
-          content: { type: 'string' },
-        },
-        required: ['title', 'content']
-      }
-    }
-  }
-]
-
-// LLM tool-calling function implementations.
-const toolImplementations: ToolImplementation = {
-  createNote: async (args) => {
-    console.log(`Creating note: ${args.title} - ${args.content}`)
-    return { success: true }
-  }
-}
-
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<(Message|ToolCall)[]>([])
   const [source, setSource] = useState<string>('google/gemini-2.5-pro-exp-03-25:free')
   const [input, setInput] = useState<string>('')
   const [isTyping, setIsTyping] = useState<boolean>(true)
@@ -74,10 +47,19 @@ export default function Chat() {
     // TODO: HANDLE DATABASE ERRORS.
     const fetchMessages = async () => {
       const msgs = await db.history.readAll()
-      setMessages(msgs.map(msg => ({
-        role    : msg.role,
-        content : msg.content
-      } as Message)))
+      setMessages(msgs.map(msg => {
+        if (msg.role === 'tool') {
+          return {
+            tool    : msg.tool_name,
+            id      : msg.id,
+            content : msg.content,
+          } as ToolCall
+        }
+        return {
+          role    : msg.role,
+          content : msg.content
+        } as Message
+      }))
       setIsTyping(false)
     }
     const fetchKey = async () => {
@@ -122,12 +104,23 @@ export default function Chat() {
       time    : Math.floor(Date.now() / 1000)
     })
 
+    // Filter non-message values -- cannot pass these to OpenRouter.
+    const context : Message[] = updatedMessages.filter(
+      (data): data is Message => !('tool' in data)
+    )
+
     // Chunks are appended to res because reading the 'messages'
     // does not return the latest data.
     let res : string = ""
 
+    // Take timestamp early; this way the LLM response is saved
+    // before any tool calls.
+    const time : number = Math.floor(Date.now() / 1000)
+
     try {
-      await Stream(client, updatedMessages, source,
+      await Stream(client, context,
+        // Append ":online" to model name to enable web search.
+        `${source}${(webSearchEnabled) ? ':online' : ''}`,
         (chunk: string, i: number) => {
           res += chunk
           if (i == 0) {
@@ -146,13 +139,19 @@ export default function Chat() {
             }
             return newMessages
           })
-        }, tools, toolImplementations)
+        },
+        (toolCallingEnabled) ? toolDefinitions : undefined,
+        toolImplementations(db, setMessages))
+
+      if (res === '') {
+        return
+      }
 
       // Insert response into chat history.
       await db.history.create({
         role    : 'assistant',
         content : res,
-        time    : Math.floor(Date.now() / 1000)
+        time    : time
       })
 
     } catch (error: unknown) {
@@ -162,8 +161,10 @@ export default function Chat() {
       }
       toast('Error: Could not Send Message', {description})
       setIsTyping(false)
+    } finally {
+      setIsTyping(false)
+      setIsStreaming(false)
     }
-    setIsStreaming(false)
   }
 
   return (
