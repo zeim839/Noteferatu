@@ -23,8 +23,8 @@ const timeAgo = (timestamp: number): string => {
 const RecentsCard = ({title, desc, atime} : RecentsCardsProps) => (
   <div className='w-[344px] h-[77px] bg-white rounded-md border border-[#979797] grid grid-cols-[3fr_1fr] my-1'>
     <div className="p-2">
-      <p className='font-extrabold text-sm line-clamp-1'>{title}</p>
-      <p className='font-light text-sm line-clamp-2'>{desc}</p>
+      <p className='font-extrabold text-sm line-clamp-1 break-all overflow-ellipsis'>{title}</p>
+      <p className='font-light text-sm line-clamp-2 break-all overflow-ellipsis'>{desc}</p>
     </div>
     <div className='flex items-center justify-center'>
       <p className='text-sm font-light'>{timeAgo(atime)}</p>
