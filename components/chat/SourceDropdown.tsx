@@ -17,7 +17,7 @@ export default function SourceDropdown
 ({ value, onValueChange } : SourceDropdownProps) {
   return (
     <Select
-      defaultValue='deepseek/deepseek-r1:free'
+      defaultValue='google/gemini-2.5-pro-exp-03-25:free'
       onValueChange={onValueChange}
       value={value}
     >
@@ -69,6 +69,9 @@ export default function SourceDropdown
         </SelectGroup>
         <SelectGroup>
           <SelectLabel>Gemini</SelectLabel>
+          <SelectItem value="google/gemini-2.5-pro-exp-03-25:free">
+            Gemini Pro 2.5 (free)
+          </SelectItem>
           <SelectItem value="google/gemma-3-27b-it:free">
             Gemma 3 27B (free)
           </SelectItem>

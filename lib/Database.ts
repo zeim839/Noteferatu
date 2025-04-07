@@ -26,10 +26,11 @@ CREATE TABLE IF NOT EXISTS Keys (
 );
 
 CREATE TABLE IF NOT EXISTS Chat_History (
-  id      INTEGER  PRIMARY KEY AUTOINCREMENT,
-  role    TEXT     NOT NULL,
-  content TEXT     NOT NULL,
-  time    INTEGER
+  id        INTEGER  PRIMARY KEY AUTOINCREMENT,
+  role      TEXT     NOT     NULL,
+  tool_name TEXT     DEFAULT NULL,
+  content   TEXT     NOT     NULL,
+  time      INTEGER
 );
 
 CREATE VIRTUAL TABLE IF NOT EXISTS Search USING fts5(

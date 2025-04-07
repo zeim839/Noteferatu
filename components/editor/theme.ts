@@ -11,6 +11,8 @@ export const codeMirrorTheme = EditorView.theme({
   },
   '.cm-styled-header': {
     fontWeight: '500',
+    display: 'flex',
+    justifyContent: 'start'
   },
   '.cm-styled-header.level-1': {
     fontSize: '175%',
@@ -94,16 +96,14 @@ export const codeMirrorTheme = EditorView.theme({
     borderRight: 'none',
   },
   '.cm-line-h1': {
-    borderBottom: '1px solid grey',
-    paddingBottom: '10px',
-    marginBottom: '10px',
+    lineHeight: '2',
+    background:
+      'linear-gradient(grey,grey) 0 calc(100% - 7px)/100% 1px no-repeat',
   },
   '.cm-line-higher-headers': {
-    paddingTop: '5px',
-    paddingBottom: '5px',
-    marginBottom: '5px',
-    display: 'flex',
-    justifyContent: 'start',
+    lineHeight: '1.6',
+    background:
+      'linear-gradient(#FBF9F3, #FBF9F3) 0 calc(100% - 7px)/100% 1px no-repeat',
   },
   '&:not(.cm-focused) .cm-activeLine': {
     background: 'transparent',
@@ -126,7 +126,7 @@ export const codeMirrorTheme = EditorView.theme({
     fontFamily: 'monospace',
     backgroundColor: 'rgba(230, 230, 230, 0.8)',
     borderRadius: '4px',
-    padding: '1px 4px',
+    // padding: '1px 4px',
     position: 'relative',
     zIndex: '0',
   },
@@ -153,7 +153,7 @@ export const codeMirrorTheme = EditorView.theme({
     backgroundColor: '#888',
     width: '100%',
     border: 'none',
-    marginTop: '-10px',
+    // marginTop: '-10px',
   },
   '.cm-styled-horizontal-rule': {
     color: '#aaa',

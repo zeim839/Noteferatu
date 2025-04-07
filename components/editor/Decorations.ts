@@ -27,6 +27,10 @@ class LinkWidget extends WidgetType {
 
     if (this.dest.startsWith('node:')) {
       const nodeID = this.dest.substring(5)
+      // allow clicking while title is in focus
+      link.addEventListener('mousedown', (event) => {
+        event.preventDefault()
+      })
       link.addEventListener('click', () => {
         const navigateEvent = new CustomEvent('navigate', {
           detail: { path: `/note?id=${nodeID}` },
@@ -182,9 +186,7 @@ export class Decorations {
       decorations.push({
         from: start,
         to: start,
-        decoration: Decoration.line({
-          class: 'cm-line-higher-headers',
-        }),
+        decoration: Decoration.line({ class: 'cm-line-higher-headers' }),
       })
     }
 
@@ -630,6 +632,7 @@ export class Decorations {
   }
 
   private isCursorInside(cursor: TreeCursor, view: EditorView) {
+    if (!view.hasFocus) return false
     const cursorPos = view.state.selection.main.head
     const selection = view.state.selection.main
     const cursorInside = cursorPos >= cursor.from && cursorPos <= cursor.to

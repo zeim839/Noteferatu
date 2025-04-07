@@ -71,12 +71,12 @@ export default function GraphView() {
     // when there are no edges between nodes.
     const layout = (edges.length > 0) ? {
       name: 'cose',
-      randomize: false,
+      randomize: true,
       animate: false,
       padding: 50,
     } : {
       name: 'grid',
-      animate: false,
+      animate: true,
       avoidOverlap: true,
       avoidOverlapPadding: 50,
       padding: 50,
