@@ -8,6 +8,8 @@ export type Note = {
   atime           : number
   mtime           : number
   snippetContent? : string
+  contentPreview? : string
+  titlePreview?   : string
 }
 
 // NoteController manages notes in the database.
@@ -60,9 +62,12 @@ class NoteController extends Database {
     return await this.select<Note>(`SELECT * FROM Notes;`)
   }
 
+  // Gets notes to load into recents menu.
+  // Count should be number of cards that can fit on screen.
   async getRecents(count: number) : Promise<Note[]> {
     await this.ensureConnected()
-    const query = `SELECT * FROM Notes ORDER BY atime DESC LIMIT ?;`
+    const query = `SELECT id, title, atime, SUBSTR(content, 1, 150) AS contentPreview,
+                  SUBSTR(title,1,50) AS titlePreview FROM Notes ORDER BY atime DESC LIMIT ?;`
     return await this.select<Note>(query, [count])
   }
 
