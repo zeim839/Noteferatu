@@ -42,7 +42,7 @@ export default function Recents() {
 
   // fetchData reads all notes.
   const fetchData = async () => {
-    try { setRecentsData(await db.notes.readAll()) }
+    try { setRecentsData(await db.notes.getRecents(cardCount)) }
     catch (error) {
       let description = 'An unknown error has occurred'
       if (error instanceof Error) {
@@ -67,12 +67,12 @@ export default function Recents() {
   if (recentsData && recentsData.length > 0) {
     const recentsCardsList = recentsData.slice(0, cardCount).map((note, i) => (
       <div key={i}
-        onClick={() => router.push(`/note?id=${note.id}`) }
+      onClick={() => router.push(`/note?id=${note.id}`) }
         className="opacity-0 animate-fade-in"
         style={{ animationDelay: `${i * 0.06}s` }}>
         <RecentsCard
           title={note.title}
-          desc={note.content}
+          desc={note.contentPreview || ''}
           atime={note.atime}
         />
       </div>
