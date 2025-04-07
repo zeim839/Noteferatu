@@ -55,7 +55,8 @@ export default function GraphView() {
   // graphElements transforms nodes and edges into cytoscape elements.
   const graphElements = () => {
     const elements : object[] = notes.map(note => (
-      { data: { id: note.id?.toString(), title: note.title } }
+      { data: { id: note.id?.toString(), title: (note.title.length >= 23)
+        ? note.title.slice(0, 20) + "..." : note.title } }
     ))
     return elements.concat(edges.map(edge => (
       { data: { source: edge.src.toString(),
