@@ -1,27 +1,35 @@
 import { Button } from "@/components/ui/button"
 import { NavigationState } from "./NavigationState"
-import { MessageSquareIcon, PlusIcon} from "lucide-react"
+import { MessageSquareIcon, PlusIcon, SettingsIcon} from "lucide-react"
+import { useState } from "react"
+
 import Chat from "@/components/chat/Chat"
 import Settings from "../chat/Settings"
 
 // RightNavigation consists of the create note, LLM chat, and
 // settings buttons.
-const RightNavigation = ({ state } : { state: NavigationState }) => (
-  <div className='flex flex-row gap-1 fixed top-2 right-2 z-20'>
-    { /* Redirecting to the note page creates a new note */ }
-    <Button size='icon' onClick={() => window.location.href = '/note'}>
-      <PlusIcon />
-    </Button>
-    { /* Toggle the right sidebar */ }
-    <Button
-      onClick={() => state.setRightOpen(!state.isRightOpen)}
-      size='icon'
-    >
-      <MessageSquareIcon />
-    </Button>
-    <Settings />
-  </div>
-)
+const RightNavigation = ({ state } : { state: NavigationState }) => {
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false)
+  return (
+    <div className='flex flex-row gap-1 fixed top-2 right-2 z-20'>
+      { /* Redirecting to the note page creates a new note */ }
+      <Button size='icon' onClick={() => window.location.href = '/note'}>
+        <PlusIcon />
+      </Button>
+      { /* Toggle the right sidebar */ }
+      <Button
+        onClick={() => state.setRightOpen(!state.isRightOpen)}
+        size='icon'
+      >
+        <MessageSquareIcon />
+      </Button>
+      <Button size='icon' onClick={() => setSettingsOpen(true)}>
+        <SettingsIcon />
+      </Button>
+      <Settings open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </div>
+  )
+}
 
 // RightSidebar shows the LLM chat sidebar.
 const RightSidebar = () => (

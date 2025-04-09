@@ -1,24 +1,26 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Dispatch, SetStateAction } from "react"
 import { Button } from "@/components/ui/button"
-import { SettingsIcon } from "lucide-react"
 import { useDB } from "@/components/DatabaseProvider"
 import { toast } from "sonner"
 import { Keys } from "@/lib/controller/KeyController"
 
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
 
+type SettingsProps = {
+  onOpenChange: Dispatch<SetStateAction<boolean>>
+  open: boolean,
+}
+
 // Settings displays a modal asking the user to configure their
 // OpenRouter API key.
-const Settings = () => {
-  const [open, setOpen] = useState(false)
+const Settings = ({open, onOpenChange} : SettingsProps) => {
   const [apiKey, setApiKey] = useState("")
   const db = useDB()
 
@@ -35,7 +37,7 @@ const Settings = () => {
         setApiKey("")
         return
       }
-      setApiKey(keys[0].id!.toString())
+      setApiKey(keys[0].key_hash)
     }
     fetchKey()
   }, [])
@@ -45,6 +47,10 @@ const Settings = () => {
   const handleSubmit = async () => {
     try {
       await db.keys.deleteAll()
+      if (apiKey === "") {
+        onOpenChange(false)
+        return
+      }
       await db.keys.create({
         key_hash   : apiKey,
         created_at : Math.floor(Date.now() / 1000)
@@ -54,16 +60,11 @@ const Settings = () => {
         description: 'A database error prevented the key from being saved'
       })
     }
-    setOpen(false)
+    onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size='icon'>
-          <SettingsIcon />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-full !p-4">
         <DialogHeader className="col-span-2">
           <DialogTitle>Enter your OpenRouter API Key</DialogTitle>
