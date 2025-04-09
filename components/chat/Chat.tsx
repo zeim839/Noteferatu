@@ -6,7 +6,11 @@ import { Stream, Message } from "@/lib/OpenRouter"
 import { MessageView } from "./Messages"
 import { useDB } from "@/components/DatabaseProvider"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { openUrl } from '@tauri-apps/plugin-opener'
+
 import SourceDropdown from "./SourceDropdown"
+import Settings from "./Settings"
 import OpenAI from "openai"
 
 import {
@@ -14,7 +18,8 @@ import {
   SendHorizontalIcon,
   GlobeIcon,
   WrenchIcon,
-  CheckIcon
+  CheckIcon,
+  KeyRoundIcon,
 } from "lucide-react"
 
 import {
@@ -26,6 +31,33 @@ import {
 
 type FormEvent = React.KeyboardEvent<HTMLInputElement>
 
+// SetUpKeyCard is a card that asks the user to set up their OpenRouter
+// API key whenever it's not available.
+export const SetUpKeyCard = () => {
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false)
+  const openrouter = () => {
+    openUrl("https://openrouter.ai/")
+  }
+  return (
+    <div className="pt-12 min-h-full flex flex-col justify-center items-center pb-12">
+      <KeyRoundIcon className="h-12 w-12"/>
+      <p className="text-lg font-bold pt-2 text-center">
+        Configure API Key
+      </p>
+      <p className="text-center pb-4">
+        Configure your OpenRouter API key to begin sending messages.
+      </p>
+      <div className="w-100 flex flex-col gap-2">
+        <Button onClick={openrouter}> Get Free API Key (OpenRouter) </Button>
+        <Button onClick={() => setSettingsOpen(true)}>
+          Configure API Key
+        </Button>
+      </div>
+      <Settings open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </div>
+  )
+}
+
 export default function Chat() {
   const [messages, setMessages] = useState<(Message|ToolCall)[]>([])
   const [source, setSource] = useState<string>('google/gemini-2.5-pro-exp-03-25:free')
@@ -34,6 +66,8 @@ export default function Chat() {
   const [isStreaming, setIsStreaming] = useState<boolean>(false)
   const [webSearchEnabled, setWebSearchEnabled] = useState<boolean>(false)
   const [toolCallingEnabled, setToolCallingEnabled] = useState<boolean>(true)
+  const [hasKey, setHasKey] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState<boolean>(true)
   const [client, setClient] = useState<OpenAI>(new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
     dangerouslyAllowBrowser: true,
@@ -44,36 +78,51 @@ export default function Chat() {
 
   // Fetch messages and API key from database.
   useEffect(() => {
-    // TODO: HANDLE DATABASE ERRORS.
     const fetchMessages = async () => {
-      const msgs = await db.history.readAll()
-      setMessages(msgs.map(msg => {
-        if (msg.role === 'tool') {
+      try {
+        const msgs = await db.history.readAll()
+        setMessages(msgs.map(msg => {
+          if (msg.role === 'tool') {
+            return {
+              tool    : msg.tool_name,
+              id      : msg.id,
+              content : msg.content,
+            } as ToolCall
+          }
           return {
-            tool    : msg.tool_name,
-            id      : msg.id,
-            content : msg.content,
-          } as ToolCall
-        }
-        return {
-          role    : msg.role,
-          content : msg.content
-        } as Message
-      }))
-      setIsTyping(false)
+            role    : msg.role,
+            content : msg.content
+          } as Message
+        }))
+      }
+      catch {
+        toast('Error: Failed to Load Chat Message', {
+          description: 'The database failed to load chat message'
+        })
+      }
+      finally {setIsTyping(false)}
     }
     const fetchKey = async () => {
-      const keys = await db.keys.readAll()
-      if (keys.length === 0) {
-        // TODO: SHOW DIALOG
-        return
+      try {
+        const keys = await db.keys.readAll()
+        if (keys.length === 0) {
+          setHasKey(false)
+          return
+        }
+        setClient(new OpenAI({
+          baseURL: "https://openrouter.ai/api/v1",
+          dangerouslyAllowBrowser: true,
+          apiKey: keys[0].key_hash,
+        }))
+        setHasKey(true)
       }
-      setClient(new OpenAI({
-        baseURL: "https://openrouter.ai/api/v1",
-        dangerouslyAllowBrowser: true,
-        apiKey: keys[0].key_hash,
-      }))
+      catch {
+        toast('Error: Failed to fetch API Key', {
+          description: 'Ensure your API Key is correct'
+        })
+      }
     }
+    setIsLoading(false)
     fetchMessages()
     fetchKey()
   }, [])
@@ -165,6 +214,15 @@ export default function Chat() {
       setIsTyping(false)
       setIsStreaming(false)
     }
+  }
+
+  if (isLoading) {
+    setIsLoading(false)
+  }
+
+  // Show a "set up API key" card when OpenRouter key is not configured.
+  if (!hasKey) {
+    return <SetUpKeyCard />
   }
 
   return (
