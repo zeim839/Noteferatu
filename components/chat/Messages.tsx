@@ -1,19 +1,15 @@
 import { Message } from "@/lib/OpenRouter"
-import { CreateNoteToolCard, ToolCall } from "./tools"
+import { ToolCall } from "./tools"
 
 // MessageField is a single message bubble. Its style depends on whether
 // the message is from user or system (LLM response).
 export const MessageField = (data: Message | ToolCall, index: number) => {
-  if ('tool' in data && data.tool === 'createNote') {
-    return (
-      <CreateNoteToolCard
-        key={index}
-        id={data.id!}
-        preview={data.content}
-      />
-    )
+  // Skip rendering any tool calls
+  if ('tool' in data) {
+    return null;
   }
-  const isUser = (data as Message).role === "user"
+  
+  const isUser = data.role === "user"
   return (
     <div
       key={index}
@@ -32,9 +28,11 @@ export const MessageView = (
   isTyping: boolean,
   ref: BottomRef
 ) => {
-
+  // Filter out all tool calls
+  const displayMessages = messages.filter(msg => !('tool' in msg));
+  
   // Show a placeholder message whenever there are no messages.
-  if (messages.length === 0) {
+  if (displayMessages.length === 0) {
     return (
       <div className="flex flex-col justify-center items-center text-center text-gray-700">
         <h2 className="text-xl font-bold">Chat with your Notes</h2>
@@ -44,14 +42,12 @@ export const MessageView = (
       </div>
     )
   }
-
+  
   return (
     <div className="flex-1 overflow-auto flex flex-col gap-3"
       style={{maxHeight: 'calc(100vh - 120px)'}}>
-
       { /* Render each message as a MessageField object. */ }
-      { messages.map(MessageField) }
-
+      { displayMessages.map(MessageField) }
       { /* Show a grayed-out 'typing' placeholder when loading */ }
       {isTyping && (
         <div className="self-start border border-[#979797] bg-[#F6F6F6] text-black rounded-md p-3 text-sm">
