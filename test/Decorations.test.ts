@@ -1,20 +1,33 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { markdown } from '@codemirror/lang-markdown'
-import { Decorations } from '../components/editor/Decorations'
+import decorationsPlugin, {
+  Decorations,
+} from '../components/editor/Decorations'
+
+const activeViews: EditorView[] = []
 
 function createView(doc: string, cursorPos: number = 0): EditorView {
   const state = EditorState.create({
     doc,
     selection: { anchor: cursorPos },
-    extensions: [markdown()],
+    extensions: [markdown(), decorationsPlugin],
   })
   const view = new EditorView({ state })
   document.body.appendChild(view.dom)
   view.focus()
+  activeViews.push(view)
   return view
 }
+
+afterEach(() => {
+  for (const view of activeViews) {
+    view.destroy()
+    view.dom.remove()
+  }
+  activeViews.length = 0
+})
 
 function getDecorations(view: EditorView) {
   const instance = new Decorations(view)
@@ -373,5 +386,98 @@ describe('Header decorations', () => {
     expect(header).toBeTruthy()
     expect(bold).toBeTruthy()
     expect(italic).toBeTruthy()
+  })
+})
+
+// ---------------------------
+// Link decorations
+// ---------------------------
+describe('Link decorations', () => {
+  it('decorates a basic markdown link', () => {
+    const view = createView('[click here](https://example.com)', 0)
+    const decorations = getDecorations(view)
+    const hasLink = decorations.some((d) => d.class.includes('cm-styled-link'))
+    expect(hasLink).toBe(true)
+  })
+
+  it('hides markdown characters when cursor is outside link', () => {
+    const view = createView('a[click here](https://example.com)', 0)
+    const decorations = getDecorations(view)
+    const hidden = decorations.filter((d) => d.class === 'cm-hidden-characters')
+    expect(hidden.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('shows markdown characters when cursor is inside link', () => {
+    const view = createView('[click here](https://example.com)', 3)
+    const decorations = getDecorations(view)
+    const hidden = decorations.filter((d) => d.class === 'cm-hidden-characters')
+    expect(hidden.length).toBe(0)
+  })
+
+  it('handles links with angle brackets', () => {
+    const view = createView('[label](<https://example.com>)', 0)
+    const decorations = getDecorations(view)
+    const hasLink = decorations.some((d) => d.class.includes('cm-styled-link'))
+    expect(hasLink).toBe(true)
+  })
+
+  it('ignores link with empty label', () => {
+    const view = createView('[](/url)', 0)
+    const decorations = getDecorations(view)
+    const hasLink = decorations.some((d) => d.class.includes('cm-styled-link'))
+    expect(hasLink).toBe(false)
+  })
+
+  it('handles node: links (internal)', () => {
+    const view = createView('[note](node:123)', 0)
+    const decorations = getDecorations(view)
+    const hasLink = decorations.some((d) => d.class.includes('cm-styled-link'))
+    expect(hasLink).toBe(true)
+  })
+
+  it('does not decorate text with only brackets', () => {
+    const view = createView('[]()', 0)
+    const decorations = getDecorations(view)
+    const hasLink = decorations.some((d) => d.class.includes('cm-styled-link'))
+    expect(hasLink).toBe(false)
+  })
+
+  it('renders multiple links correctly', () => {
+    const view = createView('[one](https://a.com) and [two](https://b.com)', 0)
+    const decorations = getDecorations(view)
+    const count = decorations.filter((d) =>
+      d.class.includes('cm-styled-link')
+    ).length
+    expect(count).toBe(2)
+  })
+})
+describe('Link widget behavior', () => {
+  it('replaces link label with a widget when cursor is outside', async () => {
+    const view = createView('a[example](https://test.com)', 0)
+    const linkElement = view.dom.querySelector('a')
+
+    expect(linkElement).toBeTruthy()
+    expect(linkElement?.textContent).toBe('example')
+  })
+
+  it('does not render widget for malformed link (no closing parenthesis)', () => {
+    const view = createView('a[bad link](https://abc', 0)
+    console.log(view.dom.innerHTML)
+    const widget = view.dom.querySelector('a')
+    expect(widget).toBeFalsy()
+  })
+
+  it('renders correct widget text and handles internal node: links', () => {
+    const view = createView('a[note](node:456)', 0)
+    const widget = view.dom.querySelector('a')
+    expect(widget?.textContent).toBe('note')
+  })
+
+  it('renders widgets for multiple links', () => {
+    const view = createView('a[one](https://a.com) and [two](https://b.com)', 0)
+    const widgets = view.dom.querySelectorAll('a')
+    expect(widgets.length).toBe(2)
+    expect(widgets[0].textContent).toBe('one')
+    expect(widgets[1].textContent).toBe('two')
   })
 })
