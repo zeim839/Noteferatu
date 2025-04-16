@@ -481,3 +481,56 @@ describe('Link widget behavior', () => {
     expect(widgets[1].textContent).toBe('two')
   })
 })
+
+// ---------------------------
+// Quote decorations
+// ---------------------------
+describe('Blockquote decorations', () => {
+  it('applies quote decorations when cursor is outside the quote line', () => {
+    const view = createView('> Hello world', 0)
+    const decorations = getDecorations(view)
+    const quoteMark = decorations.find((d) =>
+      d.class.includes('cm-styled-quote')
+    )
+    const quoteText = decorations.find((d) =>
+      d.class.includes('cm-styled-quote-text')
+    )
+    expect(quoteMark).toBeTruthy()
+    expect(quoteText).toBeTruthy()
+  })
+
+  it('applies focused quote class when cursor is on the quote line', () => {
+    const view = createView('> Hello world', 3)
+    const decorations = getDecorations(view)
+    const focused = decorations.find((d) =>
+      d.class.includes('cm-styled-quote-focused')
+    )
+    expect(focused).toBeTruthy()
+  })
+
+  it('only focuses the line with the cursor in a multiline quote', () => {
+    const view = createView('> Line one\n> Line two\n> Line three', 20) // cursor in line two
+    const decorations = getDecorations(view)
+
+    const lineOne = decorations.find(
+      (d) => d.from === 0 && d.class.includes('cm-styled-quote')
+    )
+    const lineTwo = decorations.find(
+      (d) => d.from > 10 && d.class.includes('cm-styled-quote-focused')
+    )
+    const lineThree = decorations.find(
+      (d) => d.from > 20 && d.class.includes('cm-styled-quote')
+    )
+
+    expect(lineOne).toBeTruthy()
+    expect(lineTwo).toBeTruthy()
+    expect(lineThree).toBeTruthy()
+  })
+
+  it('does not apply quote decorations to normal text', () => {
+    const view = createView('This is just text', 0)
+    const decorations = getDecorations(view)
+    const hasQuote = decorations.some((d) => d.class.includes('quote'))
+    expect(hasQuote).toBe(false)
+  })
+})
