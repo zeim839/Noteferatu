@@ -462,7 +462,6 @@ describe('Link widget behavior', () => {
 
   it('does not render widget for malformed link (no closing parenthesis)', () => {
     const view = createView('a[bad link](https://abc', 0)
-    console.log(view.dom.innerHTML)
     const widget = view.dom.querySelector('a')
     expect(widget).toBeFalsy()
   })
@@ -652,5 +651,47 @@ describe('Fenced code block decorations', () => {
       d.class.includes('cm-styled-fenced-code')
     )
     expect(lines.length).toBeLessThan(3)
+  })
+})
+
+// ---------------------------
+// Horizontal rule decorations
+// ---------------------------
+describe('Horizontal rule decorations', () => {
+  it('shows visible rule when cursor is on the line', () => {
+    const view = createView('---', 1)
+    const decorations = getDecorations(view)
+    const foundStyled = decorations.some((d) =>
+      d.class.includes('cm-styled-horizontal-rule')
+    )
+    expect(foundStyled).toBe(true)
+  })
+
+  it('hides rule and shows widget when cursor is not on the line', () => {
+    const view = createView('abc\n\n---\ndef', 0) // Cursor on first line
+    const widget = view.dom.querySelector('.cm-styled-inline-hr')
+    expect(widget).toBeTruthy()
+  })
+
+  it('supports other horizontal rule syntax (***, ___)', () => {
+    const view = createView('___', 0)
+    const decorations = getDecorations(view)
+    const replaced = decorations.find((d) => d.to - d.from === 3)
+    expect(replaced).toBeTruthy()
+  })
+
+  it('ignores malformed rules (e.g., --)', () => {
+    const view = createView('--', 0)
+    const decorations = getDecorations(view)
+    const found = decorations.find((d) =>
+      d.class?.includes?.('cm-styled-horizontal-rule')
+    )
+    expect(found).toBeFalsy()
+  })
+
+  it('handles multiple horizontal rules', () => {
+    const view = createView('---\nabc\n___\n***', 0)
+    const widgets = [...view.dom.querySelectorAll('.cm-styled-inline-hr')]
+    expect(widgets.length).toBeGreaterThanOrEqual(2)
   })
 })
