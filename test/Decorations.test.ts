@@ -310,3 +310,68 @@ describe('Bold + Italic decorations', () => {
     expect(hiddenMarkers.length).toBeGreaterThanOrEqual(3)
   })
 })
+
+// ---------------------------
+// Header decorations
+// ---------------------------
+describe('Header decorations', () => {
+  it('correctly decorates level 1 header', () => {
+    const view = createView('# Heading 1', 0)
+    const decorations = getDecorations(view)
+    const lineClass = decorations.find((d) => d.class === 'cm-line-h1')
+    const styledHeader = decorations.find(
+      (d) => d.class === 'cm-styled-header level-1'
+    )
+    expect(lineClass).toBeTruthy()
+    expect(styledHeader).toBeTruthy()
+  })
+
+  it('correctly decorates level 3 header', () => {
+    const view = createView('### Heading 3', 0)
+    const decorations = getDecorations(view)
+    const lineClass = decorations.find(
+      (d) => d.class === 'cm-line-higher-headers'
+    )
+    const styledHeader = decorations.find(
+      (d) => d.class === 'cm-styled-header level-3'
+    )
+    expect(lineClass).toBeTruthy()
+    expect(styledHeader).toBeTruthy()
+  })
+
+  it('hides header marks when cursor is outside', () => {
+    const view = createView('a\n## Hidden Marks', 0)
+    const decorations = getDecorations(view)
+    const hidden = decorations.find((d) => d.class === 'cm-hidden-characters')
+    expect(hidden).toBeTruthy()
+  })
+
+  it('shows header marks when cursor is inside', () => {
+    const view = createView('## Visible Marks', 5)
+    const decorations = getDecorations(view)
+    const hidden = decorations.find((d) => d.class === 'cm-hidden-characters')
+    expect(hidden).toBeFalsy()
+  })
+
+  it('does not decorate invalid header without space', () => {
+    const view = createView('#InvalidHeader', 0)
+    const decorations = getDecorations(view)
+    const hasHeaderStyling = decorations.some((d) =>
+      d.class.includes('cm-styled-header')
+    )
+    expect(hasHeaderStyling).toBe(false)
+  })
+
+  it('correctly decorates header with inline formatting', () => {
+    const view = createView('## Heading with **bold** and *italic*', 0)
+    const decorations = getDecorations(view)
+    const header = decorations.find(
+      (d) => d.class === 'cm-styled-header level-2'
+    )
+    const bold = decorations.find((d) => d.class === 'cm-styled-bold')
+    const italic = decorations.find((d) => d.class === 'cm-styled-italic')
+    expect(header).toBeTruthy()
+    expect(bold).toBeTruthy()
+    expect(italic).toBeTruthy()
+  })
+})
