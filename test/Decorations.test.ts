@@ -584,3 +584,73 @@ describe('Inline code decorations', () => {
     expect(inlineCodeCount).toBe(2)
   })
 })
+
+// ---------------------------
+// Fenced code decorations
+// ---------------------------
+describe('Fenced code block decorations', () => {
+  const codeBlock = '\n```\nconsole.log("hello")\n```'
+
+  it('decorates code block lines with cm-styled-fenced-code', () => {
+    const view = createView(codeBlock, 0)
+    const decorations = getDecorations(view)
+    const lineDecorations = decorations.filter((d) =>
+      d.class.includes('cm-styled-fenced-code')
+    )
+    expect(lineDecorations.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('applies active class when cursor is inside block', () => {
+    const view = createView(codeBlock, 10)
+    const decorations = getDecorations(view)
+    const active = decorations.find((d) =>
+      d.class.includes('cm-styled-fenced-code-active')
+    )
+    expect(active).toBeTruthy()
+  })
+
+  it('hides backticks when cursor is outside block', () => {
+    const view = createView(codeBlock, 0)
+    const decorations = getDecorations(view)
+    const hidden = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hidden.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('does not hide backticks when cursor is inside block', () => {
+    const view = createView(codeBlock, 10)
+    const decorations = getDecorations(view)
+    const hidden = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hidden.length).toBe(0)
+  })
+
+  it('handles multiple lines in block', () => {
+    const view = createView('```\nline1\nline2\n```', 0)
+    const decorations = getDecorations(view)
+    const lines = decorations.filter((d) =>
+      d.class.includes('cm-styled-fenced-code')
+    )
+    expect(lines.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('handles empty line inside code block', () => {
+    const view = createView('```\n\nconsole.log()\n```', 0)
+    const decorations = getDecorations(view)
+    const lines = decorations.filter((d) =>
+      d.class.includes('cm-styled-fenced-code')
+    )
+    expect(lines.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('ignores malformed code block (no closing ```)', () => {
+    const view = createView('```\nconsole.log("missing end")', 0)
+    const decorations = getDecorations(view)
+    const lines = decorations.filter((d) =>
+      d.class.includes('cm-styled-fenced-code')
+    )
+    expect(lines.length).toBeLessThan(3)
+  })
+})
