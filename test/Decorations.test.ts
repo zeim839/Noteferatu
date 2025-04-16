@@ -17,6 +17,7 @@ function createView(doc: string, cursorPos: number = 0): EditorView {
   const view = new EditorView({ state })
   document.body.appendChild(view.dom)
   view.focus()
+  document.body.focus()
   activeViews.push(view)
   return view
 }
@@ -460,6 +461,13 @@ describe('Link widget behavior', () => {
     expect(linkElement?.textContent).toBe('example')
   })
 
+  it('does not render widget when cursor is on the link', async () => {
+    const view = createView('a[example](https://test.com)', 10)
+    await new Promise((r) => setTimeout(r, 10))
+    const linkElement = view.dom.querySelector('a')
+    expect(linkElement).toBeFalsy()
+  })
+
   it('does not render widget for malformed link (no closing parenthesis)', () => {
     const view = createView('a[bad link](https://abc', 0)
     const widget = view.dom.querySelector('a')
@@ -693,5 +701,49 @@ describe('Horizontal rule decorations', () => {
     const view = createView('---\nabc\n___\n***', 0)
     const widgets = [...view.dom.querySelectorAll('.cm-styled-inline-hr')]
     expect(widgets.length).toBeGreaterThanOrEqual(2)
+  })
+})
+
+// ---------------------------
+// Image decorations
+// ---------------------------
+describe('Image decorations', () => {
+  it('renders widget and hides markdown when cursor is off the line', () => {
+    const view = createView('\n![desc](https://img.png)', 0)
+    const decorations = getDecorations(view)
+
+    const hidden = decorations.find((d) =>
+      d.class?.includes('cm-hide-image-line')
+    )
+    const img = view.dom.querySelector('img')
+
+    expect(hidden).toBeTruthy()
+    expect(img?.src).toContain('https://img.png')
+    expect(img?.alt).toBe('desc')
+  })
+
+  it('does not render image widget if cursor is on the image line', async () => {
+    const view = createView('![desc](https://img.png)', 5)
+    await new Promise((r) => setTimeout(r, 10))
+    const img = view.dom.querySelector('img')
+    expect(img).toBeFalsy()
+  })
+
+  it('falls back to alt text "Image" if missing', () => {
+    const view = createView('![](https://abc.com)', 0)
+    const img = view.dom.querySelector('img')
+    expect(img?.alt).toBe('Image')
+  })
+
+  it('ignores malformed image (no closing parenthesis)', () => {
+    const view = createView('![desc](https://abc.com', 0)
+    const img = view.dom.querySelector('img')
+    expect(img).toBeFalsy()
+  })
+
+  it('supports multiple images', () => {
+    const view = createView('![a](a.com)\n![b](b.com)\n![c](c.com)', 0)
+    const imgs = [...view.dom.querySelectorAll('img')]
+    expect(imgs.length).toBe(6) // double the amount because codemirror inserts image widget buffer
   })
 })
