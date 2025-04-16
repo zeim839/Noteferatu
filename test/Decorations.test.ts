@@ -30,6 +30,9 @@ function getDecorations(view: EditorView) {
   return result
 }
 
+// -----------------------------
+// Bold decorations
+// -----------------------------
 describe('Bold decorations', () => {
   it('correctly decorates **bold**', () => {
     const view = createView('**bold**')
@@ -137,5 +140,118 @@ describe('Bold decorations', () => {
       d.class.includes('cm-styled-bold')
     )
     expect(foundBold).toBe(true)
+  })
+})
+
+// -----------------------------
+// Italic decorations
+// -----------------------------
+describe('Italic decorations', () => {
+  it('correctly decorates *italic*', () => {
+    const view = createView('*italic*')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(true)
+  })
+
+  it('correctly decorates _italic_', () => {
+    const view = createView('_italic_')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(true)
+  })
+
+  it('ignores missing closing *', () => {
+    const view = createView('*italic')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(false)
+  })
+
+  it('ignores missing opening *', () => {
+    const view = createView('italic*')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(false)
+  })
+
+  it('shows markers when cursor inside italic', () => {
+    const view = createView('*italic*', 3)
+    const decorations = getDecorations(view)
+    const hiddenMarkers = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hiddenMarkers.length).toBe(0)
+  })
+
+  it('hides markers when cursor outside italic', () => {
+    const view = createView('text *italic* stuff', 0)
+    const decorations = getDecorations(view)
+    const hiddenMarkers = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hiddenMarkers.length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('handles multiple italic blocks', () => {
+    const view = createView('*one* and *two*')
+    const decorations = getDecorations(view)
+    const count = decorations.filter((d) =>
+      d.class.includes('cm-styled-italic')
+    ).length
+    expect(count).toBe(2)
+  })
+
+  it('ignores * italic * with whitespace inside', () => {
+    const view = createView('* italic *')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(false)
+  })
+
+  it('ignores * italic* with leading whitespace', () => {
+    const view = createView('* italic*')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(false)
+  })
+
+  it('ignores *italic * with trailing whitespace', () => {
+    const view = createView('*italic *')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(false)
+  })
+
+  it('ignores *  * with only whitespace', () => {
+    const view = createView('*  *')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(false)
+  })
+
+  it('handles mixed formatting like *it_alic*', () => {
+    const view = createView('*it_alic*')
+    const decorations = getDecorations(view)
+    const foundItalic = decorations.some((d) =>
+      d.class.includes('cm-styled-italic')
+    )
+    expect(foundItalic).toBe(true)
   })
 })
