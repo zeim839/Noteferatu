@@ -509,7 +509,7 @@ describe('Blockquote decorations', () => {
   })
 
   it('only focuses the line with the cursor in a multiline quote', () => {
-    const view = createView('> Line one\n> Line two\n> Line three', 20) // cursor in line two
+    const view = createView('> Line one\n> Line two\n> Line three', 20)
     const decorations = getDecorations(view)
 
     const lineOne = decorations.find(
@@ -532,5 +532,55 @@ describe('Blockquote decorations', () => {
     const decorations = getDecorations(view)
     const hasQuote = decorations.some((d) => d.class.includes('quote'))
     expect(hasQuote).toBe(false)
+  })
+})
+
+// ---------------------------
+// Inline code decorations
+// ---------------------------
+describe('Inline code decorations', () => {
+  it('correctly decorates inline code', () => {
+    const view = createView('Here is `code`.', 0)
+    const decorations = getDecorations(view)
+    const inlineCode = decorations.find((d) =>
+      d.class.includes('cm-styled-inline-code')
+    )
+    expect(inlineCode).toBeTruthy()
+  })
+
+  it('ignores unmatched backtick', () => {
+    const view = createView('Here is `code.', 0)
+    const decorations = getDecorations(view)
+    const inlineCode = decorations.find((d) =>
+      d.class.includes('cm-styled-inline-code')
+    )
+    expect(inlineCode).toBeFalsy()
+  })
+
+  it('shows backticks when cursor is inside inline code', () => {
+    const view = createView('Here is `code`.', 10) // inside `code`
+    const decorations = getDecorations(view)
+    const hiddenTicks = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hiddenTicks.length).toBe(0)
+  })
+
+  it('hides backticks when cursor is outside inline code', () => {
+    const view = createView('Here is `code`.', 0) // outside
+    const decorations = getDecorations(view)
+    const hiddenTicks = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hiddenTicks.length).toBe(2)
+  })
+
+  it('handles multiple inline code blocks', () => {
+    const view = createView('`one` and `two`', 0)
+    const decorations = getDecorations(view)
+    const inlineCodeCount = decorations.filter((d) =>
+      d.class.includes('cm-styled-inline-code')
+    ).length
+    expect(inlineCodeCount).toBe(2)
   })
 })
