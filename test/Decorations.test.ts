@@ -80,7 +80,7 @@ describe('Bold decorations', () => {
   })
 
   it('hides markers when cursor outside bold', () => {
-    const view = createView('abc**bold** extra', 0)
+    const view = createView('a**bold**', 0)
     const decorations = getDecorations(view)
     const hiddenMarkers = decorations.filter((d) =>
       d.class.includes('cm-hidden-characters')
@@ -253,5 +253,60 @@ describe('Italic decorations', () => {
       d.class.includes('cm-styled-italic')
     )
     expect(foundItalic).toBe(true)
+  })
+})
+
+// -----------------------------
+// Bold + Italic decorations
+// -----------------------------
+describe('Bold + Italic decorations', () => {
+  it('correctly decorates ***bolditalic*** with both bold and italic styles', () => {
+    const view = createView('***bolditalic***')
+    const decorations = getDecorations(view)
+
+    const bold = decorations.find((d) => d.class.includes('cm-styled-bold'))
+    const italic = decorations.find((d) => d.class.includes('cm-styled-italic'))
+
+    expect(bold).toBeTruthy()
+    expect(italic).toBeTruthy()
+
+    expect(bold!.from).toBeGreaterThanOrEqual(italic!.from)
+    expect(bold!.to).toBeLessThanOrEqual(italic!.to)
+  })
+
+  it('ignores *** bold italic *** with surrounding whitespace', () => {
+    const view = createView('*** bold italic ***')
+    const decorations = getDecorations(view)
+    const bold = decorations.find((d) => d.class.includes('cm-styled-bold'))
+    const italic = decorations.find((d) => d.class.includes('cm-styled-italic'))
+    expect(bold).toBeUndefined()
+    expect(italic).toBeUndefined()
+  })
+
+  it('ignores ***  *** with only whitespace inside', () => {
+    const view = createView('***  ***')
+    const decorations = getDecorations(view)
+    const bold = decorations.find((d) => d.class.includes('cm-styled-bold'))
+    const italic = decorations.find((d) => d.class.includes('cm-styled-italic'))
+    expect(bold).toBeUndefined()
+    expect(italic).toBeUndefined()
+  })
+
+  it('shows both markers when cursor is inside ***bolditalic***', () => {
+    const view = createView('***bolditalic***', 5)
+    const decorations = getDecorations(view)
+    const hiddenMarkers = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hiddenMarkers.length).toBe(0)
+  })
+
+  it('hides markers when cursor is outside ***bolditalic***', () => {
+    const view = createView('a***bolditalic***', 0)
+    const decorations = getDecorations(view)
+    const hiddenMarkers = decorations.filter((d) =>
+      d.class.includes('cm-hidden-characters')
+    )
+    expect(hiddenMarkers.length).toBeGreaterThanOrEqual(3)
   })
 })
