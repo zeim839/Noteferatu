@@ -321,25 +321,20 @@ export class Decorations {
     decorations: { from: number; to: number; decoration: Decoration }[],
     view: EditorView
   ) {
-    const selectedLines = new Set<number>()
     const doc = view.state.doc
+    const line = doc.lineAt(cursor.from)
+
+    // Check if any part of the line is within any selection range
+    let lineIsSelected = false
     for (const range of view.state.selection.ranges) {
-      const line = doc.lineAt(range.from).number
-      selectedLines.add(line)
+      if ((range.from <= line.to) && (range.to >= line.from)) {
+        lineIsSelected = true
+        break
+      }
     }
 
-    // Process each `QuoteMark`.
-    const lineNumber = doc.lineAt(cursor.from).number
-    const cursorOnLine = selectedLines.has(lineNumber)
-
-    // Hide `>` if cursor is not on this line, but show vertical bar.
-    if (!cursorOnLine) {
-      decorations.push({
-        from: cursor.from,
-        to: cursor.from + 1,
-        decoration: Decoration.mark({ class: 'cm-styled-quote' }),
-      })
-    } else {
+    // Use the styled-quote-focused class if the line is selected
+    if (lineIsSelected) {
       decorations.push({
         from: cursor.from,
         to: cursor.from + 1,
@@ -347,7 +342,15 @@ export class Decorations {
           class: 'cm-styled-quote-focused',
         }),
       })
+    } else {
+      decorations.push({
+        from: cursor.from,
+        to: cursor.from + 1,
+        decoration: Decoration.mark({ class: 'cm-styled-quote' }),
+      })
     }
+
+    // Always style the text after the quote mark
     decorations.push({
       from: cursor.from + 1,
       to: doc.lineAt(cursor.to).to,
