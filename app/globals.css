@@ -1,161 +1,77 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
 
 body {
-    font-family: 'Iosevka Comfy', monospace;
-    background-color: rgba(245, 245, 245, 0.9);
-    width: 100%;
-    height: 100%;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalboldupright.ttf');
-    font-weight: bold;
-    font-style: normal;
-    font-display: swap;
+.title-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 30px;
+  background: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  user-select: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalbolditalic.ttf');
-    font-weight: bold;
-    font-style: italic;
-    font-display: swap;
+.title-bar-title {
+  padding-left: 10px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalextrabolditalic.ttf');
-    font-weight: bolder;
-    font-style: italic;
-    font-display: swap;
+.title-bar-controls {
+  display: flex;
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalextraboldupright.ttf');
-    font-weight: bolder;
-    font-style: normal;
-    font-display: swap;
+.title-bar-controls button {
+  width: 45px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normallightitalic.ttf');
-    font-weight: light;
-    font-style: italic;
-    font-display: swap;
+.title-bar-controls button:hover {
+  background: rgba(0, 0, 0, 0.1);
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normallightupright.ttf');
-    font-weight: light;
-    font-style: normal;
-    font-display: swap;
+.title-bar-controls .close-btn:hover {
+  background: #e74c3c;
+  color: white;
 }
 
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalmediumitalic.ttf');
-    font-weight: medium;
-    font-style: italic;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalmediumupright.ttf');
-    font-weight: medium;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalregularitalic.ttf');
-    font-weight: regular;
-    font-style: italic;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalregularupright.ttf');
-    font-weight: regular;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemibolditalic.ttf');
-    font-weight: 600;
-    font-style: italic;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemiboldupright.ttf');
-    font-weight: 600;
-    font-style: normal;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemilightitalic.ttf');
-    font-weight: 200;
-    font-style: italic;
-    font-display: swap;
-}
-
-@font-face {
-    font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemilightupright.ttf');
-    font-weight: 200;
-    font-style: normal;
-    font-display: swap;
-}
-
-@layer base {
-  :root {
-    --background: 0 0% 96.08%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+/* Adjust your main content to account for title bar */
+.main-content {
+  margin-top: 30px;
 }
