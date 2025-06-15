@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0-rc",
-  "productName": "noteferatu",
+  "productName": "NoteFeratu",
   "version": "1.0.0",
   "identifier": "com.noteferatu.dev",
   "build": {
@@ -12,12 +12,15 @@
   "app": {
     "windows": [
       {
-        "title": "noteferatu",
-        "width": 800,
-        "height": 600,
-        "resizable": true,
+        "title": "NoteFeratu",
+	"titleBarStyle": "Overlay",
+	"hiddenTitle": true,
+	"resizable": true,
         "fullscreen": false,
-	"decorations": false
+	"width": 800,
+	"minWidth": 800,
+        "height": 700,
+	"minHeight": 600
       }
     ],
     "security": {
