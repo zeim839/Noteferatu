@@ -1,0 +1,17 @@
+[package]
+name = "macwindow"
+version = "0.1.0"
+authors = [ "Michael Zeipekkis" ]
+description = ""
+edition = "2021"
+rust-version = "1.77.2"
+links = "macwindow"
+
+[dependencies]
+tauri = { version = "2.2.4" }
+cocoa = "0.26.1"
+objc = "0.2.7"
+rand = "0.9.1"
+
+[build-dependencies]
+tauri-plugin = { version = "2.0.3", features = ["build"] }
