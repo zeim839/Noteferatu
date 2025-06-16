@@ -20,10 +20,122 @@
 }
 
 body {
+  font-family: 'Iosevka Comfy', monospace;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalboldupright.ttf');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalbolditalic.ttf');
+    font-weight: bold;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalextrabolditalic.ttf');
+    font-weight: bolder;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalextraboldupright.ttf');
+    font-weight: bolder;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normallightitalic.ttf');
+    font-weight: light;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normallightupright.ttf');
+    font-weight: light;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalmediumitalic.ttf');
+    font-weight: medium;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalmediumupright.ttf');
+    font-weight: medium;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalregularitalic.ttf');
+    font-weight: regular;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalregularupright.ttf');
+    font-weight: regular;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalsemibolditalic.ttf');
+    font-weight: 600;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalsemiboldupright.ttf');
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalsemilightitalic.ttf');
+    font-weight: 200;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Iosevka Comfy';
+    src: url('/fonts/iosevka-comfy-normalsemilightupright.ttf');
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
 }
