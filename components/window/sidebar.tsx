@@ -64,7 +64,7 @@ function Sidebar({
       className="group hidden data-[collapsed=false]:block w-full h-full"
     >
       <div className="flex h-full flex-col relative">
-        <div className={cn("h-full w-full bg-[#E5E9EF] outline outline-[#AEB3C0]", className)} {...props}>
+        <div className={cn("h-full w-full bg-[#E5E9EF] outline outline-[#AEB3C0] overflow-scroll overscroll-none", className)} {...props}>
           {children}
         </div>
         {/* Resize handle */}
@@ -77,4 +77,18 @@ function Sidebar({
   )
 }
 
-export { Sidebar }
+function SidebarHeader({ className, children, ...props }:
+React.ComponentProps<"div">) {
+  return (
+    <div
+      className={cn("h-[29px] w-full min-w-max outline outline-[#ABB0BE] bg-[#DCE0E8]", className)}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
+
+Sidebar.Header = SidebarHeader
+
+export { Sidebar, SidebarHeader }

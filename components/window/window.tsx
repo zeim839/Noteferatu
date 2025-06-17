@@ -1,62 +1,159 @@
 "use client"
 
 import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
 
-import { Titlebar, Toolbar } from "./titlebar"
-import { Button } from "@/components/ui/button"
-import { TooltipProvider } from "@/components/ui/tooltip"
+import { Titlebar } from "./titlebar"
+import { TooltipProvider } from "@/components/core/tooltip"
 import { useWindowSize } from "@/hooks/windowsize"
 import { Sidebar } from "./sidebar"
 
-import {
-  PanelLeftDashedIcon,
-  SettingsIcon,
-  MessageSquareTextIcon,
-  SearchIcon,
-  FolderSyncIcon,
-  CirclePlusIcon,
-} from "lucide-react"
+type WindowContextProps = {
+  isLeftSidebarOpen: boolean
+  isRightSidebarOpen: boolean
+  setLeftSidebarOpen: (open: boolean) => void
+  setRightSidebarOpen: (open: boolean) => void
+
+  // The initial preferred width of the left and right sidebars.
+  leftDefaultWidth: number,
+  rightDefaultWidth: number,
+}
+
+const WindowContext = React.createContext<WindowContextProps | null>(null)
+
+function useWindow() {
+  const ctx = React.useContext(WindowContext)
+  if (!ctx) {
+    throw new Error("useWindow must be used within a WindowProvider")
+  }
+  return ctx
+}
+
+interface WindowProviderProps extends React.ComponentProps<"div"> {
+  isLeftSidebarOpen?: boolean
+  isRightSidebarOpen?: boolean
+  setLeftSidebarOpen?: (open: boolean) => void
+  setRightSidebarOpen?: (open: boolean) => void
+
+  leftDefaultWidth?: number,
+  rightDefaultWidth?: number,
+}
+
+function WindowProvider({
+  isLeftSidebarOpen,
+  isRightSidebarOpen,
+  setLeftSidebarOpen,
+  setRightSidebarOpen,
+  leftDefaultWidth = 232,
+  rightDefaultWidth = 343,
+  children,
+  ...props
+}: WindowProviderProps ) {
+
+  const [_isLeftSidebarOpen, _setLeftSidebarOpen] = React.useState<boolean>(false)
+  const [_isRightSidebarOpen, _setRightSidebarOpen] = React.useState<boolean>(false)
+
+  // Use the parameter values when available. Otherwise use the
+  // component's internal useState hooks.
+  const leftOpen = isLeftSidebarOpen ?? _isLeftSidebarOpen
+  const rightOpen = isRightSidebarOpen ?? _isRightSidebarOpen
+
+  const setLeftOpen = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      const openState = typeof value === "function" ? value(_isLeftSidebarOpen) : value
+      if (setLeftSidebarOpen) {
+        setLeftSidebarOpen(openState)
+        return
+      }
+      _setLeftSidebarOpen(openState)
+      // TODO: MEMORIZE SIDEBAR STATE.
+    },
+    [setLeftSidebarOpen]
+  )
+
+  const setRightOpen = React.useCallback(
+    (value: boolean | ((value: boolean) => boolean)) => {
+      const openState = typeof value === "function" ? value(_isLeftSidebarOpen) : value
+      if (setRightSidebarOpen) {
+        setRightSidebarOpen(openState)
+        return
+      }
+      _setRightSidebarOpen(openState)
+      // TODO: MEMORIZE SIDEBAR STATE.
+    },
+    [setRightSidebarOpen]
+  )
+
+  // TODO: KEYBOARD SHORTCUTS.
+
+  const contextValue = React.useMemo<WindowContextProps>(
+    () => ({
+      isLeftSidebarOpen: leftOpen,
+      isRightSidebarOpen: rightOpen,
+      setLeftSidebarOpen: setLeftOpen,
+      setRightSidebarOpen: setRightOpen,
+      leftDefaultWidth,
+      rightDefaultWidth,
+    }),
+    [
+      leftOpen, rightOpen, setLeftOpen,
+      setRightOpen, leftDefaultWidth, rightDefaultWidth
+    ]
+  )
+
+  return (
+    <WindowContext.Provider value={contextValue}>
+      <TooltipProvider delayDuration={600}>
+        <div {...props}>
+          {children}
+        </div>
+      </TooltipProvider>
+    </WindowContext.Provider>
+  )
+}
 
 // The minimum sidebar width when a sidebar is open. Has no effect when
 // the sidebar is closed.
 const MIN_SIDEBAR_WIDTH = 80
 
-interface WindowProps extends React.ComponentProps<"div"> {
-}
-
-function Window({ className, children, ...props } : WindowProps) {
-  const [isLeftSidebarOpen, setLeftSidebarOpen] = React.useState<boolean>(false)
-  const [isRightSidebarOpen, setRightSidebarOpen] = React.useState<boolean>(false)
+function Window({ className, children, ...props } : React.ComponentProps<"div">) {
+  const {isLeftSidebarOpen, isRightSidebarOpen} = useWindow()
+  const {leftDefaultWidth, rightDefaultWidth} = useWindow()
 
   // Keep track of a user configured (or default 300) preferred width.
   // When one sidebar shrinks, the other grows to its preferred width.
   // This gives resizing sidebars a sense of continuity.
-  const [leftPreferredWidth, setLeftPreferredWidth] = React.useState<number>(340)
-  const [rightPreferredWidth, setRightPreferredWidth] = React.useState<number>(340)
+  const [leftPreferredWidth, setLeftPreferredWidth] = React.useState<number>(leftDefaultWidth)
+  const [rightPreferredWidth, setRightPreferredWidth] = React.useState<number>(rightDefaultWidth)
   const [leftRealWidth, setLeftRealWidth] = React.useState<number>(0)
   const [rightRealWidth, setRightRealWidth] = React.useState<number>(0)
 
   // Deconstruct window subcomponents.
   const slots = React.useMemo(() => {
-    let leftSidebarBody : React.ReactNode | null = null
-    let windowContent : React.ReactElement | null = null
-    let rightSidebarBody : React.ReactElement | null = null
+    let leftSidebar : React.ReactNode | null = null
+    let windowContent : React.ReactNode | null = null
+    let rightSidebar : React.ReactNode | null = null
+    let titlebar : React.ReactNode | null = null
     React.Children.forEach(children, child => {
       if (!React.isValidElement(child)) return
-      if (child.type === Window.LeftSidebarBody) {
-        leftSidebarBody = child
+      if (child.type === Window.LeftSidebar) {
+        leftSidebar = child
         return
       }
       if (child.type === Window.Content) {
         windowContent = child
         return
       }
-      if (child.type === Window.RightSidebarBody) {
-        rightSidebarBody = child
+      if (child.type === Window.RightSidebar) {
+        rightSidebar = child
+        return
+      }
+      if (child.type === Window.Titlebar) {
+        titlebar = child
         return
       }
     })
-    return { leftSidebarBody, windowContent, rightSidebarBody }
+    return { leftSidebar, windowContent, rightSidebar, titlebar }
   }, [children])
 
   // Handle the window size changing. The preferred widths are readjusted
@@ -99,7 +196,7 @@ function Window({ className, children, ...props } : WindowProps) {
       setLeftPreferredWidth(Math.max(window.innerWidth - rightRealWidth, MIN_SIDEBAR_WIDTH))
       return
     }
-    setLeftRealWidth(Math.min(leftPreferredWidth, window.innerWidth))
+    setLeftRealWidth(Math.max(Math.min(leftPreferredWidth, window.innerWidth), MIN_SIDEBAR_WIDTH))
   }, [isLeftSidebarOpen])
 
   // Handle opening/closing the right sidebar. Same as above.
@@ -117,10 +214,10 @@ function Window({ className, children, ...props } : WindowProps) {
       setRightPreferredWidth(Math.max(window.innerWidth - leftRealWidth, MIN_SIDEBAR_WIDTH))
       return
     }
-    setRightRealWidth(Math.min(rightPreferredWidth, window.innerWidth))
+    setRightRealWidth(Math.max(Math.min(rightPreferredWidth, window.innerWidth), MIN_SIDEBAR_WIDTH))
   }, [isRightSidebarOpen])
 
-    // Handler for when the user drags the sidebar's border to readjust
+  // Handler for when the user drags the sidebar's border to readjust
   // its width. Shrink the other sidebar's real width if user overextends.
   const handleLeftWidthChange = (width: number) => {
     if (!isLeftSidebarOpen) {
@@ -164,30 +261,7 @@ function Window({ className, children, ...props } : WindowProps) {
   return (
     <TooltipProvider delayDuration={600}>
       <div className="w-screen h-screen overflow-hidden bg-[#DCE0E8] flex flex-col">
-        <Titlebar>
-          <Toolbar>
-            <Button variant="ghost" size="icon" tooltip="Toggle File Explorer" onClick={() => setLeftSidebarOpen(!isLeftSidebarOpen)}>
-              <PanelLeftDashedIcon strokeWidth={1.6} />
-            </Button>
-            <Button variant="ghost" size="icon" tooltip="Cloud Sync Status">
-              <FolderSyncIcon strokeWidth={1.6} />
-            </Button>
-            <Button variant="ghost" size="icon" tooltip="Command Menu">
-              <SearchIcon strokeWidth={1.6} />
-            </Button>
-          </Toolbar>
-          <Toolbar>
-            <Button variant="ghost" size="icon" tooltip="New Document">
-              <CirclePlusIcon strokeWidth={1.6} />
-            </Button>
-            <Button variant="ghost" size="icon" tooltip="Agent Panel" onClick={() => setRightSidebarOpen(!isRightSidebarOpen)}>
-              <MessageSquareTextIcon strokeWidth={1.6} />
-            </Button>
-            <Button variant="ghost" size="icon" tooltip="Settings">
-              <SettingsIcon strokeWidth={1.6} />
-            </Button>
-          </Toolbar>
-        </Titlebar>
+        { slots.titlebar }
         <div className="relative h-[calc(100vh-35px)] w-full">
           <div className="h-full w-full" style={{ display: "grid", gridTemplateColumns: columns() }}>
             <div>
@@ -196,7 +270,7 @@ function Window({ className, children, ...props } : WindowProps) {
                 open={isLeftSidebarOpen}
                 onWidthChange={handleLeftWidthChange}
               >
-                { slots.leftSidebarBody }
+                { slots.leftSidebar }
               </Sidebar>
             </div>
             <div className={className} {...props}>
@@ -208,7 +282,7 @@ function Window({ className, children, ...props } : WindowProps) {
                 open={isRightSidebarOpen}
                 onWidthChange={handleRightWidthChange}
               >
-                { slots.rightSidebarBody }
+                { slots.rightSidebar }
               </Sidebar>
             </div>
           </div>
@@ -218,16 +292,22 @@ function Window({ className, children, ...props } : WindowProps) {
   )
 }
 
-Window.LeftSidebarBody = ({ ...props } : React.ComponentProps<"div">) => (
-  <div {...props} />
-)
+function LeftSidebar({ ...props }: React.ComponentProps<"div">) {
+  return (<Slot {...props} />)
+}
 
-Window.Content = ({ ...props } : React.ComponentProps<"div">) => (
-  <div {...props} />
-)
+function Content({...props}: React.ComponentProps<"div">) {
+  return (<Slot {...props} />)
+}
 
-Window.RightSidebarBody = ({ ...props } : React.ComponentProps<"div">) => (
-  <div {...props} />
-)
+function RightSidebar({...props}: React.ComponentProps<"div">) {
+  return (<Slot className="h-full" {...props} />)
+}
 
-export { Window }
+// Window subcomponents.
+Window.LeftSidebar = LeftSidebar
+Window.Content = Content
+Window.RightSidebar = RightSidebar
+Window.Titlebar = Titlebar
+
+export { WindowProvider, Window }
