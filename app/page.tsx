@@ -3,8 +3,8 @@
 import { Window, WindowProvider } from "@/components/window/window"
 import { Explorer } from "@/components/explorer/explorer"
 import { AgentPanel } from "@/components/agent/agentpanel"
-import { VBuffer } from "@/components/window/vbuffer"
 import { Button } from "@/components/core/button"
+import { BufferGroup } from "@/components/buffer/group"
 import { useState } from "react"
 
 import {
@@ -29,13 +29,13 @@ export default function Home() {
       <Window>
         <Window.Titlebar>
           <Window.Titlebar.ToolGroup>
-            <Button variant="ghost" size="icon" tooltip="Toggle File Explorer" onClick={() => setLeftSidebarOpen(!isLeftSidebarOpen)}>
+            <Button variant="ghost" size="icon" tooltip="File Explorer" onClick={() => setLeftSidebarOpen(!isLeftSidebarOpen)}>
               <PanelLeftDashedIcon strokeWidth={1.6} />
             </Button>
-            <Button variant="ghost" size="icon" tooltip="Cloud Sync Status">
+            <Button variant="ghost" size="icon" tooltip="Cloud Sync">
               <FolderSyncIcon strokeWidth={1.6} />
             </Button>
-            <Button variant="ghost" size="icon" tooltip="Command Menu">
+            <Button variant="ghost" size="icon" tooltip="Search & Command">
               <SearchIcon strokeWidth={1.6} />
             </Button>
           </Window.Titlebar.ToolGroup>
@@ -55,7 +55,7 @@ export default function Home() {
           <Explorer />
         </Window.LeftSidebar>
         <Window.Content>
-          <VBuffer />
+          <BufferGroup />
         </Window.Content>
         <Window.RightSidebar>
           <AgentPanel />
