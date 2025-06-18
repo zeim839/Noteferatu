@@ -28,6 +28,15 @@ body {
   overflow: hidden;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @font-face {
     font-family: 'Iosevka Comfy';
     src: url('/fonts/iosevka-comfy-normalboldupright.ttf');

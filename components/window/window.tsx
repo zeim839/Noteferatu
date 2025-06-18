@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
+import { cn } from "@/lib/utils"
 
 import { Titlebar } from "./titlebar"
 import { TooltipProvider } from "@/components/core/tooltip"
@@ -273,8 +274,8 @@ function Window({ className, children, ...props } : React.ComponentProps<"div">)
                 { slots.leftSidebar }
               </Sidebar>
             </div>
-            <div className={className} {...props}>
-              { slots.windowContent }
+            <div className={cn("outline outline-[#ABB0BE]", className)} {...props}>
+                { slots.windowContent }
             </div>
             <div>
               <Sidebar

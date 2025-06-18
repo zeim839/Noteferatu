@@ -88,14 +88,14 @@ function DocEntry({ title="Untitled", type }:
         <GlobeIcon strokeWidth={1.6} className="h-[16px]" />
 
   return (
-    <div className="grid grid-cols-[20px_auto_20px] items-center p-2 font-light text-sm hover:bg-[#DCE0E8] gap-2">
+    <div className="grid grid-cols-[20px_auto_20px] items-center p-2 font-light text-sm hover:bg-[#DCE0E8] hover:rounded-md gap-2">
       {icon}
       <p className="text-nowrap text-ellipsis overflow-hidden">
         {title}
       </p>
       {
         (type === "folder") ? (
-          <Button variant="ghost" size="icon" tooltip="Settings">
+          <Button variant="ghost" size="icon">
             <ChevronDownIcon strokeWidth={1.6} />
           </Button>
         ) : null
