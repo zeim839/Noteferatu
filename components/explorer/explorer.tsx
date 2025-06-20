@@ -9,9 +9,9 @@ import {
   ChevronDownIcon,
   ArrowDownWideNarrowIcon,
   SlidersHorizontalIcon,
-  BookTextIcon,
   LockIcon,
   GlobeIcon,
+  NotepadTextIcon,
 } from "lucide-react"
 
 const sampleDocuments = [
@@ -80,15 +80,15 @@ const sampleDocuments = [
 function DocEntry({ title="Untitled", type }:
 { title?: string, type: string }) {
   const icon = (type === "document") ?
-    <BookTextIcon strokeWidth={1.6} className="w-[16px] h-[16px]" /> :
+    <NotepadTextIcon strokeWidth={1.6} className="h-[15px]" /> :
     (type === "folder") ?
-      <FolderClosedIcon strokeWidth={1.6} className="w-[19px]" /> :
+      <FolderClosedIcon strokeWidth={1.6} className="h-[15px]" /> :
       (type === "encrypted") ?
-        <LockIcon strokeWidth={1.6} className="w-[17px]" /> :
-        <GlobeIcon strokeWidth={1.6} className="h-[16px]" />
+        <LockIcon strokeWidth={1.6} className="h-[15px]" /> :
+        <GlobeIcon strokeWidth={1.6} className="h-[15px]" />
 
   return (
-    <div className="grid grid-cols-[20px_auto_20px] items-center p-2 font-light text-sm hover:bg-[#DCE0E8] hover:rounded-md gap-2">
+    <div className="grid grid-cols-[20px_auto_20px] items-center py-2 pr-2 font-light text-sm hover:bg-[#DCE0E8] hover:rounded-md gap-2">
       {icon}
       <p className="text-nowrap text-ellipsis overflow-hidden">
         {title}
