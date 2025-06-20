@@ -27,9 +27,11 @@ type HeaderProps = {
   active: number
   setActive: (tab: number) => void
   onSplit: (orientation: "vertical" | "horizontal" | null) => void
+  onCloseTab: (index: number) => void
+  onCloseBuffer: () => void
 }
 
-function Header({ tabs, active, setActive, onSplit } : HeaderProps) {
+function Header({ tabs, active, setActive, onSplit, onCloseTab, onCloseBuffer } : HeaderProps) {
   // The currently active tab does not have a lower border, so that it
   // looks like its merging with the buffer content. Adding an
   // outline/border to the header ruins the effect.
@@ -53,6 +55,7 @@ function Header({ tabs, active, setActive, onSplit } : HeaderProps) {
               active={i === active}
               name={tab.name}
               setActive={setActive}
+              onCloseTab={onCloseTab}
             />
           ))
         }
@@ -84,7 +87,9 @@ function Header({ tabs, active, setActive, onSplit } : HeaderProps) {
             <DropdownMenuItem onClick={() => onSplit("horizontal")}>
               Split Horizontal
             </DropdownMenuItem>
-            <DropdownMenuItem>Close Buffer</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onCloseBuffer()}>
+              Close Buffer
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
