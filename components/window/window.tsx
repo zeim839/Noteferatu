@@ -261,9 +261,9 @@ function Window({ className, children, ...props } : React.ComponentProps<"div">)
 
   return (
     <TooltipProvider delayDuration={600}>
-      <div className="w-screen h-screen overflow-hidden bg-[#DCE0E8] flex flex-col">
+      <div className="w-screen h-screen bg-[#DCE0E8] flex flex-col">
         { slots.titlebar }
-        <div className="relative h-[calc(100vh-35px)] w-full">
+        <div className="relative h-[calc(100vh-35px)] h-max-[calc(100vh-35px)] w-full">
           <div className="h-full w-full" style={{ display: "grid", gridTemplateColumns: columns() }}>
             <div>
               <Sidebar

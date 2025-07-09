@@ -64,7 +64,7 @@ function Sidebar({
       className="group hidden data-[collapsed=false]:block w-full h-full"
     >
       <div className="flex h-full flex-col relative">
-        <div className={cn("h-full w-full bg-[#EFF1F5] outline outline-[#AEB3C0] overflow-scroll overscroll-none select-none cursor-default", className)} {...props}>
+        <div className={cn("h-full w-full bg-[#EFF1F5] outline outline-[#AEB3C0] overflow-hidden overscroll-none select-none cursor-default", className)} {...props}>
           {children}
         </div>
         {/* Resize handle */}

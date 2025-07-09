@@ -5,12 +5,10 @@ import { Button } from "@/components/core/button"
 import * as React from "react"
 
 import {
-  FolderClosedIcon,
+  FolderIcon,
   ChevronDownIcon,
   ArrowDownWideNarrowIcon,
   SlidersHorizontalIcon,
-  LockIcon,
-  GlobeIcon,
   NotepadTextIcon,
 } from "lucide-react"
 
@@ -30,10 +28,6 @@ const sampleDocuments = [
   {
     title: "First Order Theory",
     type: "document",
-  },
-  {
-    title: "Passwords",
-    type: "encrypted",
   },
   {
     title: "Coursework",
@@ -72,25 +66,36 @@ const sampleDocuments = [
     type: "document",
   },
   {
-    title: "www.unqualified-reservations.org",
-    type: "website"
+    title: "Politics",
+    type: "folder",
+  },
+  {
+    title: "Travel & Outdoors",
+    type: "folder",
+  },
+    {
+    title: "Siege of Toulon",
+    type: "document",
+  },
+  {
+    title: "Battle of Pharsalus",
+    type: "document",
+  },
+  {
+    title: "Battle of Cannae",
+    type: "document",
   },
 ]
 
-function DocEntry({ title="Untitled", type }:
-{ title?: string, type: string }) {
+function Entry({ title="Untitled", type }: { title?: string, type: string }) {
   const icon = (type === "document") ?
     <NotepadTextIcon strokeWidth={1.6} className="h-[15px]" /> :
-    (type === "folder") ?
-      <FolderClosedIcon strokeWidth={1.6} className="h-[15px]" /> :
-      (type === "encrypted") ?
-        <LockIcon strokeWidth={1.6} className="h-[15px]" /> :
-        <GlobeIcon strokeWidth={1.6} className="h-[15px]" />
+    <FolderIcon strokeWidth={1.6} className="h-[15px]" />
 
   return (
-    <div className="grid grid-cols-[20px_auto_20px] items-center py-2 pr-2 font-light text-sm hover:bg-[#DCE0E8] hover:rounded-md gap-2">
+    <div className="grid grid-cols-[20px_auto_30px] items-center font-light text-sm hover:bg-[#DCE0E8] hover:rounded-md gap-2 h-[32px]">
       {icon}
-      <p className="text-nowrap text-ellipsis overflow-hidden">
+      <p className="max-h-[17px] text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
         {title}
       </p>
       {
@@ -106,11 +111,11 @@ function DocEntry({ title="Untitled", type }:
 
 function Explorer() {
   return (
-    <div className="w-full min-w-[200px] h-full flex flex-col">
-      <Sidebar.Header className="flex flex-row justify-between items-center px-1">
+    <div className="w-full max-h-[calc(100vh-35px)] min-w-[200px] flex flex-col">
+      <Sidebar.Header className="flex flex-row justify-between items-center px-1 min-h-[29px]">
         <div className="flex flex-row items-center gap-1">
           <Button variant="ghost" size="icon">
-            <FolderClosedIcon strokeWidth={1.6} />
+            <FolderIcon strokeWidth={1.6} />
           </Button>
           <p className="text-xs">Documents</p>
           <Button variant="ghost" size="icon">
@@ -118,7 +123,7 @@ function Explorer() {
           </Button>
         </div>
         <div className="flex flex-row">
-          <Button variant="ghost" size="icon" tooltip="Filter & Sort">
+          <Button variant="ghost" size="icon" tooltip="Filter / Sort">
             <ArrowDownWideNarrowIcon strokeWidth={1.6} />
           </Button>
           <Button variant="ghost" size="icon" tooltip="Customize View">
@@ -126,10 +131,10 @@ function Explorer() {
           </Button>
         </div>
       </Sidebar.Header>
-      <div className="w-full flex flex-col px-1 pt-2">
+      <div className="w-full flex flex-col px-1 pt-1 flex-1 overflow-auto scrollbar-hide">
         {
           sampleDocuments.map((obj, i) => (
-            <DocEntry key={i} title={obj.title} type={obj.type} />
+            <Entry key={i} title={obj.title} type={obj.type} />
           ))
         }
       </div>
