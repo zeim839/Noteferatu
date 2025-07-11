@@ -101,7 +101,7 @@ function BufferGroup({ onClose } : BufferGroupProps) {
           (isLeftClosed || isRightClosed) ? null :
             <div
               data-split={split}
-              className="bg-[#ABB0BE] data-[split=vertical]:w-px data-[split=vertical]:hover:w-1 data-[split=horizontal]:h-px data-[split=horizontal]:hover:h-1 data-[split=vertical]:cursor-col-resize data-[split=horizontal]:cursor-row-resize"
+              className="bg-[#ABB0BE] data-[split=vertical]:w-px data-[split=horizontal]:h-px data-[split=vertical]:cursor-col-resize data-[split=horizontal]:cursor-row-resize"
               onMouseDown={handleMouseDown}
             />
         }
