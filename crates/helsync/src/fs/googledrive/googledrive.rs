@@ -409,20 +409,16 @@ mod tests {
         dotenv().ok();
 
         let client_id = env::var("GOOGLEDRIVE_CLIENT_ID")
-            .map_err(|_| anyhow!("missing GOOGLEDRIVE_CLIENT_ID env variable"))
-            .unwrap();
+            .expect("missing GOOGLEDRIVE_CLIENT_ID env variable");
 
         let client_secret = env::var("GOOGLEDRIVE_CLIENT_SECRET")
-            .map_err(|_| anyhow!("missing GOOGLEDRIVE_CLIENT_SECRET env variable"))
-            .unwrap();
+            .expect("missing GOOGLEDRIVE_CLIENT_SECRET env variable");
 
         let redirect_uri = env::var("GOOGLEDRIVE_REDIRECT_URI")
-            .map_err(|_| anyhow!("missing GOOGLEDRIVE_CLIENT_SECRET env variable"))
-            .unwrap();
+            .expect("missing GOOGLEDRIVE_CLIENT_SECRET env variable");
 
         let refresh_token = env::var("GOOGLEDRIVE_REFRESH_TOKEN")
-            .map_err(|_| anyhow!("missing GOOGLEDRIVE_REFRESH_TOKEN env variable"))
-            .unwrap();
+            .expect("missing GOOGLEDRIVE_REFRESH_TOKEN env variable");
 
         let app_config = oauth2::Config::googledrive(
             &client_id, &client_secret, &redirect_uri,

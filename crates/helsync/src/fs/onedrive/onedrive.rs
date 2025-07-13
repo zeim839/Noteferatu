@@ -416,16 +416,13 @@ mod tests {
         dotenv().ok();
 
         let client_id = env::var("ONEDRIVE_CLIENT_ID")
-            .map_err(|_| anyhow!("missing ONEDRIVE_CLIENT_ID env variable"))
-            .unwrap();
+            .expect("missing ONEDRIVE_CLIENT_ID env variable");
 
         let redirect_uri = env::var("ONEDRIVE_REDIRECT_URI")
-            .map_err(|_| anyhow!("missing ONEDRIVE_REDIRECT_URI env variable"))
-            .unwrap();
+            .expect("missing ONEDRIVE_REDIRECT_URI env variable");
 
         let refresh_token = env::var("ONEDRIVE_REFRESH_TOKEN")
-            .map_err(|_| anyhow!("missing ONEDRIVE_REFRESH_TOKEN env variable"))
-            .unwrap();
+            .expect("missing ONEDRIVE_REFRESH_TOKEN env variable");
 
         let app_config = oauth2::Config::onedrive(&client_id, &redirect_uri);
 
