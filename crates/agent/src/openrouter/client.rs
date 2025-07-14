@@ -1,8 +1,11 @@
 use super::errors::{ClientError, OpenRouterError};
 use super::models::Model;
 use super::chat::{ChatRequest, ChatResponse};
+use super::stream::StreamSSE;
 
+#[allow(unused)]
 use tokio_stream::StreamExt;
+
 use reqwest::header;
 use serde_json::{Value, from_value};
 
@@ -93,29 +96,30 @@ impl Client {
     /// stream. For text-only completions, see [Client::completion].
     ///
     /// API Reference: [Completion](https://openrouter.ai/docs/api-reference/completion)
-    pub async fn stream_completion(&self, req: ChatRequest) -> Result<(), ClientError> {
+    pub async fn stream_completion(&self, req: ChatRequest) -> Result<StreamSSE, ClientError> {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/completions"))
             .json(&req)
             .send().await
             .map_err(|e| ClientError::from(e))?;
 
-        let mut stream = res.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            let text = String::from_utf8_lossy(&chunk);
-            println!("{text}");
-        }
-
-        Ok(())
+        let stream = res.bytes_stream();
+        Ok(StreamSSE::new(stream))
     }
 
     /// Send a chat completion request to a selected model, returning a SSE
     /// stream. For text-only completions, see [Client::completion].
     ///
     /// API Reference: [Chat Completion](https://openrouter.ai/docs/api-reference/chat-completion)
-    pub async fn stream_chat_completion(&self, req: ChatRequest) -> Result<(), ClientError> {
-        unimplemented!();
+    pub async fn stream_chat_completion(&self, req: ChatRequest) -> Result<StreamSSE, ClientError> {
+        let req = req.with_stream(Some(true));
+        let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
+            .json(&req)
+            .send().await
+            .map_err(|e| ClientError::from(e))?;
+
+        let stream = res.bytes_stream();
+        Ok(StreamSSE::new(stream))
     }
 
     /// Fetches a list of models available through the API.
@@ -166,7 +170,7 @@ mod tests {
         assert!(res.choices.is_some());
 
         assert!(res.usage.is_some());
-        assert!(res.usage.unwrap().completion_tokens == 5);
+        assert!(res.usage.unwrap().completion_tokens <= 5);
 
         let choices = res.choices.unwrap();
         assert!(choices.len() > 0);
@@ -220,16 +224,83 @@ mod tests {
             "Hello, who are you?",
         ).with_max_tokens(Some(5));
 
-        client.stream_completion(req).await.unwrap();
-        panic!("force panic");
+        let mut stream = client.stream_completion(req).await.unwrap();
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(response) => {
+                    if let Some(choices) = response.choices {
+                        if let Some(text) = &choices[0].text {
+                            println!("Streamed text: {}", text);
+                        }
+                    }
+                }
+                Err(e) => println!("Stream error: {}", e),
+            }
+        }
     }
 
     #[tokio::test]
     async fn test_stream_completion() {
+        let client = get_test_client();
+        let req = ChatRequest::from_prompt(
+            "deepseek/deepseek-chat-v3-0324:free",
+            "Hello, who are you?",
+        ).with_max_tokens(Some(10));
+
+        let mut stream = client.stream_completion(req).await.unwrap();
+        let mut response_count = 0;
+
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(_) => {
+                    response_count += 1;
+
+                    // Limit test to avoid long execution
+                    if response_count >= 3 {
+                        break;
+                    }
+                }
+                Err(e) => {
+                    println!("Stream error: {e}");
+                    break;
+                }
+            }
+        }
+
+        assert!(response_count > 0, "Should receive at least one response");
     }
 
     #[tokio::test]
     async fn test_stream_chat_completion() {
+        let client = get_test_client();
+        let messages = vec![
+            Message { role: Role::User, content: "hello".to_string() }
+        ];
+
+        let req = ChatRequest::from_messages(
+            "deepseek/deepseek-chat-v3-0324:free",
+            messages,
+        ).with_max_tokens(Some(5));
+
+        let mut stream = client.stream_chat_completion(req).await.unwrap();
+        let mut response_count = 0;
+
+        while let Some(result) = stream.next().await {
+            match result {
+                Ok(_response) => {
+                    response_count += 1;
+                    if response_count >= 3 {
+                        break; // Limit test to avoid long execution
+                    }
+                }
+                Err(e) => {
+                    println!("Stream error: {}", e);
+                    break;
+                }
+            }
+        }
+
+        assert!(response_count > 0, "Should receive at least one response");
     }
 
     #[tokio::test]

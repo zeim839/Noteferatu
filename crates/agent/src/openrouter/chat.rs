@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 /// Chat message role.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Role {
     #[serde(rename = "system")]
     System,
@@ -20,7 +20,7 @@ pub enum Role {
 }
 
 /// Chat message.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     pub role: Role,
     pub content: String,
@@ -231,14 +231,14 @@ pub struct UsageChoice {
 }
 
 /// ChatResponse represents a successful chat completion.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChatResponse {
     pub id: Option<String>,
     pub choices: Option<Vec<Choice>>,
     pub usage: Option<Usage>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Choice {
     pub text: Option<String>,
     pub index: Option<i64>,
@@ -248,7 +248,7 @@ pub struct Choice {
 
 /// Reports on the tokens consumed by a [ChatRequest] and its
 /// subsequent [ChatResponse].
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Usage {
     pub prompt_tokens: i64,
     pub completion_tokens: i64,

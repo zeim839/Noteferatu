@@ -44,6 +44,32 @@
 //! object, which contains either a prompt response, message chain, or
 //! finish reason.
 //! ### Streaming
+//! ```no_run
+//! use agent::openrouter::*;
+//! use tokio_stream::StreamExt;
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let client = Client::new("my-openrouter-key");
+//!     let req = ChatRequest::from_prompt(
+//!         "deepseek/deepseek-chat-v3-0324:free",
+//!         "What is the meaning of life?",
+//!     );
+//!
+//!     let mut stream = client.stream_completion(req).await.unwrap();
+//!     while let Some(result) = stream.next().await {
+//!         match result {
+//!             Ok(response) => {
+//!                 // Do something with the response...
+//!             },
+//!             Err(e) => {
+//!                 println!("Stream error: {e}");
+//!                 break;
+//!             },
+//!         }
+//!     }
+//! }
+//! ```
 //! ## Chat Completion Request
 //! ### Non-Streaming
 //! ```no_run
@@ -73,6 +99,37 @@
 //! }
 //! ```
 //! ### Streaming
+//! ```no_run
+//! use agent::openrouter::*;
+//! use tokio_stream::StreamExt;
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     let client = Client::new("my-openrouter-key");
+//!
+//!     let messages = vec![
+//!         Message { role: Role::User, content: "hello".to_string() }
+//!     ];
+//!
+//!     let req = ChatRequest::from_messages(
+//!         "deepseek/deepseek-chat-v3-0324:free",
+//!         messages,
+//!     );
+//!
+//!     let mut stream = client.stream_chat_completion(req).await.unwrap();
+//!     while let Some(result) = stream.next().await {
+//!         match result {
+//!             Ok(response) => {
+//!                 // Do something with the response...
+//!             },
+//!             Err(e) => {
+//!                 println!("Stream error: {e}");
+//!                 break;
+//!             }
+//!         }
+//!     }
+//! }
+//! ```
 
 mod errors;
 pub use errors::*;
