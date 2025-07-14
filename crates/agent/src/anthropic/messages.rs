@@ -61,7 +61,7 @@ pub struct MessageRequest {
     /// 0.0 for analytical / multiple choice, and closer to 1.0 for
     /// creative and generative tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<i64>,
+    temperature: Option<f64>,
 
     /// Configuration for enabling Claude's extended thinking.
     ///
@@ -91,11 +91,11 @@ pub struct MessageRequest {
 
     /// Only sample from the top K options for each subsequent token.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<i64>,
+    pub top_k: Option<f64>,
 
     /// Use nucleus sampling.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<i64>,
+    pub top_p: Option<f64>,
 }
 
 impl MessageRequest {
@@ -139,7 +139,7 @@ impl MessageRequest {
     }
 
     /// Populates the `temperature` field with the given value.
-    pub fn with_temperature(self, temperature: Option<i64>) -> Self {
+    pub fn with_temperature(self, temperature: Option<f64>) -> Self {
         Self { temperature, ..self }
     }
 
@@ -159,12 +159,12 @@ impl MessageRequest {
     }
 
     /// Populates the `top_k` field with the given value.
-    pub fn with_top_k(self, top_k: Option<i64>) -> Self {
+    pub fn with_top_k(self, top_k: Option<f64>) -> Self {
         Self { top_k, ..self }
     }
 
     /// Populates the `top_p` field with the given value.
-    pub fn with_top_p(self, top_p: Option<i64>) -> Self {
+    pub fn with_top_p(self, top_p: Option<f64>) -> Self {
         Self { top_p, ..self }
     }
 }

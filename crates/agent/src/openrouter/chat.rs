@@ -62,7 +62,7 @@ pub struct ChatRequest {
 
     /// Sampling temperature (range: [0, 2]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<i64>,
+    pub temperature: Option<f64>,
 
     /// Seed for deterministic outputs.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -70,23 +70,23 @@ pub struct ChatRequest {
 
     /// Top-p sampling value (range: (0, 1]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<i64>,
+    pub top_p: Option<f64>,
 
     /// Top-k sampling value (range: [1, Infinity)).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_k: Option<i64>,
+    pub top_k: Option<f64>,
 
     /// Frequency penalty (range: [-2, 2]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub frequency_penalty: Option<i64>,
+    pub frequency_penalty: Option<f64>,
 
     /// Presence penalty (range: [-2, 2]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub presence_penalty: Option<i64>,
+    pub presence_penalty: Option<f64>,
 
     /// Repetition penalty (range: (0, 2]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub repetition_penalty: Option<i64>,
+    pub repetition_penalty: Option<f64>,
 
     /// Number of top log probabilities to return.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -94,11 +94,11 @@ pub struct ChatRequest {
 
     /// Minimum probability threshold (range: [0, 1]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub min_p: Option<i64>,
+    pub min_p: Option<f64>,
 
     /// Alternate top sampling parameter (range: [0, 1]).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_a: Option<i64>,
+    pub top_a: Option<f64>,
 
 }
 
@@ -141,7 +141,7 @@ impl ChatRequest {
     }
 
     /// Populates the `temperature` field with the given value.
-    pub fn with_temperature(self, temperature: Option<i64>) -> Self {
+    pub fn with_temperature(self, temperature: Option<f64>) -> Self {
         Self { temperature, ..self }
     }
 
@@ -151,27 +151,27 @@ impl ChatRequest {
     }
 
     /// Populates the `top_p` field with the given value.
-    pub fn with_top_p(self, top_p: Option<i64>) -> Self {
+    pub fn with_top_p(self, top_p: Option<f64>) -> Self {
         Self { top_p, ..self }
     }
 
     /// Populates the `top_k` field with the given value.
-    pub fn with_top_k(self, top_k: Option<i64>) -> Self {
+    pub fn with_top_k(self, top_k: Option<f64>) -> Self {
         Self { top_k, ..self }
     }
 
     /// Populates the `frequency_penalty` field with the given value.
-    pub fn with_frequency_penalty(self, penalty: Option<i64>) -> Self {
+    pub fn with_frequency_penalty(self, penalty: Option<f64>) -> Self {
         Self { frequency_penalty: penalty, ..self }
     }
 
     /// Populates the `presence_penalty` field with the given value.
-    pub fn with_presence_penalty(self, penalty: Option<i64>) -> Self {
+    pub fn with_presence_penalty(self, penalty: Option<f64>) -> Self {
         Self { presence_penalty: penalty, ..self }
     }
 
     /// Populates the `repetition_penalty` field with the given value.
-    pub fn with_repetition_penalty(self, penalty: Option<i64>) -> Self {
+    pub fn with_repetition_penalty(self, penalty: Option<f64>) -> Self {
         Self { repetition_penalty: penalty, ..self }
     }
 
@@ -181,12 +181,12 @@ impl ChatRequest {
     }
 
     /// Populates the `min_p` field with the given value.
-    pub fn with_min_p(self, min_p: Option<i64>) -> Self {
+    pub fn with_min_p(self, min_p: Option<f64>) -> Self {
         Self { min_p, ..self }
     }
 
     /// Populates the `top_a` field with the given value.
-    pub fn with_top_a(self, top_a: Option<i64>) -> Self {
+    pub fn with_top_a(self, top_a: Option<f64>) -> Self {
         Self { top_a, ..self }
     }
 }
