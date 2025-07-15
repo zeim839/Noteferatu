@@ -41,22 +41,15 @@ impl Client {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value = res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
+        let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())
-                .map_err(|e| ClientError::from(e))?;
-
+            let err: OpenAIError = from_value(error.clone())?;
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: ChatResponse = from_value(json)
-            .map_err(|e| ClientError::from(e))?;
-
+        let chat_res: ChatResponse = from_value(json)?;
         Ok(chat_res)
     }
 
@@ -68,8 +61,7 @@ impl Client {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
         let stream = res.bytes_stream();
         Ok(StreamSSE::new(stream))
@@ -80,15 +72,10 @@ impl Client {
     /// API Reference: [Models](https://platform.openai.com/docs/api-reference/models)
     pub async fn list_models(&self) -> Result<Vec<Model>, ClientError> {
         let res = self.0.get(format!("{API_ENDPOINT}/models"))
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value = res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
-        let models: Vec<Model> = from_value(json["data"].clone())
-            .map_err(|e| ClientError::from(e))?;
-
+        let json: Value = res.json().await?;
+        let models: Vec<Model> = from_value(json["data"].clone())?;
         Ok(models)
     }
 }

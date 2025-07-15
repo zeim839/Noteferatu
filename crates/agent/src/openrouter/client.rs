@@ -1,7 +1,7 @@
 use super::errors::{ClientError, OpenRouterError};
-use super::models::Model;
 use super::chat::{ChatRequest, ChatResponse};
 use super::stream::StreamSSE;
+use super::models::Model;
 
 #[allow(unused)]
 use tokio_stream::StreamExt;
@@ -46,22 +46,15 @@ impl Client {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/completions"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value = res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
+        let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenRouterError = from_value(error.clone())
-                .map_err(|e| ClientError::from(e))?;
-
+            let err: OpenRouterError = from_value(error.clone())?;
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: ChatResponse = from_value(json)
-            .map_err(|e| ClientError::from(e))?;
-
+        let chat_res: ChatResponse = from_value(json)?;
         Ok(chat_res)
     }
 
@@ -73,22 +66,15 @@ impl Client {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value = res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
+        let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenRouterError = from_value(error.clone())
-                .map_err(|e| ClientError::from(e))?;
-
+            let err: OpenRouterError = from_value(error.clone())?;
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: ChatResponse = from_value(json)
-            .map_err(|e| ClientError::from(e))?;
-
+        let chat_res: ChatResponse = from_value(json)?;
         Ok(chat_res)
     }
 
@@ -100,8 +86,7 @@ impl Client {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/completions"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
         let stream = res.bytes_stream();
         Ok(StreamSSE::new(stream))
@@ -115,8 +100,7 @@ impl Client {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
         let stream = res.bytes_stream();
         Ok(StreamSSE::new(stream))
@@ -127,15 +111,10 @@ impl Client {
     /// API Reference: [List Available Models](https://openrouter.ai/docs/api-reference/list-available-models)
     pub async fn list_models(&self) -> Result<Vec<Model>, ClientError> {
         let res = self.0.get(format!("{API_ENDPOINT}/models"))
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value = res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
-        let models: Vec<Model> = from_value(json["data"].clone())
-            .map_err(|e| ClientError::from(e))?;
-
+        let json: Value = res.json().await?;
+        let models: Vec<Model> = from_value(json["data"].clone())?;
         Ok(models)
     }
 }
@@ -217,29 +196,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_streaming() {
-        let client = get_test_client();
-        let req = ChatRequest::from_prompt(
-            "deepseek/deepseek-chat-v3-0324:free",
-            "Hello, who are you?",
-        ).with_max_tokens(Some(5));
-
-        let mut stream = client.stream_completion(req).await.unwrap();
-        while let Some(result) = stream.next().await {
-            match result {
-                Ok(response) => {
-                    if let Some(choices) = response.choices {
-                        if let Some(text) = &choices[0].text {
-                            println!("Streamed text: {}", text);
-                        }
-                    }
-                }
-                Err(e) => println!("Stream error: {}", e),
-            }
-        }
-    }
-
-    #[tokio::test]
     async fn test_stream_completion() {
         let client = get_test_client();
         let req = ChatRequest::from_prompt(
@@ -249,7 +205,6 @@ mod tests {
 
         let mut stream = client.stream_completion(req).await.unwrap();
         let mut response_count = 0;
-
         while let Some(result) = stream.next().await {
             match result {
                 Ok(_) => {
@@ -259,14 +214,10 @@ mod tests {
                     if response_count >= 3 {
                         break;
                     }
-                }
-                Err(e) => {
-                    println!("Stream error: {e}");
-                    break;
-                }
+                },
+                Err(e) => panic!("stream error: {e}"),
             }
         }
-
         assert!(response_count > 0, "Should receive at least one response");
     }
 

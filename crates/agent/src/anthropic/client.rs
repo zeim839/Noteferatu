@@ -43,22 +43,15 @@ impl Client {
         let req = req.with_stream(false);
         let res = self.0.post(format!("{API_ENDPOINT}/messages"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value =  res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
+        let json: Value =  res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: AnthropicError = from_value(error.clone())
-                .map_err(|e| ClientError::from(e))?;
-
+            let err: AnthropicError = from_value(error.clone())?;
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: MessageResponse = from_value(json)
-            .map_err(|e| ClientError::from(e))?;
-
+        let chat_res: MessageResponse = from_value(json)?;
         Ok(chat_res)
     }
 
@@ -69,8 +62,7 @@ impl Client {
         let req = req.with_stream(true);
         let res = self.0.post(format!("{API_ENDPOINT}/messages"))
             .json(&req)
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
         let stream = res.bytes_stream();
         Ok(StreamSSE::new(stream))
@@ -81,15 +73,10 @@ impl Client {
     /// API Reference: [List Models](https://docs.anthropic.com/en/api/models-list)
     pub async fn list_models(&self) -> Result<Vec<Model>, ClientError> {
         let res = self.0.get(format!("{API_ENDPOINT}/models?limit=1000"))
-            .send().await
-            .map_err(|e| ClientError::from(e))?;
+            .send().await?;
 
-        let json: Value = res.json()
-            .await.map_err(|e| ClientError::from(e))?;
-
-        let models: Vec<Model> = from_value(json["data"].clone())
-            .map_err(|e| ClientError::from(e))?;
-
+        let json: Value = res.json().await?;
+        let models: Vec<Model> = from_value(json["data"].clone())?;
         Ok(models)
     }
 }
