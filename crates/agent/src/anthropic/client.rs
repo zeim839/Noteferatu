@@ -42,8 +42,7 @@ impl Client {
     pub async fn messages(&self, req: MessageRequest) -> Result<MessageResponse, ClientError> {
         let req = req.with_stream(false);
         let res = self.0.post(format!("{API_ENDPOINT}/messages"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
         let json: Value =  res.json().await?;
         if let Some(error) = json.get("error") {
@@ -51,8 +50,7 @@ impl Client {
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: MessageResponse = from_value(json)?;
-        Ok(chat_res)
+        Ok(from_value(json)?)
     }
 
     /// Send a message request and stream the response.
@@ -61,11 +59,9 @@ impl Client {
     pub async fn stream_messages(&self, req: MessageRequest) -> Result<StreamSSE, ClientError> {
         let req = req.with_stream(true);
         let res = self.0.post(format!("{API_ENDPOINT}/messages"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
-        let stream = res.bytes_stream();
-        Ok(StreamSSE::new(stream))
+        Ok(StreamSSE::new(res.bytes_stream()))
     }
 
     /// Fetches a list of models available through the API.
@@ -76,8 +72,7 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
-        let models: Vec<Model> = from_value(json["data"].clone())?;
-        Ok(models)
+        Ok(from_value(json["data"].clone())?)
     }
 }
 

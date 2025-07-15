@@ -39,8 +39,7 @@ impl Client {
     /// API Reference: [models.generateContent](https://ai.google.dev/api/generate-content#method:-models.generatecontent)
     pub async fn completions(&self, model: &str, req: ChatRequest) -> Result<ChatResponse, ClientError> {
         let res = self.0.post(format!("{API_ENDPOINT}/models/{model}:generateContent"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
@@ -48,8 +47,7 @@ impl Client {
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: ChatResponse = from_value(json)?;
-        Ok(chat_res)
+        Ok(from_value(json)?)
     }
 
     /// Generates a streamed response from the model given an input
@@ -58,11 +56,9 @@ impl Client {
     /// API Reference: [models.streamGenerateContent](https://ai.google.dev/api/generate-content#method:-models.streamgeneratecontent)
     pub async fn stream_completions(&self, model: &str, req: ChatRequest) -> Result<StreamSSE, ClientError> {
         let res = self.0.post(format!("{API_ENDPOINT}/models/{model}:streamGenerateContent"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
-        let bytes_stream = res.bytes_stream();
-        Ok(StreamSSE::new(bytes_stream))
+        Ok(StreamSSE::new(res.bytes_stream()))
     }
 
     /// Lists the Models available through the Gemini API.
@@ -73,15 +69,12 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
-        let models: Vec<Model> = from_value(json["models"].clone())?;
-        Ok(models)
+        Ok(from_value(json["models"].clone())?)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use std::env;
     use dotenv::dotenv;

@@ -7,7 +7,7 @@ use std::pin::Pin;
 use bytes::Bytes;
 use std::task::{Context, Poll};
 
-/// Implements Server-Sent Events (SSE) streaming for OpenRouter
+/// Implements Server-Sent Events (SSE) streaming for OpenAI
 /// streaming completions.
 pub struct StreamSSE {
     inner: Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,

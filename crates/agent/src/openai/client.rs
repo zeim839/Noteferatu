@@ -40,8 +40,7 @@ impl Client {
     pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, ClientError> {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
@@ -49,22 +48,19 @@ impl Client {
             return Err(ClientError::Api(err));
         }
 
-        let chat_res: ChatResponse = from_value(json)?;
-        Ok(chat_res)
+        Ok(from_value(json)?)
     }
 
     /// Send a completion request to a selected model, returning a SSE
-    /// stream. For text-only completions, see [Client::completion].
+    /// stream. For non-streaming completions, see [Client::completion].
     ///
     /// API Reference: [Stream Chat Completions](https://platform.openai.com/docs/api-reference/chat-streaming)
     pub async fn stream_completion(&self, req: ChatRequest) -> Result<StreamSSE, ClientError> {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
-        let stream = res.bytes_stream();
-        Ok(StreamSSE::new(stream))
+        Ok(StreamSSE::new(res.bytes_stream()))
     }
 
     /// List and describe the various models available in the API.
@@ -75,14 +71,12 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
-        let models: Vec<Model> = from_value(json["data"].clone())?;
-        Ok(models)
+        Ok(from_value(json["data"].clone())?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use std::env;
     use dotenv::dotenv;

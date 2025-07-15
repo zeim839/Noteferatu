@@ -76,7 +76,7 @@ pub struct MessageStop {
     pub kind: String,
 }
 
-/// Implements Server-Sent Events (SSE) streaming for OpenRouter
+/// Implements Server-Sent Events (SSE) streaming for Anthropic
 /// streaming completions.
 pub struct StreamSSE {
     inner: Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
