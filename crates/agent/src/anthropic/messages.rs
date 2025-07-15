@@ -61,7 +61,7 @@ pub struct MessageRequest {
     /// 0.0 for analytical / multiple choice, and closer to 1.0 for
     /// creative and generative tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<f64>,
+    pub temperature: Option<f64>,
 
     /// Configuration for enabling Claude's extended thinking.
     ///
@@ -123,47 +123,47 @@ impl MessageRequest {
         req
     }
 
-    /// Populates the `max_tokens` field with the given value.
+    /// Populates the [Self::max_tokens] field with the given value.
     pub fn with_max_tokens(self, max_tokens: i64) -> Self {
         Self { max_tokens, ..self }
     }
 
-    /// Populates the `stream` field with the given value.
+    /// Populates the [Self::stream] field with the given value.
     pub fn with_stream(self, stream: bool) -> Self {
         Self { stream, ..self }
     }
 
-    /// Populates the `reasoning` field with the given value.
+    /// Populates the [Self::system] field with the given value.
     pub fn with_system(self, system: Option<String>) -> Self {
         Self { system, ..self }
     }
 
-    /// Populates the `temperature` field with the given value.
+    /// Populates the [Self::temperature] field with the given value.
     pub fn with_temperature(self, temperature: Option<f64>) -> Self {
         Self { temperature, ..self }
     }
 
-    /// Populates the `thinking` field with the given value.
+    /// Populates the [Self::thinking] field with the given value.
     pub fn with_thinking(self, thinking: Option<Thinking>) -> Self {
         Self { thinking, ..self }
     }
 
-    /// Populates the `tool_choice` field with the given value.
+    /// Populates the [Self::tool_choice] field with the given value.
     pub fn with_tool_choice(self, tool_choice: Option<ToolChoice>) -> Self {
         Self { tool_choice, ..self }
     }
 
-    /// Populates the `tools` field with the given value.
+    /// Populates the [Self::tools] field with the given value.
     pub fn with_tools(self, tools: Option<Vec<ToolDefinition>>) -> Self {
         Self { tools, ..self }
     }
 
-    /// Populates the `top_k` field with the given value.
+    /// Populates the [Self::top_k] field with the given value.
     pub fn with_top_k(self, top_k: Option<f64>) -> Self {
         Self { top_k, ..self }
     }
 
-    /// Populates the `top_p` field with the given value.
+    /// Populates the [Self::top_p] field with the given value.
     pub fn with_top_p(self, top_p: Option<f64>) -> Self {
         Self { top_p, ..self }
     }

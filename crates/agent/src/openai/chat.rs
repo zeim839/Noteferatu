@@ -211,67 +211,67 @@ impl ChatRequest {
         req
     }
 
-    /// Populates the `frequency_penalty` field with the given value.
+    /// Populates the [Self::frequency_penalty] field with the given value.
     pub fn with_frequency_penaly(self, frequency_penalty: Option<i64>) -> Self {
         Self { frequency_penalty, ..self }
     }
 
-    /// Populates the `max_completion_tokens` field with the given value.
+    /// Populates the [Self::max_completion_tokens] field with the given value.
     pub fn with_max_completion_tokens(self, max_completion_tokens: Option<i64>) -> Self {
         Self { max_completion_tokens, ..self }
     }
 
-    /// Populates the `n` field with the given value.
+    /// Populates the [Self::n] field with the given value.
     pub fn with_n(self, n: Option<i64>) -> Self {
         Self { n, ..self }
     }
 
-    /// Populates the `parallel_tool_calls` field with the given value.
+    /// Populates the [Self::parallel_tool_calls] field with the given value.
     pub fn with_parallel_tool_calls(self, parallel_tool_calls: Option<bool>) -> Self {
         Self { parallel_tool_calls, ..self }
     }
 
-    /// Populates the `presence_penalty` field with the given value.
+    /// Populates the [Self::presence_penalty] field with the given value.
     pub fn with_presence_penalty(self, presence_penalty: Option<i64>) -> Self {
         Self { presence_penalty, ..self }
     }
 
-    /// Populates the `reasoning_effort` field with the given value.
+    /// Populates the [Self::reasoning_effort] field with the given value.
     pub fn with_reasoning_effort(self, reasoning_effort: Option<ReasoningEffort>) -> Self {
         Self { reasoning_effort, ..self }
     }
 
-    /// Populates the `service_tier` field with the given value.
+    /// Populates the [Self::service_tier] field with the given value.
     pub fn with_service_tier(self, service_tier: Option<ServiceTier>) -> Self {
         Self { service_tier, ..self }
     }
 
-    /// Populates the `stream` field with the given value.
+    /// Populates the [Self::stream] field with the given value.
     pub fn with_stream(self, stream: Option<bool>) -> Self {
         Self { stream, ..self }
     }
 
-    /// Populates the `stream_options` field with the given value.
+    /// Populates the [Self::stream_options] field with the given value.
     pub fn with_stream_options(self, stream_options: Option<StreamOptions>) -> Self {
         Self { stream_options, ..self }
     }
 
-    /// Populates the `temperature` field with the given value.
+    /// Populates the [Self::temperature] field with the given value.
     pub fn with_temperature(self, temperature: Option<i64>) -> Self {
         Self { temperature, ..self }
     }
 
-    /// Populates the `tools` field with the given value.
+    /// Populates the [Self::tools] field with the given value.
     pub fn with_tools(self, tools: Option<Vec<ToolDefinition>>) -> Self {
         Self { tools, ..self }
     }
 
-    /// Populates the `top_p` field with the given value.
+    /// Populates the [Self::top_p] field with the given value.
     pub fn with_top_p(self, top_p: Option<i64>) -> Self {
         Self { top_p, ..self }
     }
 
-    /// Populates the `web_search_options` field with the given value.
+    /// Populates the [Self::web_search_options] field with the given value.
     pub fn with_web_search_options(self, web_search_options: Option<WebSearchOptions>) -> Self {
         Self { web_search_options, ..self }
     }

@@ -120,72 +120,72 @@ impl ChatRequest {
         req
     }
 
-    /// Populates the `Reasoning` field with the given value.
+    /// Populates the [Self::reasoning] field with the given value.
     pub fn with_reasoning(self, reasoning: Option<Reasoning>) -> Self {
         Self { reasoning, ..self}
     }
 
-    /// Populates the `usage` field with the given value.
+    /// Populates the [Self::usage] field with the given value.
     pub fn with_usage(self, usage: bool) -> Self {
         Self { usage: Some(UsageChoice { include: usage }), ..self }
     }
 
-    /// Populates the `stream` field with the given value.
+    /// Populates the [Self::stream] field with the given value.
     pub fn with_stream(self, stream: Option<bool>) -> Self {
         Self { stream, ..self }
     }
 
-    /// Populates the `max_tokens` field with the given value.
+    /// Populates the [Self::max_tokens] field with the given value.
     pub fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
         Self { max_tokens, ..self }
     }
 
-    /// Populates the `temperature` field with the given value.
+    /// Populates the [Self::temperature] field with the given value.
     pub fn with_temperature(self, temperature: Option<f64>) -> Self {
         Self { temperature, ..self }
     }
 
-    /// Populates the `seed` field with the given value.
+    /// Populates the [Self::seed] field with the given value.
     pub fn with_seed(self, seed: Option<i64>) -> Self {
         Self { seed, ..self }
     }
 
-    /// Populates the `top_p` field with the given value.
+    /// Populates the [Self::top_p] field with the given value.
     pub fn with_top_p(self, top_p: Option<f64>) -> Self {
         Self { top_p, ..self }
     }
 
-    /// Populates the `top_k` field with the given value.
+    /// Populates the [Self::top_k] field with the given value.
     pub fn with_top_k(self, top_k: Option<f64>) -> Self {
         Self { top_k, ..self }
     }
 
-    /// Populates the `frequency_penalty` field with the given value.
+    /// Populates the [Self::frequency_penalty] field with the given value.
     pub fn with_frequency_penalty(self, penalty: Option<f64>) -> Self {
         Self { frequency_penalty: penalty, ..self }
     }
 
-    /// Populates the `presence_penalty` field with the given value.
+    /// Populates the [Self::presence_penalty] field with the given value.
     pub fn with_presence_penalty(self, penalty: Option<f64>) -> Self {
         Self { presence_penalty: penalty, ..self }
     }
 
-    /// Populates the `repetition_penalty` field with the given value.
+    /// Populates the [Self::repetition_penalty] field with the given value.
     pub fn with_repetition_penalty(self, penalty: Option<f64>) -> Self {
         Self { repetition_penalty: penalty, ..self }
     }
 
-    /// Populates the `top_logprobs` field with the given value.
+    /// Populates the [Self::top_logprobs] field with the given value.
     pub fn with_top_logprobs(self, top_logprobs: Option<i64>) -> Self {
         Self { top_logprobs, ..self }
     }
 
-    /// Populates the `min_p` field with the given value.
+    /// Populates the [Self::min_p] field with the given value.
     pub fn with_min_p(self, min_p: Option<f64>) -> Self {
         Self { min_p, ..self }
     }
 
-    /// Populates the `top_a` field with the given value.
+    /// Populates the [Self::top_a] field with the given value.
     pub fn with_top_a(self, top_a: Option<f64>) -> Self {
         Self { top_a, ..self }
     }
