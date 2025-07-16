@@ -39,7 +39,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalboldupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalboldupright.ttf');
     font-weight: bold;
     font-style: normal;
     font-display: swap;
@@ -47,7 +47,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalbolditalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalbolditalic.ttf');
     font-weight: bold;
     font-style: italic;
     font-display: swap;
@@ -55,7 +55,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalextrabolditalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalextrabolditalic.ttf');
     font-weight: bolder;
     font-style: italic;
     font-display: swap;
@@ -63,7 +63,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalextraboldupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalextraboldupright.ttf');
     font-weight: bolder;
     font-style: normal;
     font-display: swap;
@@ -71,7 +71,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normallightitalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normallightitalic.ttf');
     font-weight: light;
     font-style: italic;
     font-display: swap;
@@ -79,7 +79,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normallightupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normallightupright.ttf');
     font-weight: light;
     font-style: normal;
     font-display: swap;
@@ -87,7 +87,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalmediumitalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalmediumitalic.ttf');
     font-weight: medium;
     font-style: italic;
     font-display: swap;
@@ -95,7 +95,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalmediumupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalmediumupright.ttf');
     font-weight: medium;
     font-style: normal;
     font-display: swap;
@@ -103,7 +103,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalregularitalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalregularitalic.ttf');
     font-weight: regular;
     font-style: italic;
     font-display: swap;
@@ -111,7 +111,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalregularupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalregularupright.ttf');
     font-weight: regular;
     font-style: normal;
     font-display: swap;
@@ -119,7 +119,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemibolditalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalsemibolditalic.ttf');
     font-weight: 600;
     font-style: italic;
     font-display: swap;
@@ -127,7 +127,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemiboldupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalsemiboldupright.ttf');
     font-weight: 600;
     font-style: normal;
     font-display: swap;
@@ -135,7 +135,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemilightitalic.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalsemilightitalic.ttf');
     font-weight: 200;
     font-style: italic;
     font-display: swap;
@@ -143,7 +143,7 @@ body {
 
 @font-face {
     font-family: 'Iosevka Comfy';
-    src: url('/fonts/iosevka-comfy-normalsemilightupright.ttf');
+    src: url('./fonts/iosevka-comfy/iosevka-comfy-normalsemilightupright.ttf');
     font-weight: 200;
     font-style: normal;
     font-display: swap;
