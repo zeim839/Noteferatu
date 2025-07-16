@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 
 import { Titlebar } from "./titlebar"
 import { TooltipProvider } from "@/components/core/tooltip"
-import { useWindowSize } from "@/hooks/windowsize"
+import { useWindowSize } from "@/lib/hooks/windowsize"
 import { Sidebar } from "./sidebar"
 
 type WindowContextProps = {
