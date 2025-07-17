@@ -21,9 +21,8 @@ impl Client {
         Self(reqwest::Client::new())
     }
 
-    /// Send a completion request to a selected model. For streaming
-    /// responses, see [Client::stream_completion].
-    pub async fn completions(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
+    /// Send a completion request to a selected model.
+    pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat"))
             .json(&req).send().await?;
@@ -37,8 +36,7 @@ impl Client {
         Ok(from_value(json)?)
     }
 
-    /// Send a completion request to a selected model, returning a SSE
-    /// stream. For non-streaming completions, see [Client::completion].
+    /// Send a streaming completion request to a selected model.
     pub async fn stream_completion(&self, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat"))
@@ -81,7 +79,7 @@ mod tests {
     #[tokio::test]
     async fn test_completions() {
         let req = ChatRequest::from_prompt("gemma3n:e4b", "hi");
-        let res = Client::new().completions(req).await.unwrap();
+        let res = Client::new().completion(req).await.unwrap();
         assert!(res.message.content.is_some());
     }
 
@@ -131,7 +129,7 @@ mod tests {
                 },
             }]));
 
-        let res = Client::new().completions(req).await.unwrap();
+        let res = Client::new().completion(req).await.unwrap();
         assert!(res.message.tool_calls.is_some());
 
         let tool_calls = res.message.tool_calls.as_ref().unwrap();
