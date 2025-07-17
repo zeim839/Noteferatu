@@ -2,36 +2,31 @@ use serde::{Serialize, Deserialize};
 
 /// Chat message role.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Role {
 
     /// Developer-provided instructions that the model should follow,
     /// regardless of messages sent by the user. With o1 models and
     /// newer, `developer` messages replace the previous system
     /// messages.
-    #[serde(rename = "developer")]
     Developer,
 
     /// Developer-provided instructions that the model should follow,
     /// regardless of messages sent by the user. With o1 models and
     /// newer, use `developer` messages for this purpose instead.
-    #[serde(rename = "system")]
     System,
 
-    /// Messages sent by an end user, containing prompts or additional
-    /// context information.
-    #[serde(rename = "user")]
+    /// Messages sent by an end user.
     User,
 
     /// Messages sent by the model in response to user messages.
-    #[serde(rename = "assistant")]
     Assistant,
 
     /// Tool call messages.
-    #[serde(rename = "tool")]
     Tool,
-
 }
 
+/// Describes an instance of an LLM tool call.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToolCall {
 
@@ -48,6 +43,7 @@ pub struct ToolCall {
     pub function: FunctionCall,
 }
 
+/// Describes the function called by a an associated [ToolCall].
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FunctionCall {
 
@@ -71,7 +67,7 @@ pub struct Message {
     pub role: Option<Role>,
 
     /// The contents of the message.
-    pub content: Option<String>,
+    pub content: Option<Content>,
 
     /// Tool call that this message is responding to.
     ///
@@ -91,6 +87,49 @@ pub struct Message {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ToolCall>>,
 
+}
+
+/// Describes the possible response types of a [Message].
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum Content {
+    Text(String),
+    Content(Vec<ContentData>),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ContentKind {
+    #[serde(rename = "input_text")]
+    InputText,
+    #[serde(rename = "input_file")]
+    InputFile,
+    #[serde(rename = "text")]
+    Text,
+    #[serde(rename = "image_url")]
+    ImageUrl,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ContentData {
+
+    #[serde(rename = "type")]
+    pub kind: String,
+
+    /// A basic text response.
+    pub text: Option<String>,
+
+    /// URL to an image to be embedded as context.
+    pub image_url: Option<String>,
+
+    /// URL to an file/document to be embedded as context.
+    pub file_url: Option<String>,
+
+    /// Name of the file whose data is being uploaded. Associated file
+    /// data is sent as a base64 in the [Self::file_data] field.
+    pub filename: Option<String>,
+
+    /// Base64 encoded file data to add as context.
+    pub file_data: Option<String>,
 }
 
 /// ChatRequest represents a chat completion request.
@@ -185,6 +224,10 @@ pub struct ChatRequest {
     /// response.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub web_search_options: Option<WebSearchOptions>,
+
+    /// Maximum number of tokens (range: [1, context_length)).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_tokens: Option<i64>,
 }
 
 impl ChatRequest {
@@ -195,7 +238,7 @@ impl ChatRequest {
         req.model = model.to_string();
         req.messages = vec![Message {
             role: Some(Role::User),
-            content: Some(prompt.to_string()),
+            content: Some(Content::Text(prompt.to_string())),
             tool_call_id: None,
             refusal: None,
             tool_calls: None,
@@ -249,6 +292,11 @@ impl ChatRequest {
     /// Populates the [Self::stream] field with the given value.
     pub fn with_stream(self, stream: Option<bool>) -> Self {
         Self { stream, ..self }
+    }
+
+    /// Populates the [Self::max_tokens] field with the given value.
+    pub fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
+        Self { max_tokens, ..self }
     }
 
     /// Populates the [Self::stream_options] field with the given value.
@@ -431,7 +479,7 @@ pub struct Choice {
 }
 
 /// The reason the model stopped generating tokens.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum FinishReason {
 
     /// `stop` if the model hit a natural stop point or a provided

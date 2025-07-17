@@ -1,11 +1,12 @@
-use super::chat::{ChatRequest, ChatResponse};
-use super::errors::{ClientError, OllamaError};
-use super::stream::StreamSSE;
+use crate::error::Error as E;
 use super::models::Model;
+use super::chat::*;
+use crate::SSE;
 
-#[allow(unused)]
-use tokio_stream::StreamExt;
 use serde_json::{from_value, Value};
+
+/// Alias for the Ollama error type.
+pub type Error = E<String>;
 
 /// Ollama API endpoint.
 const API_ENDPOINT: &str = "http://localhost:11434/api";
@@ -22,15 +23,15 @@ impl Client {
 
     /// Send a completion request to a selected model. For streaming
     /// responses, see [Client::stream_completion].
-    pub async fn completions(&self, req: ChatRequest) -> Result<ChatResponse, ClientError> {
+    pub async fn completions(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat"))
             .json(&req).send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OllamaError = from_value(error.clone())?;
-            return Err(ClientError::Api(err));
+            let err: String = from_value(error.clone())?;
+            return Err(crate::Error::Api(err));
         }
 
         Ok(from_value(json)?)
@@ -38,28 +39,44 @@ impl Client {
 
     /// Send a completion request to a selected model, returning a SSE
     /// stream. For non-streaming completions, see [Client::completion].
-    pub async fn stream_completion(&self, req: ChatRequest) -> Result<StreamSSE, ClientError> {
+    pub async fn stream_completion(&self, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat"))
             .json(&req).send().await?;
 
-        Ok(StreamSSE::new(res.bytes_stream()))
+        Ok(SSE::new(Box::new(Self::parse_event), res.bytes_stream()))
     }
 
     /// List available models.
-    pub async fn list_models(&self) -> Result<Vec<Model>, ClientError> {
+    pub async fn list_models(&self) -> Result<Vec<Model>, Error> {
         let res = self.0.get(format!("{API_ENDPOINT}/tags"))
             .send().await?;
 
         let json: Value = res.json().await?;
         Ok(from_value(json["models"].clone())?)
     }
+
+    /// Parses an Ollama SSE event.
+    fn parse_event(buffer: &mut String) -> Option<ChatResponse> {
+        while let Some(newline_pos) = buffer.find("\n") {
+            let event_block = buffer[..newline_pos].to_string();
+            buffer.drain(..=newline_pos);
+            for line in event_block.lines() {
+                match serde_json::from_str::<ChatResponse>(line.trim()) {
+                    Ok(response) => return Some(response),
+                    Err(_) => return None,
+                }
+            }
+        }
+        None
+    }
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
+    use super::FunctionDefinition;
+    use super::ToolDefinition;
 
     #[tokio::test]
     async fn test_completions() {
@@ -73,23 +90,52 @@ mod tests {
         let req = ChatRequest::from_prompt("gemma3n:e4b", "hi");
         let mut stream = Client::new().stream_completion(req).await.unwrap();
         let mut response_count = 0;
-        while let Some(result) = stream.next().await {
-            match result {
-                Ok(_) => {
+        let mut has_text = false;
+        while let Some(event) = stream.next::<String>().await {
+            match event {
+                Ok(data) => {
+                    if data.message.content.is_some() {
+                        has_text = true;
+                    }
                     response_count += 1;
-                    if response_count >= 3 {
+                    if has_text && response_count > 3 {
                         break;
                     }
                 },
                 Err(e) => panic!("stream error: {e}"),
             }
         }
-        assert!(response_count > 0, "Should receive at least one response");
+        assert!(has_text);
+        assert!(response_count > 0);
     }
 
     #[tokio::test]
     async fn test_list_models() {
         let models = Client::new().list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_tool_call() {
+        let req = ChatRequest::from_prompt("qwen3:0.6b", "what's the current weather like?")
+            .with_tools(Some(vec![ToolDefinition {
+                kind: Some("function".to_string()),
+                function: FunctionDefinition {
+                    name: "get_current_weather".to_string(),
+                    description: Some("retrieves the current weather".to_string()),
+                    parameters: Some(
+                        serde_json::from_str("{\"type\":\"object\",\"properties\":{}}")
+                            .unwrap()
+                    ),
+                    strict: None,
+                },
+            }]));
+
+        let res = Client::new().completions(req).await.unwrap();
+        assert!(res.message.tool_calls.is_some());
+
+        let tool_calls = res.message.tool_calls.as_ref().unwrap();
+        assert!(!tool_calls.is_empty());
+        assert_eq!(tool_calls[0].function.name, "get_current_weather");
     }
 }

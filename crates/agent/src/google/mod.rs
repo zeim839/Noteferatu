@@ -63,11 +63,5 @@ pub use models::*;
 mod client;
 pub use client::*;
 
-mod errors;
-pub use errors::*;
-
 mod chat;
 pub use chat::*;
-
-mod stream;
-pub use stream::*;

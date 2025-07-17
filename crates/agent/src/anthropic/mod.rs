@@ -79,11 +79,5 @@ pub use client::*;
 mod models;
 pub use models::*;
 
-mod errors;
-pub use errors::*;
-
 mod messages;
 pub use messages::*;
-
-mod stream;
-pub use stream::*;

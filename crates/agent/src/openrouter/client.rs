@@ -1,10 +1,8 @@
-use super::errors::{ClientError, OpenRouterError};
-use super::chat::{ChatRequest, ChatResponse};
-use super::stream::StreamSSE;
+use crate::openai::{ChatRequest, ChatResponse};
+use super::error::{Error, OpenRouterError};
+use crate::openai::Client as OAI;
 use super::models::Model;
-
-#[allow(unused)]
-use tokio_stream::StreamExt;
+use crate::sse::SSE;
 
 use reqwest::header;
 use serde_json::{Value, from_value};
@@ -38,78 +36,43 @@ impl Client {
         Self(client)
     }
 
-    /// Send a completion request to a selected model. For streaming
-    /// responses, see [Client::stream_completion].
-    ///
-    /// API Reference: [Completion](https://openrouter.ai/docs/api-reference/completion)
-    pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, ClientError> {
-        let req = req.with_stream(Some(false));
-        let res = self.0.post(format!("{API_ENDPOINT}/completions"))
-            .json(&req)
-            .send().await?;
-
-        let json: Value = res.json().await?;
-        if let Some(error) = json.get("error") {
-            let err: OpenRouterError = from_value(error.clone())?;
-            return Err(ClientError::Api(err));
-        }
-
-        let chat_res: ChatResponse = from_value(json)?;
-        Ok(chat_res)
-    }
-
-    /// Send a chat completion request to a selected model. For streaming
-    /// responses, see [Client::stream_chat_completion].
+    /// Send a chat completion request to a selected model.
     ///
     /// API Reference: [Chat Completion](https://openrouter.ai/docs/api-reference/chat-completion)
-    pub async fn chat_completion(&self, req: ChatRequest) -> Result<ChatResponse, ClientError> {
+    pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req)
             .send().await?;
 
         let json: Value = res.json().await?;
+        println!("{json}");
+
         if let Some(error) = json.get("error") {
             let err: OpenRouterError = from_value(error.clone())?;
-            return Err(ClientError::Api(err));
+            return Err(crate::error::Error::Api(err));
         }
 
         let chat_res: ChatResponse = from_value(json)?;
         Ok(chat_res)
     }
 
-    /// Send a completion request to a selected model, returning a SSE
-    /// stream. For text-only completions, see [Client::completion].
-    ///
-    /// API Reference: [Completion](https://openrouter.ai/docs/api-reference/completion)
-    pub async fn stream_completion(&self, req: ChatRequest) -> Result<StreamSSE, ClientError> {
-        let req = req.with_stream(Some(true));
-        let res = self.0.post(format!("{API_ENDPOINT}/completions"))
-            .json(&req)
-            .send().await?;
-
-        let stream = res.bytes_stream();
-        Ok(StreamSSE::new(stream))
-    }
-
-    /// Send a chat completion request to a selected model, returning a SSE
-    /// stream. For text-only completions, see [Client::completion].
+    /// Send a streaming chat completion request to a selected model.
     ///
     /// API Reference: [Chat Completion](https://openrouter.ai/docs/api-reference/chat-completion)
-    pub async fn stream_chat_completion(&self, req: ChatRequest) -> Result<StreamSSE, ClientError> {
+    pub async fn stream_completion(&self, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req)
             .send().await?;
 
-        let stream = res.bytes_stream();
-        Ok(StreamSSE::new(stream))
+        Ok(SSE::new(Box::new(OAI::parse_event), res.bytes_stream()))
     }
 
-    /// Fetches a list of models available through the API.
+    /// Fetches a list of models available via the API.
     ///
     /// API Reference: [List Available Models](https://openrouter.ai/docs/api-reference/list-available-models)
-    pub async fn list_models(&self) -> Result<Vec<Model>, ClientError> {
+    pub async fn list_models(&self) -> Result<Vec<Model>, Error> {
         let res = self.0.get(format!("{API_ENDPOINT}/models"))
             .send().await?;
 
@@ -121,12 +84,12 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
-    use super::super::chat::*;
-
     use std::env;
     use dotenv::dotenv;
+    use crate::openai;
+
+    const TEST_MODEL: &str = "deepseek/deepseek-chat-v3-0324:free";
 
     fn get_test_client() -> Client {
         dotenv().ok();
@@ -139,45 +102,15 @@ mod tests {
     #[tokio::test]
     async fn test_completion() {
         let client = get_test_client();
-        let req = ChatRequest::from_prompt(
-            "deepseek/deepseek-chat-v3-0324:free",
-            "Hello, who are you?",
-        ).with_max_tokens(Some(5));
+        let req = ChatRequest::from_prompt(TEST_MODEL, "hi")
+            .with_max_tokens(Some(5));
 
         let res = client.completion(req).await.unwrap();
-        assert!(res.id.is_some());
-        assert!(res.choices.is_some());
-
-        assert!(res.usage.is_some());
-        assert!(res.usage.unwrap().completion_tokens <= 5);
-
-        let choices = res.choices.unwrap();
-        assert!(choices.len() > 0);
-        assert!(choices[0].text.is_some());
-    }
-
-    #[tokio::test]
-    async fn test_chat_completion() {
-        let client = get_test_client();
-        let messages = vec![
-            Message { role: Role::User, content: "hello".to_string() }
-        ];
-
-        let req = ChatRequest::from_messages(
-            "deepseek/deepseek-chat-v3-0324:free",
-            messages,
-        ).with_max_tokens(Some(5));
-
-        let res = client.chat_completion(req).await.unwrap();
-        assert!(res.id.is_some());
-        assert!(res.choices.is_some());
+        assert!(res.choices.len() > 0);
+        assert!(res.choices[0].message.is_some());
 
         assert!(res.usage.is_some());
         assert!(res.usage.unwrap().completion_tokens == 5);
-
-        let choices = res.choices.unwrap();
-        assert!(choices.len() > 0);
-        assert!(choices[0].message.is_some());
     }
 
     #[tokio::test]
@@ -187,7 +120,7 @@ mod tests {
         let res = client.completion(req).await;
         assert!(res.is_err());
         if let Err(err) = res {
-            if let ClientError::Api(err) = err {
+            if let Error::Api(err) = err {
                 assert!(err.code == 400);
                 return;
             }
@@ -198,19 +131,15 @@ mod tests {
     #[tokio::test]
     async fn test_stream_completion() {
         let client = get_test_client();
-        let req = ChatRequest::from_prompt(
-            "deepseek/deepseek-chat-v3-0324:free",
-            "Hello, who are you?",
-        ).with_max_tokens(Some(10));
+        let req = ChatRequest::from_prompt(TEST_MODEL, "hi")
+            .with_max_tokens(Some(10));
 
-        let mut stream = client.stream_completion(req).await.unwrap();
+        let mut sse = client.stream_completion(req).await.unwrap();
         let mut response_count = 0;
-        while let Some(result) = stream.next().await {
-            match result {
+        while let Some(msg) = sse.next::<OpenRouterError>().await {
+            match msg {
                 Ok(_) => {
                     response_count += 1;
-
-                    // Limit test to avoid long execution
                     if response_count >= 3 {
                         break;
                     }
@@ -218,40 +147,10 @@ mod tests {
                 Err(e) => panic!("stream error: {e}"),
             }
         }
-        assert!(response_count > 0, "Should receive at least one response");
-    }
 
-    #[tokio::test]
-    async fn test_stream_chat_completion() {
-        let client = get_test_client();
-        let messages = vec![
-            Message { role: Role::User, content: "hello".to_string() }
-        ];
-
-        let req = ChatRequest::from_messages(
-            "deepseek/deepseek-chat-v3-0324:free",
-            messages,
-        ).with_max_tokens(Some(5));
-
-        let mut stream = client.stream_chat_completion(req).await.unwrap();
-        let mut response_count = 0;
-
-        while let Some(result) = stream.next().await {
-            match result {
-                Ok(_response) => {
-                    response_count += 1;
-                    if response_count >= 3 {
-                        break; // Limit test to avoid long execution
-                    }
-                }
-                Err(e) => {
-                    println!("Stream error: {}", e);
-                    break;
-                }
-            }
+        if response_count < 1 {
+            panic!("expected at least one response");
         }
-
-        assert!(response_count > 0, "Should receive at least one response");
     }
 
     #[tokio::test]
@@ -259,5 +158,34 @@ mod tests {
         let client = get_test_client();
         let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_tool_calling() {
+        let client = get_test_client();
+        let req = ChatRequest::from_prompt(TEST_MODEL, "what's the current weather like?")
+            .with_tools(Some(vec![openai::ToolDefinition{
+                kind: "function".to_string(),
+                function: openai::FunctionDefinition{
+                    name: "get_current_weather".to_string(),
+                    description: Some("retrieves the current weather".to_string()),
+                    parameters: None,
+                    strict: None,
+                }
+            }]));
+
+        let res = client.completion(req).await.unwrap();
+        assert!(res.choices.len() > 0);
+
+        let choice = &res.choices[0];
+        assert!(*choice.finish_reason.as_ref().unwrap() ==
+                openai::FinishReason::ToolCalls
+        );
+
+        assert!(choice.message.as_ref().is_some());
+
+        let msg = choice.message.as_ref().unwrap();
+        assert!(msg.tool_calls.is_some());
+        assert!(msg.tool_calls.as_ref().unwrap()[0].function.name == "get_current_weather");
     }
 }

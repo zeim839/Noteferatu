@@ -1,10 +1,7 @@
-use super::errors::{ClientError, GoogleError};
+use crate::openai::{Error, OpenAIError};
 use super::models::Model;
-use super::StreamSSE;
+use crate::sse::SSE;
 use super::chat::*;
-
-#[allow(unused)]
-use tokio_stream::StreamExt;
 
 use serde_json::{from_value, Value};
 use reqwest::header;
@@ -33,18 +30,18 @@ impl Client {
         Self(client)
     }
 
-    /// Generates a model response given an input
+    /// Generates a model response given a
     /// [ChatRequest](super::chat::ChatRequest).
     ///
     /// API Reference: [models.generateContent](https://ai.google.dev/api/generate-content#method:-models.generatecontent)
-    pub async fn completions(&self, model: &str, req: ChatRequest) -> Result<ChatResponse, ClientError> {
+    pub async fn completion(&self, model: &str, req: ChatRequest) -> Result<ChatResponse, Error> {
         let res = self.0.post(format!("{API_ENDPOINT}/models/{model}:generateContent"))
             .json(&req).send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: GoogleError = from_value(error.clone())?;
-            return Err(ClientError::Api(err));
+            let err: OpenAIError = from_value(error.clone())?;
+            return Err(crate::Error::Api(err));
         }
 
         Ok(from_value(json)?)
@@ -54,22 +51,90 @@ impl Client {
     /// [ChatRequest](super::chat::ChatRequest).
     ///
     /// API Reference: [models.streamGenerateContent](https://ai.google.dev/api/generate-content#method:-models.streamgeneratecontent)
-    pub async fn stream_completions(&self, model: &str, req: ChatRequest) -> Result<StreamSSE, ClientError> {
+    pub async fn stream_completion(&self, model: &str, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
         let res = self.0.post(format!("{API_ENDPOINT}/models/{model}:streamGenerateContent"))
             .json(&req).send().await?;
 
-        Ok(StreamSSE::new(res.bytes_stream()))
+        Ok(SSE::new(Box::new(Self::parse_event), res.bytes_stream()))
     }
 
     /// Lists the Models available through the Gemini API.
     ///
     /// API Reference: [List Models](https://ai.google.dev/api/models#method:-models.list)
-    pub async fn list_models(&self) -> Result<Vec<Model>, ClientError> {
+    pub async fn list_models(&self) -> Result<Vec<Model>, Error> {
         let res = self.0.get(format!("{API_ENDPOINT}/models?pageSize=1000"))
             .send().await?;
 
         let json: Value = res.json().await?;
         Ok(from_value(json["models"].clone())?)
+    }
+
+    /// Parses a Gemini SSE event.
+    fn parse_event(buffer: &mut String) -> Option<ChatResponse> {
+        let mut start_idx = 0;
+        let mut brace_count = 0;
+        let mut object_start = None;
+
+        // Skip leading whitespace and array opening bracket
+        while start_idx < buffer.len() && (buffer.as_bytes()[start_idx] as char).is_ascii_whitespace() {
+            start_idx += 1;
+        }
+        if start_idx < buffer.len() && buffer.as_bytes()[start_idx] == b'[' {
+            start_idx += 1;
+        }
+
+        // Find the start of a JSON object '{'
+        for i in start_idx..buffer.len() {
+            match buffer.as_bytes()[i] {
+                b'{' => {
+                    if object_start.is_none() {
+                        object_start = Some(i);
+                    }
+                    brace_count += 1;
+                },
+                b'}' => {
+                    brace_count -= 1;
+                    if brace_count == 0 && object_start.is_some() {
+                        // Found a complete JSON object
+                        let obj_start = object_start.unwrap();
+                        let obj_end = i + 1; // Inclusive '}'
+                        let json_str_to_parse = &buffer[obj_start..obj_end];
+                        match serde_json::from_str::<ChatResponse>(json_str_to_parse) {
+                            Ok(response) => {
+                                // After parsing, remove the parsed object and any trailing comma or array closing bracket
+                                let mut drain_end = obj_end;
+                                // Check for comma or ']' after the object
+                                while drain_end < buffer.len() && (buffer.as_bytes()[drain_end] as char).is_ascii_whitespace() {
+                                    drain_end += 1;
+                                }
+                                if drain_end < buffer.len() && buffer.as_bytes()[drain_end] == b',' {
+                                    drain_end += 1;
+                                } else if drain_end < buffer.len() && buffer.as_bytes()[drain_end] == b']' {
+                                    // This ']' might be the final one, or intermediate if multiple are closing
+                                    // Let's not consume it prematurely unless it's truly the end of the stream.
+                                    // For now, if we found a valid object, just consume up to the object + any following comma
+                                    // The end of stream will be handled in poll_next when `self.inner` returns None.
+                                }
+                                buffer.drain(..drain_end);
+                                return Some(response);
+                            },
+                            Err(_) => {
+                                buffer.clear();
+                                return None;
+                            }
+                        }
+                    }
+                },
+                // Handle potential array start/end or other non-JSON object chars
+                b'[' | b']' | b',' => {
+                    // Ignore these outside of brace counting, as they are array delimiters/separators.
+                    // If we are at the very beginning and see '[', we should advance start_idx.
+                }
+                _ => {} // Other characters are part of the JSON content
+            }
+        }
+        None
+
     }
 }
 
@@ -100,7 +165,7 @@ mod tests {
         let req = ChatRequest::from_prompt("hi")
             .with_generation_config(Some(config));
 
-        let res = client.completions("gemini-2.5-pro", req).await.unwrap();
+        let res = client.completion("gemini-2.5-pro", req).await.unwrap();
         assert!(res.candidates.len() > 0);
 
         let candidate = &res.candidates[0];
@@ -127,20 +192,14 @@ mod tests {
         let req = ChatRequest::from_prompt("hi")
             .with_generation_config(Some(config));
 
-        let mut stream = client.stream_completions("gemini-2.5-pro", req).await.unwrap();
-
-        let mut all_text = String::new();
-        while let Some(res) = stream.next().await {
-            let res = res.unwrap();
-            for candidate in res.candidates {
-                for part in candidate.content.parts {
-                    if let Some(text) = part.data.text {
-                        all_text.push_str(&text);
-                    }
-                }
+        let mut sse = client.stream_completion("gemini-2.5-pro", req).await.unwrap();
+        while let Some(event) = sse.next::<OpenAIError>().await {
+            match event {
+                Ok(_) => return,
+                Err(e) => panic!("stream error: {e}"),
             }
         }
-        assert!(!all_text.is_empty());
+        panic!("no events returned from stream");
     }
 
     #[tokio::test]
@@ -148,5 +207,34 @@ mod tests {
         let client = get_test_client();
         let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_tool_call() {
+        let client = get_test_client();
+        let tool = Tool {
+            function_declarations: Some(vec![FunctionDeclaration {
+                name: "get_current_weather".to_string(),
+                description: "retrieves the current weather".to_string(),
+                parameters_json_schema: None,
+                response_json_schema: None,
+            }]),
+            google_search_retrieval: None,
+            google_search: None,
+            url_context: None,
+        };
+
+        let req = ChatRequest::from_prompt("what's the current weather like?")
+            .with_tools(Some(vec![tool]));
+
+        let res = client.completion("gemini-2.5-pro", req).await.unwrap();
+        assert!(res.candidates.len() > 0);
+
+        let candidate = &res.candidates[0];
+        let part = &candidate.content.parts[0];
+        assert!(part.data.function_call.is_some());
+
+        let function_call = part.data.function_call.as_ref().unwrap();
+        assert_eq!(function_call.name, "get_current_weather");
     }
 }

@@ -27,8 +27,7 @@
 //!     );
 //!
 //!     let res = client.completion(req).await.unwrap();
-//!     let msg = &res.choices[0].message.as_ref().unwrap();
-//!     println!("{}", msg.content.as_ref().unwrap());
+//!     println!("{res:?}");
 //! }
 //! ```
 //! ## Chat Completion (Stream)
@@ -43,12 +42,10 @@
 //!         "gpt-4.1-mini", "Hello, ChatGPT!"
 //!     );
 //!
-//!     let mut stream = client.stream_completion(req).await.unwrap();
-//!     while let Some(result) = stream.next().await {
-//!         match result {
-//!             Ok(res) => {
-//!                 // Do something with response...
-//!             },
+//!     let mut sse = client.stream_completion(req).await.unwrap();
+//!     while let Some(event) = sse.next::<OpenAIError>().await {
+//!         match event {
+//!             Ok(response) => println!("{response:?}"),
 //!             Err(e) => panic!("stream error: {e}"),
 //!         }
 //!     }
@@ -60,11 +57,8 @@ pub use models::*;
 mod client;
 pub use client::*;
 
-mod errors;
-pub use errors::*;
+mod error;
+pub use error::*;
 
 mod chat;
 pub use chat::*;
-
-mod stream;
-pub use stream::*;

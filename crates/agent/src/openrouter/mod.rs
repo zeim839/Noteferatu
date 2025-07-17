@@ -18,58 +18,7 @@
 //! ```
 //! Calling [Client::list_models] will fetch models currently
 //! available on OpenRouter, returning a vector of [Model].
-//! ## Completion Request
-//! ### Non-Streaming
-//! ```no_run
-//! use agent::openrouter::*;
 //!
-//! #[tokio::main]
-//! async fn main() {
-//!     let client = Client::new("my-openrouter-key");
-//!     let req = ChatRequest::from_prompt(
-//!         "deepseek/deepseek-chat-v3-0324:free",
-//!         "What is the meaning of life?",
-//!     ).with_usage(true);
-//!
-//!     let res = client.completion(req).await.unwrap();
-//!     let choices = res.choices.unwrap();
-//!     println!("Response: {}", choices[0].text.clone().unwrap());
-//!
-//!     // Inspect usage metadata.
-//!     let usage = res.usage.unwrap();
-//!     println!("Total tokens billed: {}", usage.total_tokens);
-//! }
-//! ```
-//! The OpenRouter completions route responds with the [ChatResponse]
-//! object, which contains either a prompt response, message chain, or
-//! finish reason.
-//! ### Streaming
-//! ```no_run
-//! use agent::openrouter::*;
-//! use tokio_stream::StreamExt;
-//!
-//! #[tokio::main]
-//! async fn main() {
-//!     let client = Client::new("my-openrouter-key");
-//!     let req = ChatRequest::from_prompt(
-//!         "deepseek/deepseek-chat-v3-0324:free",
-//!         "What is the meaning of life?",
-//!     );
-//!
-//!     let mut stream = client.stream_completion(req).await.unwrap();
-//!     while let Some(result) = stream.next().await {
-//!         match result {
-//!             Ok(response) => {
-//!                 // Do something with the response...
-//!             },
-//!             Err(e) => {
-//!                 println!("Stream error: {e}");
-//!                 break;
-//!             },
-//!         }
-//!     }
-//! }
-//! ```
 //! ## Chat Completion Request
 //! ### Non-Streaming
 //! ```no_run
@@ -77,62 +26,39 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
+//!     let model = "deepseek/deepseek-chat-v3-0324:free";
 //!     let client = Client::new("my-openrouter-key");
+//!     let req = ChatRequest::from_prompt(model, "Hello, deepseek!")
+//!         .with_usage(true);
 //!
-//!     let messages = vec![
-//!         Message { role: Role::User, content: "hello".to_string() }
-//!     ];
-//!
-//!     let req = ChatRequest::from_messages(
-//!         "deepseek/deepseek-chat-v3-0324:free",
-//!         messages,
-//!     ).with_usage(true);
-//!
-//!     let res = client.chat_completion(req).await.unwrap();
-//!     let choices = res.choices.unwrap();
-//!     println!("Response: {}", choices[0].message.as_ref().unwrap().content);
+//!     let res = client.completion(req).await.unwrap();
+//!     println!("Received response: {res:?}");
 //!
 //!     // Inspect usage metadata.
 //!     let usage = res.usage.unwrap();
 //!     println!("Total tokens billed: {}", usage.total_tokens);
-//!
 //! }
+//!
 //! ```
 //! ### Streaming
 //! ```no_run
 //! use agent::openrouter::*;
-//! use tokio_stream::StreamExt;
 //!
 //! #[tokio::main]
 //! async fn main() {
+//!     let model = "deepseek/deepseek-chat-v3-0324:free";
 //!     let client = Client::new("my-openrouter-key");
+//!     let req = ChatRequest::from_prompt(model, "Hello, deepseek!");
 //!
-//!     let messages = vec![
-//!         Message { role: Role::User, content: "hello".to_string() }
-//!     ];
-//!
-//!     let req = ChatRequest::from_messages(
-//!         "deepseek/deepseek-chat-v3-0324:free",
-//!         messages,
-//!     );
-//!
-//!     let mut stream = client.stream_chat_completion(req).await.unwrap();
-//!     while let Some(result) = stream.next().await {
-//!         match result {
-//!             Ok(response) => {
-//!                 // Do something with the response...
-//!             },
-//!             Err(e) => {
-//!                 println!("Stream error: {e}");
-//!                 break;
-//!             }
+//!     let mut sse = client.stream_completion(req).await.unwrap();
+//!     while let Some(event) = sse.next::<OpenRouterError>().await {
+//!         match event {
+//!             Ok(response) => println!("{response:?}"),
+//!             Err(e) => panic!("Stream error: {e}"),
 //!         }
 //!     }
 //! }
 //! ```
-
-mod errors;
-pub use errors::*;
 
 mod client;
 pub use client::*;
@@ -140,8 +66,5 @@ pub use client::*;
 mod models;
 pub use models::*;
 
-mod chat;
-pub use chat::*;
-
-mod stream;
-pub use stream::*;
+mod error;
+pub use error::*;

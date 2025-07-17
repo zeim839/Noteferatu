@@ -1,19 +1,18 @@
 use serde::{Serialize, Deserialize};
+use crate::openai::OpenAIError;
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Role {
-    #[serde(rename = "user")]
     User,
-
-    #[serde(rename = "assistant")]
     Assistant,
 }
 
 /// A message to Claude.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
     pub role: Role,
-    pub content: String,
+    pub content: Vec<Content>,
 }
 
 /// MessageRequest is a request to the messages API.
@@ -28,13 +27,6 @@ pub struct MessageRequest {
     pub model: String,
 
     /// Input messages.
-    ///
-    /// Anthropic models are trained to operate on alternating user
-    /// and assistant conversational turns. When creating a new
-    /// Message, you specify the prior conversational turns with the
-    /// messages parameter, and the model then generates the next
-    /// Message in the conversation. Consecutive user or assistant
-    /// turns in your request will be combined into a single turn.
     pub messages: Vec<Message>,
 
     /// The maximum number of tokens to generate before stopping.
@@ -44,22 +36,14 @@ pub struct MessageRequest {
     /// to generate.
     pub max_tokens: i64,
 
-    /// Whether to incrementally stream the response using server-sent
-    /// events.
+    /// Use Server-sent-events to stream the response.
     pub stream: bool,
 
     /// System prompt.
-    ///
-    /// A system prompt is a way of providing context and instructions
-    /// to Claude, such as specifying a particular goal or role.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub system: Option<String>,
 
     /// Amount of randomness injected into the response.
-    ///
-    /// Defaults to 1.0. Ranges from 0.0 to 1.0. Use temperature closer to
-    /// 0.0 for analytical / multiple choice, and closer to 1.0 for
-    /// creative and generative tasks.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub temperature: Option<f64>,
 
@@ -80,12 +64,6 @@ pub struct MessageRequest {
     pub tool_choice: Option<ToolChoice>,
 
     /// Definitions of tools that the model may use.
-    ///
-    /// If you include tools in your API request, the model may return
-    /// tool_use content blocks that represent the model's use of those
-    /// tools. You can then run those tools using the tool input generated
-    /// by the model and then optionally return results back to the model
-    /// using tool_result content blocks.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<ToolDefinition>>,
 
@@ -106,7 +84,16 @@ impl MessageRequest {
         req.model = model.to_string();
         req.messages = vec![Message {
             role: Role::User,
-            content: prompt.to_string(),
+            content: vec![Content{
+                kind: ContentKind::Text,
+                text: Some(prompt.to_string()),
+                thinking: None,
+                signature: None,
+                data: None,
+                input: None,
+                name: None,
+                tool_use_id: None,
+            }],
         }];
         req.max_tokens = 1024;
         req.stream = false;
@@ -170,16 +157,17 @@ impl MessageRequest {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ThinkingKind {
-    #[serde(rename="enabled")]
     Enabled,
-    #[serde(rename="disabled")]
     Disabled,
 }
 
 /// Configuration for enabling Claude's extended thinking.
 #[derive(Serialize, Deserialize)]
 pub struct Thinking {
+
+    /// The type of tool choice configuration.
     #[serde(rename = "type")]
     pub kind: ThinkingKind,
 
@@ -189,33 +177,31 @@ pub struct Thinking {
     ///
     ///
     /// Must be ≥1024 and less than [MessageRequest::max_tokens].
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub budget_tokens: Option<i64>,
 }
 
 /// The type of tool choice configuration.
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ToolChoiceKind {
-
     /// The model can decide by itself.
-    #[serde(rename = "auto")]
     Auto,
 
     /// Use any available tool.
-    #[serde(rename = "any")]
     Any,
 
     /// Use a specific tool.
-    #[serde(rename = "tool")]
     Tool,
 
     /// Do not use tools.
-    #[serde(rename = "none")]
     None
 }
 
 /// How the model should use the provided tools.
 #[derive(Serialize, Deserialize)]
 pub struct ToolChoice {
+    #[serde(rename = "type")]
     pub kind: ToolChoiceKind,
 
     /// Whether to disable parallel tool use.
@@ -237,7 +223,7 @@ pub struct ToolDefinition {
     pub input_schema: serde_json::Value,
 }
 
-/// Response from the [message](super::Client::messages)
+/// Response from the [completion](super::Client::completion)
 /// route. Contains the LLMs response, including tool use, web search,
 /// and textual results.
 #[derive(Debug, Serialize, Deserialize)]
@@ -253,7 +239,7 @@ pub struct MessageResponse {
     ///
     /// This is an array of content blocks, each of which has a type
     /// that determines its shape.
-    pub content: Vec<ContentResponse>,
+    pub content: Vec<Content>,
 
     /// The model that handled the request.
     pub model: String,
@@ -266,100 +252,176 @@ pub struct MessageResponse {
 
 }
 
+/// Enumerates the possible types of streaming response events.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StreamEventType {
+    Error,
+    MessageStart,
+    ContentBlockStart,
+    ContentBlockDelta,
+    ContentBlockStop,
+    MessageDelta,
+    MessageStop,
+    Ping,
+    Other(String),
+}
+
+/// An Server-Sent-Event message response from the
+/// [completion](super::Client::completion) route.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StreamResponse {
+
+    /// The type of event.
+    #[serde(rename = "type")]
+    pub kind: StreamEventType,
+
+    /// Possible error body for [StreamEventType::Error] responses.
+    pub error: Option<OpenAIError>,
+
+    /// Possible delta body for [StreamEventType::ContentBlockDelta]
+    /// responses.
+    pub delta: Option<Delta>,
+
+    /// Content block body.
+    pub content_block: Option<Content>,
+
+    /// Possible usage body, which is (usually) included in
+    /// `message_delta` events.
+    pub usage: Option<Usage>,
+
+    /// Message body for message events;
+    pub message: Option<MessageResponse>,
+
+}
+
+/// Enumerates the possible body types of a [Delta].
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DeltaKind {
+    TextDelta,
+    InputJsonDelta,
+    ThinkingDelta,
+    SignatureDelta,
+    ToolUse,
+    Text,
+    Thinking,
+    ServerToolUse,
+    WebSearchToolResult,
+}
+
+/// Body of a [ContentBlockDelta](StreamEventType::ContentBlockDelta)
+/// streaming response.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Delta {
+
+    /// The type of content block. None if the event is a
+    /// `message_delta`, in which case `stop_reason` is populated.
+    #[serde(rename = "type")]
+    pub kind: Option<DeltaKind>,
+
+    /// Text body for [DeltaKind::TextDelta] response types.
+    pub text: Option<String>,
+
+    /// Text body for [DeltaKind::InputJsonDelta] response types.
+    /// This is used for `tool_use` content blocks.
+    ///
+    /// Current models only support emitting one complete key and
+    /// value property from input at a time. As such, when using
+    /// tools, there may be delays between streaming events while the
+    /// model is working. Once an input key and value are accumulated,
+    /// we emit them as multiple `content_block_delta` events with
+    /// chunked partial json so that the format can automatically
+    /// support finer granularity in future models.
+    pub partial_json: Option<String>,
+
+    /// Text body for [DeltaKind::ThinkingDelta] response types.
+    pub thinking: Option<String>,
+
+    /// Text body for [DeltaKind::SignatureDelta] response types.
+    pub signature: Option<String>,
+
+    /// The reason the content block stream ended.
+    pub stop_reason: Option<StopReason>,
+
+    /// Name of the tool being called.
+    pub name: Option<String>,
+}
+
 /// Enumerates the possible content types of a [MessageResponse].
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ContentResponse {
-    Text(TextResponse),
-    Thinking(ThinkingResponse),
-    RedactedThinkng(RedactedThinkingResponse),
-    ToolUse(ToolUseResponse),
-    WebSearchTool(WebSearchToolResponse),
-}
+pub struct Content {
 
-/// Contains a standard textual LLM response.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct TextResponse {
+    /// The type of content response.
     #[serde(rename = "type")]
-    pub kind: String,
-    pub text: String,
+    pub kind: ContentKind,
+
+    /// Text response data.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+
+    /// Thinking response data.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking: Option<String>,
+
+    /// Thinking signature.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature: Option<String>,
+
+    /// Redacted thinking data.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
+
+    /// Input to a tool call.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input: Option<serde_json::Value>,
+
+    /// Name of a tool call.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    /// Tool use instance identifier.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tool_use_id: Option<String>,
 }
 
-/// Contains an LLMs thinking trace.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ThinkingResponse {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub thinking: String,
-    pub signature: String,
-}
-
-/// Signals that the LLM is thinking, but the thinking trace is
-/// redacted.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct RedactedThinkingResponse {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub data: String,
-}
-
-/// Reports on the call of a custom tool.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ToolUseResponse {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub input: String,
-    pub name: String,
-    pub id: String,
-}
-
-/// Contains the response of the web search server tool, which may
-/// contain multiple fetched web pages.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WebSearchToolResponse {
-    #[serde(rename = "type")]
-    pub kind: String,
-    pub tool_use_id: String,
-    pub content: Option<Vec<WebSearchContent>>,
-}
-
-/// Contains the content of a single web page returned from the web
-/// search server tool.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WebSearchContent {
-    pub encrypted_content: String,
-    pub page_age: Option<String>,
-    pub title: String,
-    pub url: String,
+/// Message content type.
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentKind {
+    Text,
+    Thinking,
+    RedactedThinking,
+    ToolUse,
+    ServerToolUse,
+    WebSearchToolUse,
+    CodeExecutionToolResult,
+    McpToolUse,
+    McpToolResult,
+    ContainerUpload,
 }
 
 /// Reports on the reason the LLM stopped generating tokens.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum StopReason {
 
     /// The model reached a natural stopping point.
-    #[serde(rename = "end_turn")]
     EndTurn,
 
     /// Exceeded the requested max_tokens or the model's maximum.
-    #[serde(rename = "max_tokens")]
     MaxTokens,
 
     /// One of the custom `stop_sequences` was generated.
-    #[serde(rename = "stop_sequence")]
     StopSequence,
 
     /// The model invoked one or more tools.
-    #[serde(rename = "tool_use")]
     ToolUse,
 
     /// Paused a long-running turn.
-    #[serde(rename = "pause_turn")]
     PauseTurn,
 
-    /// When streaming classifiers intervene to handle potential
-    /// policy violations.
-    #[serde(rename = "refusal")]
+    /// Potential policy violation.
     Refusal,
 }
 
@@ -383,19 +445,16 @@ pub struct Usage {
 ///
 /// API Reference: [Service Tiers](https://docs.anthropic.com/en/api/service-tiers)
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ServiceTier {
 
     /// Default tier for both piloting and scaling everyday use cases.
-    #[serde(rename = "standard")]
     Standard,
 
     /// Best for workflows deployed in production where time,
     /// availability, and predictable pricing are important
-    #[serde(rename = "priority")]
     Priority,
 
-    /// Best for asynchronous workflows which can wait or benefit from
-    /// being outside your normal capacity.
-    #[serde(rename = "batch")]
+    /// Best for asynchronous workflows.
     Batch,
 }

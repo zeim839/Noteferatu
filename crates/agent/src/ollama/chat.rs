@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use crate::openai::Role;
 
 /// ChatRequest represents a chat completion request.
 #[derive(Default, Serialize, Deserialize)]
@@ -110,38 +111,6 @@ pub struct FunctionDefinition {
     pub strict: Option<bool>,
 }
 
-/// Chat message role.
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Role {
-
-    /// Developer-provided instructions that the model should follow,
-    /// regardless of messages sent by the user. With o1 models and
-    /// newer, `developer` messages replace the previous system
-    /// messages.
-    #[serde(rename = "developer")]
-    Developer,
-
-    /// Developer-provided instructions that the model should follow,
-    /// regardless of messages sent by the user. With o1 models and
-    /// newer, use `developer` messages for this purpose instead.
-    #[serde(rename = "system")]
-    System,
-
-    /// Messages sent by an end user, containing prompts or additional
-    /// context information.
-    #[serde(rename = "user")]
-    User,
-
-    /// Messages sent by the model in response to user messages.
-    #[serde(rename = "assistant")]
-    Assistant,
-
-    /// Tool call messages.
-    #[serde(rename = "tool")]
-    Tool,
-
-}
-
 /// Chat message.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
@@ -171,15 +140,6 @@ pub struct Message {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToolCall {
 
-    /// The ID of the tool call.
-    pub id: String,
-
-    /// The type of the tool call.
-    ///
-    /// Currently, only `function` is supported.
-    #[serde(rename = "type")]
-    pub kind: String,
-
     /// The function that the model called.
     pub function: FunctionCall,
 }
@@ -193,14 +153,14 @@ pub struct FunctionCall {
     /// may hallucinate parameters not defined by your function
     /// schema. Validate the arguments in your code before calling
     /// your function.
-    pub arguments: String,
+    pub arguments: serde_json::Value,
 
     /// The name of the function to call.
     pub name: String,
 }
 
 /// A response to a completion request.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChatResponse {
 
     /// The model that responded to the request.
