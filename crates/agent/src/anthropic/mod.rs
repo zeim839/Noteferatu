@@ -31,28 +31,15 @@
 //!         "Hello, Claude!",
 //!     );
 //!
-//!     // Or from a message history...
-//!     let messages = vec![Message {
-//!         role: Role::User,
-//!         content: "Hello, Claude!".to_string(),
-//!     }];
-//!
-//!     let req = MessageRequest::from_messages(
-//!         "claude-3-haiku-20240307",
-//!         messages,
-//!     );
-//!
-//!     let res = client.messages(req).await.unwrap();
+//!     let res = client.completion(req).await.unwrap();
 //!     let content = &res.content[0];
-//!     if let ContentResponse::Text(res) = content {
-//!         println!("Text response: {}", res.text);
-//!     }
+//!     println!("{}", content.text.as_ref().unwrap());
 //! }
 //! ```
 //! ## Message Completion (Streaming)
 //! ```no_run
 //! use agent::anthropic::*;
-//! use tokio_stream::StreamExt;
+//! use agent::openai::OpenAIError;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -63,8 +50,8 @@
 //!     );
 //!
 //!     // Prints stream events.
-//!     let mut stream = client.stream_messages(req).await.unwrap();
-//!     while let Some(result) = stream.next().await {
+//!     let mut stream = client.stream_completion(req).await.unwrap();
+//!     while let Some(result) = stream.next::<OpenAIError>().await {
 //!         match result {
 //!             Ok(res) => println!("{res:?}"),
 //!             Err(e) => panic!("stream error: {e}"),

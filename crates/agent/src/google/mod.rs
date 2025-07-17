@@ -25,7 +25,7 @@
 //!     let client = Client::new("my-api-key");
 //!     let req = ChatRequest::from_prompt("Hello, Gemini!");
 //!
-//!     let res = client.completions("gemini-1.5-flash", req).await.unwrap();
+//!     let res = client.completion("gemini-1.5-flash", req).await.unwrap();
 //!     let msg = &res.candidates[0].content;
 //!     println!("{}", msg.parts[0].data.text.as_ref().unwrap());
 //! }
@@ -33,15 +33,15 @@
 //! ## Chat Completion (Stream)
 //! ```no_run
 //! use agent::google::*;
-//! use tokio_stream::StreamExt;
+//! use agent::openai::OpenAIError;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let client = Client::new("my-api-key");
 //!     let req = ChatRequest::from_prompt("Hello, Gemini!");
 //!
-//!     let mut stream = client.stream_completions("gemini-1.5-flash", req).await.unwrap();
-//!     while let Some(result) = stream.next().await {
+//!     let mut sse = client.stream_completion("gemini-1.5-flash", req).await.unwrap();
+//!     while let Some(result) = sse.next::<OpenAIError>().await {
 //!         match result {
 //!             Ok(res) => {
 //!                 for candidate in res.candidates {

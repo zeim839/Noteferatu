@@ -23,26 +23,22 @@
 //! ### Non-Streaming
 //! ```no_run
 //! use agent::openrouter::*;
+//! use agent::openai::ChatRequest;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let model = "deepseek/deepseek-chat-v3-0324:free";
 //!     let client = Client::new("my-openrouter-key");
-//!     let req = ChatRequest::from_prompt(model, "Hello, deepseek!")
-//!         .with_usage(true);
-//!
+//!     let req = ChatRequest::from_prompt(model, "Hello, deepseek!");
 //!     let res = client.completion(req).await.unwrap();
 //!     println!("Received response: {res:?}");
-//!
-//!     // Inspect usage metadata.
-//!     let usage = res.usage.unwrap();
-//!     println!("Total tokens billed: {}", usage.total_tokens);
 //! }
 //!
 //! ```
 //! ### Streaming
 //! ```no_run
 //! use agent::openrouter::*;
+//! use agent::openai::ChatRequest;
 //!
 //! #[tokio::main]
 //! async fn main() {
