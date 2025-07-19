@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use crate::openai::FunctionDefinition;
 
 /// Specifies the producer of message content.
 #[derive(Debug, Serialize, Deserialize)]
@@ -332,11 +333,7 @@ pub struct FunctionDeclaration {
 
     /// Describes the parameters to the function as a JSON Schema.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters_json_schema: Option<serde_json::Value>,
-
-    /// Describes the output from this function as a JSON Schema.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub response_json_schema: Option<serde_json::Value>,
+    pub parameters: Option<serde_json::Value>,
 }
 
 /// Tool to retrieve public web data for grounding, powered by Google.
@@ -570,6 +567,60 @@ impl GenerationConfig {
     }
 }
 
+impl crate::Request for ChatRequest {
+    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
+        let mut config = self.generation_config.unwrap_or_default();
+        config.max_output_tokens = max_tokens;
+        Self { generation_config: Some(config), ..self }
+    }
+
+    fn with_temperature(self, temperature: Option<f64>) -> Self {
+        let mut config = self.generation_config.unwrap_or_default();
+        config.temperature = temperature;
+        Self { generation_config: Some(config), ..self }
+    }
+
+    fn with_web_search_results(self, _: Option<i64>) -> Self {
+        let mut tools = self.tools.unwrap_or_default();
+        tools.push(Tool {
+            function_declarations: None,
+            google_search_retrieval: None,
+            url_context: None,
+            google_search: Some(GoogleSearch{
+                time_range_filter: None,
+            }),
+        });
+        Self { tools: Some(tools), ..self }
+    }
+
+    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
+        let tools = tools.map(|v| v.iter().map(|item| {
+            Tool {
+                google_search_retrieval: None,
+                google_search: None,
+                url_context: None,
+                function_declarations: Some(vec![
+                    FunctionDeclaration {
+                        name: item.name.clone(),
+                        description: item.description.clone().unwrap_or_default(),
+                        parameters: item.parameters.clone(),
+                    }
+                ])
+            }
+        }).collect());
+        Self { tools, ..self }
+    }
+}
+
+/// Supported modalities of the response.
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum Modality {
+    Text,
+    Image,
+    Audio,
+}
+
 /// Config for thinking features.
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -580,17 +631,6 @@ pub struct ThinkingConfig {
 
     /// The number of thoughts tokens that the model should generate.
     pub thinking_budget: i64,
-}
-
-/// Content Part modality
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum Modality {
-    Text,
-    Image,
-    Video,
-    Audio,
-    Document,
 }
 
 /// Response from the [Model](super::models::Model) supporting

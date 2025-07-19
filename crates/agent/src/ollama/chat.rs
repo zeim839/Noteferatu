@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use crate::openai::{ToolCall, ToolDefinition, FunctionDefinition};
 use crate::openai::Role;
 
 /// ChatRequest represents a chat completion request.
@@ -74,41 +75,28 @@ impl ChatRequest {
     }
 }
 
-/// Tool definition.
-#[derive(Serialize, Deserialize)]
-pub struct ToolDefinition {
+impl crate::Request for ChatRequest {
+    fn with_max_tokens(self, _: Option<i64>) -> Self {
+        self // not available.
+    }
 
-    /// The tool type (currently only 'function' is supported).
-    #[serde(rename = "type")]
-    pub kind: Option<String>,
+    fn with_temperature(self, _: Option<f64>) -> Self {
+        self // not available.
+    }
 
-    /// Tool function definition.
-    pub function: FunctionDefinition,
-}
+    fn with_web_search_results(self, _: Option<i64>) -> Self {
+        self // not available.
+    }
 
-/// Function Definition.
-#[derive(Serialize, Deserialize)]
-pub struct FunctionDefinition {
-
-    /// The name of the function to be called. Must be a-z, A-Z, 0-9,
-    /// or contain underscores and dashes, with a maximum length of
-    /// 64.
-    pub name: String,
-
-    /// A description of what the function does, used by the model to
-    /// choose when and how to call the function.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-
-    /// The parameters the functions accepts.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<serde_json::Value>,
-
-    /// Whether to enable strict schema adherence when generating the
-    /// function call. If set to true, the model will follow the exact
-    /// schema defined in the `parameters` field.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub strict: Option<bool>,
+    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
+        let tools = tools.map(|v| v.iter().map(|item| {
+            ToolDefinition {
+                kind: "function".to_string(),
+                function: (*item).clone(),
+            }
+        }).collect());
+        Self { tools, ..self }
+    }
 }
 
 /// Chat message.
@@ -135,28 +123,6 @@ pub struct Message {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thinking: Option<String>,
 
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ToolCall {
-
-    /// The function that the model called.
-    pub function: FunctionCall,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FunctionCall {
-
-    /// The arguments to call the function with.
-    ///
-    /// Note that the model does not always generate valid JSON, and
-    /// may hallucinate parameters not defined by your function
-    /// schema. Validate the arguments in your code before calling
-    /// your function.
-    pub arguments: serde_json::Value,
-
-    /// The name of the function to call.
-    pub name: String,
 }
 
 /// A response to a completion request.

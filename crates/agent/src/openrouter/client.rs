@@ -42,12 +42,9 @@ impl Client {
     pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
         let json: Value = res.json().await?;
-        println!("{json}");
-
         if let Some(error) = json.get("error") {
             let err: OpenRouterError = from_value(error.clone())?;
             return Err(crate::error::Error::Api(err));
@@ -63,8 +60,7 @@ impl Client {
     pub async fn stream_completion(&self, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
-            .json(&req)
-            .send().await?;
+            .json(&req).send().await?;
 
         Ok(SSE::new(Box::new(OAI::parse_event), res.bytes_stream()))
     }

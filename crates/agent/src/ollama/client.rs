@@ -51,7 +51,36 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
-        Ok(from_value(json["models"].clone())?)
+        let mut models: Vec<Model> = from_value(json["models"].clone())?;
+        for model in models.iter_mut() {
+            let res = self.0.post(format!("{API_ENDPOINT}/show"))
+                .json(&serde_json::json!({ "name": model.model.clone() }))
+                .send().await;
+
+            if let Ok(res) = res {
+                if let Ok(json) = res.json::<Value>().await {
+                    if let Some(map) = json.as_object() {
+                        if let Some(model_info) = map.get("model_info").and_then(Value::as_object) {
+                            // The context length is in a dynamic key, e.g. "llama.context_length".
+                            for (key, value) in model_info.iter() {
+                                if key.ends_with("context_length") {
+                                    model.context_length = from_value(value.clone()).ok();
+                                    break;
+                                }
+                            }
+                        }
+                        // Tool call capability is in the "capabilities" field.
+                        if let Some(capabilities) = map.get("capabilities") {
+                            if let Ok(caps) = from_value::<Vec<String>>(capabilities.clone()) {
+                                model.supports_tool_calls = Some(caps.contains(&"tools".to_string()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(models)
     }
 
     /// Parses an Ollama SSE event.
@@ -73,8 +102,7 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::FunctionDefinition;
-    use super::ToolDefinition;
+    use crate::openai::{FunctionDefinition, ToolDefinition};
 
     #[tokio::test]
     async fn test_completions() {
@@ -117,7 +145,7 @@ mod tests {
     async fn test_tool_call() {
         let req = ChatRequest::from_prompt("qwen3:0.6b", "what's the current weather like?")
             .with_tools(Some(vec![ToolDefinition {
-                kind: Some("function".to_string()),
+                kind: "function".to_string(),
                 function: FunctionDefinition {
                     name: "get_current_weather".to_string(),
                     description: Some("retrieves the current weather".to_string()),

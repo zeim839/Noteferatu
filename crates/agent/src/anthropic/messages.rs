@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::openai::OpenAIError;
+use crate::openai::{OpenAIError, FunctionDefinition};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -156,6 +156,46 @@ impl MessageRequest {
     }
 }
 
+impl crate::Request for MessageRequest {
+
+    /// Populates the [Self::max_tokens] field with the given value.
+    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
+        if max_tokens.is_none() { self } else {
+            Self { max_tokens: max_tokens.unwrap_or(1024), ..self }
+        }
+    }
+
+    /// Populates the [Self::temperature] field with the given value.
+    fn with_temperature(self, temperature: Option<f64>) -> Self {
+        Self { temperature, ..self }
+    }
+
+    fn with_web_search_results(self, web_search_results: Option<i64>) -> Self {
+        let mut tools = self.tools.unwrap_or_default();
+        tools.push(ToolDefinition{
+            name: "web_search".to_string(),
+            kind: Some("web_search_20250305".to_string()),
+            max_uses: web_search_results.map(|v| v as u64),
+            input_schema: None,
+            description: None,
+        });
+        Self { tools: Some(tools), ..self }
+    }
+
+    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
+        let tools = tools.map(|v| v.iter().map(|item| {
+            ToolDefinition{
+                name: item.name.clone(),
+                description: item.description.clone(),
+                input_schema: item.parameters.clone(),
+                kind: None,
+                max_uses: None,
+            }
+        }).collect());
+        Self { tools, ..self }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ThinkingKind {
@@ -219,8 +259,18 @@ pub struct ToolChoice {
 #[derive(Serialize, Deserialize)]
 pub struct ToolDefinition {
     pub name: String,
-    pub description: String,
-    pub input_schema: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_schema: Option<serde_json::Value>,
+    #[serde(rename = "type")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+
+    /// Only applies to the `web_search` server tool: the maximum
+    /// number of web sources to fetch.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_uses: Option<u64>,
 }
 
 /// Response from the [completion](super::Client::completion)

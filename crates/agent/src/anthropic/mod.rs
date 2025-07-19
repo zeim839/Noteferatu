@@ -1,10 +1,5 @@
 //! [Anthropic](https://www.anthropic.com/) client.
 //!
-//! Implements an Anthropic API client, which provides access to the
-//! Claude model series. Claude is a highly performant, trustworthy,
-//! and intelligent AI platform built by Anthropic. Claude excels at
-//! tasks involving language, reasoning, analysis, coding, and more.
-//!
 //! # Examples
 //! ## List Available Models
 //! ```no_run

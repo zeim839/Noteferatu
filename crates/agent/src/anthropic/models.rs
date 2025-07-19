@@ -15,3 +15,25 @@ pub struct Model {
     /// Unique model identifier.
     pub id: String,
 }
+
+impl crate::ModelDefinition for Model {
+    fn id(&self) -> String {
+        self.id.clone()
+    }
+
+    fn display_name(&self) -> String {
+        self.display_name.clone()
+    }
+
+    fn context_length(&self) -> u64 {
+        200000
+    }
+
+    fn supports_tool_calls(&self) -> bool {
+        true
+    }
+
+    fn supports_web_search(&self) -> bool {
+        true
+    }
+}

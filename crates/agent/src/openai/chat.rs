@@ -31,13 +31,13 @@ pub enum Role {
 pub struct ToolCall {
 
     /// The ID of the tool call.
-    pub id: String,
+    pub id: Option<String>,
 
     /// The type of the tool call.
     ///
     /// Currently, only `function` is supported.
     #[serde(rename = "type")]
-    pub kind: String,
+    pub kind: Option<String>,
 
     /// The function that the model called.
     pub function: FunctionCall,
@@ -53,7 +53,7 @@ pub struct FunctionCall {
     /// may hallucinate parameters not defined by your function
     /// schema. Validate the arguments in your code before calling
     /// your function.
-    pub arguments: String,
+    pub arguments: serde_json::Value,
 
     /// The name of the function to call.
     pub name: String,
@@ -98,14 +98,11 @@ pub enum Content {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum ContentKind {
-    #[serde(rename = "input_text")]
     InputText,
-    #[serde(rename = "input_file")]
     InputFile,
-    #[serde(rename = "text")]
     Text,
-    #[serde(rename = "image_url")]
     ImageUrl,
 }
 
@@ -174,7 +171,7 @@ pub struct ChatRequest {
     /// tokens based on whether they appear in the text so far,
     /// increasing the model's likelihood to talk about new topics.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub presence_penalty: Option<i64>,
+    pub presence_penalty: Option<f64>,
 
     /// Constrains effort on reasoning for reasoning models. Currently
     /// supported values are `low`, `medium`, and `high`. Reducing
@@ -204,7 +201,7 @@ pub struct ChatRequest {
     /// deterministic. We generally recommend altering this or top_p
     /// but not both.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<i64>,
+    pub temperature: Option<f64>,
 
     /// A list of tools the model may call. Currently, only functions
     /// are supported as a tool. Use this to provide a list of
@@ -218,7 +215,7 @@ pub struct ChatRequest {
     /// with top_p probability mass. So 0.1 means only the tokens
     /// comprising the top 10% probability mass are considered.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<i64>,
+    pub top_p: Option<f64>,
 
     /// This tool searches the web for relevant results to use in a
     /// response.
@@ -275,7 +272,7 @@ impl ChatRequest {
     }
 
     /// Populates the [Self::presence_penalty] field with the given value.
-    pub fn with_presence_penalty(self, presence_penalty: Option<i64>) -> Self {
+    pub fn with_presence_penalty(self, presence_penalty: Option<f64>) -> Self {
         Self { presence_penalty, ..self }
     }
 
@@ -305,7 +302,7 @@ impl ChatRequest {
     }
 
     /// Populates the [Self::temperature] field with the given value.
-    pub fn with_temperature(self, temperature: Option<i64>) -> Self {
+    pub fn with_temperature(self, temperature: Option<f64>) -> Self {
         Self { temperature, ..self }
     }
 
@@ -315,7 +312,7 @@ impl ChatRequest {
     }
 
     /// Populates the [Self::top_p] field with the given value.
-    pub fn with_top_p(self, top_p: Option<i64>) -> Self {
+    pub fn with_top_p(self, top_p: Option<f64>) -> Self {
         Self { top_p, ..self }
     }
 
@@ -325,18 +322,43 @@ impl ChatRequest {
     }
 }
 
+impl crate::Request for ChatRequest {
+    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
+        self.with_max_completion_tokens(max_tokens)
+    }
+
+    fn with_temperature(self, temperature: Option<f64>) -> Self {
+        self.with_temperature(temperature)
+    }
+
+    fn with_web_search_results(self, _: Option<i64>) -> Self {
+        self.with_web_search_options(Some(WebSearchOptions {
+            search_context_size: None,
+        }))
+    }
+
+    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
+        let tools = tools.map(|v| v.iter().map(|item| {
+            ToolDefinition {
+                kind: "function".to_string(),
+                function: (*item).clone(),
+            }
+        }).collect());
+        Self { tools, ..self }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ReasoningEffort {
-    #[serde(rename = "low")]
     Low,
-    #[serde(rename = "medium")]
     Medium,
-    #[serde(rename = "high")]
     High,
 }
 
 /// Specifies the processing type used for serving the request.
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ServiceTier {
     /// The request will be processed with the service tier configured
     /// in the Project settings. Unless otherwise configured, the
@@ -387,7 +409,7 @@ pub struct ToolDefinition {
 }
 
 /// Function Definition.
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct FunctionDefinition {
 
     /// The name of the function to be called. Must be a-z, A-Z, 0-9,
@@ -420,19 +442,7 @@ pub struct WebSearchOptions {
     /// use for the search. One of `low`, `medium`, or `high`. medium
     /// is the default.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub search_context_size: Option<SearchContextSize>,
-}
-
-/// High level guidance for the amount of context window space to
-/// use for the search.
-#[derive(Serialize, Deserialize)]
-pub enum SearchContextSize {
-    #[serde(rename = "low")]
-    Low,
-    #[serde(rename = "medium")]
-    Medium,
-    #[serde(rename = "high")]
-    High,
+    pub search_context_size: Option<ReasoningEffort>,
 }
 
 /// ChatResponse represents a successful chat completion.
@@ -480,29 +490,25 @@ pub struct Choice {
 
 /// The reason the model stopped generating tokens.
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum FinishReason {
 
     /// `stop` if the model hit a natural stop point or a provided
     /// stop sequence.
-    #[serde(rename = "stop")]
     Stop,
 
     /// `length` if the maximum number of tokens specified in the
     /// request was reached.
-    #[serde(rename = "length")]
     Length,
 
     /// `content_filter` if content was omitted due to a flag from our
     /// content filters
-    #[serde(rename = "content_filter")]
     ContentFilter,
 
     /// `tool_calls` if the model called a tool.
-    #[serde(rename = "tool_calls")]
     ToolCalls,
 
     /// `function_call` (deprecated) if the model called a function.
-    #[serde(rename = "function_call")]
     FunctionCall,
 }
 

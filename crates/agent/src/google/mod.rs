@@ -1,9 +1,5 @@
 //! [Google AI](https://ai.google.dev/) client.
 //!
-//! Implements a Google AI client for accessing Google's Gemini models.
-//! Gemini is Google's most capable AI model, designed to be multimodal
-//! and handle text, images, and other data types.
-//!
 //! # Examples
 //! ## List Models
 //! ```no_run

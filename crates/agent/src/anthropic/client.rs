@@ -69,6 +69,11 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: OpenAIError = from_value(error.clone())?;
+            return Err(crate::error::Error::Api(err));
+        }
+
         Ok(from_value(json["data"].clone())?)
     }
 
@@ -175,8 +180,10 @@ mod tests {
             }))
             .with_tools(Some(vec![ToolDefinition{
                 name: "get_current_weather".to_string(),
-                description: "fetches the current weather".to_string(),
-                input_schema: serde_json::from_str(TEST_TOOL).unwrap(),
+                description: Some("fetches the current weather".to_string()),
+                input_schema: Some(serde_json::from_str(TEST_TOOL).unwrap()),
+                kind: None,
+                max_uses: None,
             }]));
 
         let res = client.completion(req).await.unwrap();
@@ -208,8 +215,10 @@ mod tests {
             }))
             .with_tools(Some(vec![ToolDefinition{
                 name: "get_current_weather".to_string(),
-                description: "fetches the current weather".to_string(),
-                input_schema: serde_json::from_str(TEST_TOOL).unwrap(),
+                description: Some("fetches the current weather".to_string()),
+                input_schema: Some(serde_json::from_str(TEST_TOOL).unwrap()),
+                kind: None,
+                max_uses: None,
             }]));
 
 

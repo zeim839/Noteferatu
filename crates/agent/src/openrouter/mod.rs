@@ -1,9 +1,5 @@
 //! [OpenRouter](https://openrouter.ai/) client.
 //!
-//! Implements an OpenRouter API client, which provides a unified API
-//! for interfacing with hundreds of AI models through a single
-//! endpoint.
-//!
 //! # Examples
 //! ## List Available Models
 //! ```no_run

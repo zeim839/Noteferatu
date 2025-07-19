@@ -5,7 +5,7 @@ use tokio_stream::{Stream, StreamExt};
 use std::pin::Pin;
 use bytes::Bytes;
 
-/// Implements Server-Sent Events streaming for LLM responses.
+/// Server-Sent Events (SSE) streaming for LLM responses.
 pub struct SSE<I> {
     inner: Pin<Box<dyn Stream<Item = Result<Bytes, reqwest::Error>> + Send>>,
     parser: Box<dyn Fn(&mut String) -> Option<I>>,

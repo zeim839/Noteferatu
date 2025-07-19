@@ -216,8 +216,7 @@ mod tests {
             function_declarations: Some(vec![FunctionDeclaration {
                 name: "get_current_weather".to_string(),
                 description: "retrieves the current weather".to_string(),
-                parameters_json_schema: None,
-                response_json_schema: None,
+                parameters: None,
             }]),
             google_search_retrieval: None,
             google_search: None,

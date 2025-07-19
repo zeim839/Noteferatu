@@ -9,3 +9,9 @@ pub use error::Error;
 
 mod sse;
 pub use sse::*;
+
+mod client;
+pub use client::*;
+
+mod agent;
+pub use agent::*;

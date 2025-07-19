@@ -60,3 +60,32 @@ pub struct Model {
     #[serde(rename = "topK")]
     pub top_k: Option<f64>,
 }
+
+impl crate::ModelDefinition for Model {
+    fn id(&self) -> String {
+        self.name.clone()
+    }
+
+    fn display_name(&self) -> String {
+        self.display_name.clone()
+    }
+
+    fn context_length(&self) -> u64 {
+        self.input_token_limit as u64
+    }
+
+    fn supports_tool_calls(&self) -> bool {
+        match self.name.as_str() {
+            "gemini-2.5-pro" => true,
+            "gemini-2.5-flash" => true,
+            "gemini-2.5-flash-lite-preview-06-17" => true,
+            "gemini-2.0-flash" => true,
+            "gemini-2.0-flash-preview-image-generation" => true,
+            _ => false,
+        }
+    }
+
+    fn supports_web_search(&self) -> bool {
+        true
+    }
+}

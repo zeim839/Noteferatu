@@ -1,8 +1,5 @@
 //! [OpenAI](https://openai.com/) client.
 //!
-//! With the OpenAI API, you can use a large language model to
-//! generate text from a prompt, as you might using ChatGPT.
-//!
 //! # Examples
 //! ## List Models
 //! ```no_run
