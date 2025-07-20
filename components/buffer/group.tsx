@@ -44,7 +44,7 @@ function BufferGroup({ onClose } : BufferGroupProps) {
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
     if (!isDragging || !containerRef.current || !split) return
     const rect = containerRef.current.getBoundingClientRect()
-    let newPosition: number = Math.max(10, Math.min(
+    const newPosition: number = Math.max(10, Math.min(
       90, (split === "vertical") ?
       ((e.clientX - rect.left) / rect.width) * 100 :
       ((e.clientY - rect.top) / rect.height) * 100

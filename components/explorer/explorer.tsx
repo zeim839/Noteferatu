@@ -4,6 +4,12 @@ import { Sidebar } from "@/components/window/sidebar"
 import { Button } from "@/components/core/button"
 import * as React from "react"
 
+interface DocumentEntry {
+  title: string
+  type: "document" | "folder"
+  children?: DocumentEntry[]
+}
+
 import {
   FolderIcon,
   ChevronDownIcon,
@@ -13,7 +19,7 @@ import {
   NotepadTextIcon,
 } from "lucide-react"
 
-const sampleDocuments = [
+const sampleDocuments: DocumentEntry[] = [
   {
     title: "Introduction",
     type: "document",
@@ -125,7 +131,7 @@ const sampleDocuments = [
 function Entry({
   title = "Untitled",
   type,
-  children = [],
+  subEntries = [],
   depth = 0,
   expandedFolders,
   setExpandedFolders,
@@ -133,7 +139,7 @@ function Entry({
 }: {
   title?: string
   type: string
-  children?: any[]
+  subEntries?: DocumentEntry[]
   depth?: number
   expandedFolders: Set<string>
   setExpandedFolders: (fn: (prev: Set<string>) => Set<string>) => void
@@ -141,7 +147,7 @@ function Entry({
 }) {
   const entryId = `${depth}-${title}`
   const isExpanded = expandedFolders.has(entryId)
-  const hasChildren = children && children.length > 0
+  const hasChildren = subEntries && subEntries.length > 0
 
   const toggleExpanded = () => {
     setExpandedFolders((prev) => {
@@ -216,16 +222,16 @@ function Entry({
       {/* Render children if expanded */}
       {isExpanded && hasChildren && (
         <>
-          {children.map((child, i) => (
+          {subEntries.map((child, i) => (
             <Entry
               key={`${entryId}-${i}`}
               title={child.title}
               type={child.type}
-              children={child.children}
+              subEntries={child.children}
               depth={depth + 1}
               expandedFolders={expandedFolders}
               setExpandedFolders={setExpandedFolders}
-              isLast={i === children.length - 1}
+              isLast={i === subEntries.length - 1}
             />
           ))}
           {/* Vertical line continuation for non-last folders */}
@@ -236,7 +242,7 @@ function Entry({
                 left: `${(depth - 1) * 16 + 10}px`,
                 top: "32px",
                 width: "1px",
-                height: `${children.length * 32}px`,
+                height: `${subEntries.length * 32}px`,
                 zIndex: -1,
               }}
             />
@@ -279,7 +285,7 @@ function Explorer() {
             key={i}
             title={obj.title}
             type={obj.type}
-            children={obj.children}
+            subEntries={obj.children}
             expandedFolders={expandedFolders}
             setExpandedFolders={setExpandedFolders}
             isLast={i === sampleDocuments.length - 1}
