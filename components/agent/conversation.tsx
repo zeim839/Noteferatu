@@ -5,8 +5,8 @@ import {Edit2Icon, Trash2Icon, CheckIcon, XIcon} from "lucide-react"
 // A conversation is a series of user, system, tool and response
 // messages between a user and LLM.
 export type Conversation = {
-  id: String
-  name: String
+  id: string
+  name: string
   createdAt: number
 }
 
@@ -58,11 +58,12 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
 
   return (
     <div
+      key={id}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="flex flex-row justify-between w-full p-1.5 px-2 rounded-md hover:bg-[#DCE0E8]"
+      className="flex flex-row justify-between w-full p-1.5 px-2 rounded-md hover:bg-[#DCE0E8] min-w-[250px]"
     >
-      <p className="text-xs text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
+      <p className="text-sm text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
         {name}
       </p>
       <p
