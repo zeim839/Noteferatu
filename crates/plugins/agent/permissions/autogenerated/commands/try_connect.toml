@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-try-connect"
+description = "Enables the try_connect command without any pre-configured scope."
+commands.allow = ["try_connect"]
+
+[[permission]]
+identifier = "deny-try-connect"
+description = "Denies the try_connect command without any pre-configured scope."
+commands.deny = ["try_connect"]
