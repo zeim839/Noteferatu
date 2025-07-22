@@ -1,5 +1,6 @@
-use crate::openai::{Error, OpenAIError};
+use crate::openai::ErrorAPI;
 use super::models::Model;
+use crate::error::Error;
 use crate::sse::SSE;
 use super::chat::*;
 
@@ -40,8 +41,11 @@ impl Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
-            return Err(crate::Error::Api(err));
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("GOOGLE_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
         }
 
         Ok(from_value(json)?)
@@ -66,6 +70,14 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("GOOGLE_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
+        }
+
         Ok(from_value(json["models"].clone())?)
     }
 
@@ -193,7 +205,7 @@ mod tests {
             .with_generation_config(Some(config));
 
         let mut sse = client.stream_completion("gemini-2.5-pro", req).await.unwrap();
-        while let Some(event) = sse.next::<OpenAIError>().await {
+        while let Some(event) = sse.next::<ErrorAPI>().await {
             match event {
                 Ok(_) => return,
                 Err(e) => panic!("stream error: {e}"),

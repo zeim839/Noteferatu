@@ -1,4 +1,5 @@
-use super::error::{Error, OpenAIError};
+use crate::error::Error;
+use super::error::ErrorAPI;
 use super::models::Model;
 use crate::sse::SSE;
 use super::chat::*;
@@ -41,8 +42,11 @@ impl Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
-            return Err(crate::error::Error::Api(err));
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("OPENAI_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
         }
 
         Ok(from_value(json)?)
@@ -68,6 +72,14 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("OPENAI_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
+        }
+
         Ok(from_value(json["data"].clone())?)
     }
 
@@ -143,7 +155,7 @@ mod tests {
 
         let mut sse = client.stream_completion(req).await.unwrap();
         let mut response_count = 0;
-        while let Some(msg) = sse.next::<OpenAIError>().await {
+        while let Some(msg) = sse.next::<ErrorAPI>().await {
             match msg {
                 Ok(_) => {
                     response_count += 1;

@@ -34,7 +34,7 @@
 //! ## Message Completion (Streaming)
 //! ```no_run
 //! use agent::anthropic::*;
-//! use agent::openai::OpenAIError;
+//! use agent::openai::ErrorAPI;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -46,7 +46,7 @@
 //!
 //!     // Prints stream events.
 //!     let mut stream = client.stream_completion(req).await.unwrap();
-//!     while let Some(result) = stream.next::<OpenAIError>().await {
+//!     while let Some(result) = stream.next::<ErrorAPI>().await {
 //!         match result {
 //!             Ok(res) => println!("{res:?}"),
 //!             Err(e) => panic!("stream error: {e}"),

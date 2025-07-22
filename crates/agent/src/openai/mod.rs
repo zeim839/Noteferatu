@@ -30,7 +30,6 @@
 //! ## Chat Completion (Stream)
 //! ```no_run
 //! use agent::openai::*;
-//! use tokio_stream::StreamExt;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -40,7 +39,7 @@
 //!     );
 //!
 //!     let mut sse = client.stream_completion(req).await.unwrap();
-//!     while let Some(event) = sse.next::<OpenAIError>().await {
+//!     while let Some(event) = sse.next::<ErrorAPI>().await {
 //!         match event {
 //!             Ok(response) => println!("{response:?}"),
 //!             Err(e) => panic!("stream error: {e}"),

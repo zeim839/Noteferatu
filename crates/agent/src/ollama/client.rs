@@ -1,36 +1,39 @@
-use crate::error::Error as E;
 use super::models::Model;
+use crate::error::Error;
 use super::chat::*;
 use crate::SSE;
 
 use serde_json::{from_value, Value};
 
-/// Alias for the Ollama error type.
-pub type Error = E<String>;
-
-/// Ollama API endpoint.
-const API_ENDPOINT: &str = "http://localhost:11434/api";
-
 /// An Ollama API client.
-pub struct Client(reqwest::Client);
+pub struct Client {
+    client: reqwest::Client,
+    endpoint: String,
+}
 
 impl Client {
 
     /// Create a new Ollama API client.
-    pub fn new() -> Self {
-        Self(reqwest::Client::new())
+    pub fn new(endpoint: &str) -> Self {
+        Self {
+            client: reqwest::Client::new(),
+            endpoint: format!("{endpoint}/api"),
+        }
     }
 
     /// Send a completion request to a selected model.
     pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
         let req = req.with_stream(Some(false));
-        let res = self.0.post(format!("{API_ENDPOINT}/chat"))
+        let res = self.client.post(format!("{}/chat", self.endpoint))
             .json(&req).send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
             let err: String = from_value(error.clone())?;
-            return Err(crate::Error::Api(err));
+            return Err(Error {
+                kind: "OLLAMA_ERR".to_string(),
+                message: err,
+            });
         }
 
         Ok(from_value(json)?)
@@ -39,7 +42,7 @@ impl Client {
     /// Send a streaming completion request to a selected model.
     pub async fn stream_completion(&self, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
         let req = req.with_stream(Some(true));
-        let res = self.0.post(format!("{API_ENDPOINT}/chat"))
+        let res = self.client.post(format!("{}/chat", self.endpoint))
             .json(&req).send().await?;
 
         Ok(SSE::new(Box::new(Self::parse_event), res.bytes_stream()))
@@ -47,13 +50,21 @@ impl Client {
 
     /// List available models.
     pub async fn list_models(&self) -> Result<Vec<Model>, Error> {
-        let res = self.0.get(format!("{API_ENDPOINT}/tags"))
+        let res = self.client.get(format!("{}/tags", self.endpoint))
             .send().await?;
 
         let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: String = from_value(error.clone())?;
+            return Err(Error {
+                kind: "OLLAMA_ERR".to_string(),
+                message: err,
+            });
+        }
+
         let mut models: Vec<Model> = from_value(json["models"].clone())?;
         for model in models.iter_mut() {
-            let res = self.0.post(format!("{API_ENDPOINT}/show"))
+            let res = self.client.post(format!("{}/show", self.endpoint))
                 .json(&serde_json::json!({ "name": model.model.clone() }))
                 .send().await;
 
@@ -107,14 +118,14 @@ mod tests {
     #[tokio::test]
     async fn test_completions() {
         let req = ChatRequest::from_prompt("gemma3n:e4b", "hi");
-        let res = Client::new().completion(req).await.unwrap();
+        let res = Client::new("http://localhost:11434").completion(req).await.unwrap();
         assert!(res.message.content.is_some());
     }
 
     #[tokio::test]
     async fn test_stream_completion() {
         let req = ChatRequest::from_prompt("gemma3n:e4b", "hi");
-        let mut stream = Client::new().stream_completion(req).await.unwrap();
+        let mut stream = Client::new("http://localhost:11434").stream_completion(req).await.unwrap();
         let mut response_count = 0;
         let mut has_text = false;
         while let Some(event) = stream.next::<String>().await {
@@ -137,7 +148,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_models() {
-        let models = Client::new().list_models().await.unwrap();
+        let models = Client::new("http://localhost:11434").list_models().await.unwrap();
         assert!(models.len() > 0);
     }
 
@@ -157,7 +168,7 @@ mod tests {
                 },
             }]));
 
-        let res = Client::new().completion(req).await.unwrap();
+        let res = Client::new("http://localhost:11434").completion(req).await.unwrap();
         assert!(res.message.tool_calls.is_some());
 
         let tool_calls = res.message.tool_calls.as_ref().unwrap();

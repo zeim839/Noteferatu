@@ -1,5 +1,6 @@
-use crate::openai::{Error, OpenAIError};
+use crate::openai::ErrorAPI;
 use super::models::Model;
+use crate::error::Error;
 use super::messages::*;
 use crate::sse::SSE;
 
@@ -43,8 +44,11 @@ impl Client {
 
         let json: Value =  res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
-            return Err(crate::error::Error::Api(err));
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("ANTHROPIC_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
         }
 
         Ok(from_value(json)?)
@@ -70,8 +74,11 @@ impl Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
-            return Err(crate::error::Error::Api(err));
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("ANTHROPIC_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
         }
 
         Ok(from_value(json["data"].clone())?)
@@ -143,7 +150,7 @@ mod tests {
 
         let mut sse = client.stream_completion(req).await.unwrap();
         let mut response_count = 0;
-        while let Some(msg) = sse.next::<OpenAIError>().await {
+        while let Some(msg) = sse.next::<ErrorAPI>().await {
             match msg {
                 Ok(_) => {
                     response_count += 1;
@@ -224,7 +231,7 @@ mod tests {
 
         let mut sse = client.stream_completion(req).await.unwrap();
         let mut has_tool_call = false;
-        while let Some(event) = sse.next::<OpenAIError>().await {
+        while let Some(event) = sse.next::<ErrorAPI>().await {
             let event = event.unwrap();
             if let StreamEventType::ContentBlockStart = event.kind {
                 let block = event.content_block.as_ref().unwrap();

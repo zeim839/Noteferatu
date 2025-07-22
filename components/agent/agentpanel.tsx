@@ -30,12 +30,11 @@ const tokenStr = (tokens: number) => {
 
 function AgentPanel() {
   const [expandConvs, setExpandConvs] = React.useState<boolean>(false)
-  const [usedTokens, /*setUsedTokens*/] = React.useState<number>(0)
-  const [totalTokens, /*setTotalTokens*/] = React.useState<number>(200000)
+  const [usedTokens /*setUsedTokens*/] = React.useState<number>(0)
+  const [totalTokens /*setTotalTokens*/] = React.useState<number>(200000)
   const [settingsOpen, setSettingsOpen] = React.useState<boolean>(false)
-  const [conversations, /*setConversations*/] = React.useState<
-    Conversation.Conversation[]
-  >([
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = React.useState<boolean>(false)
+  const [conversations /*setConversations*/] = React.useState<Conversation.Conversation[]>([
     {
       id: "0",
       name: "Software Engineering Assistance Request (need help)",
@@ -46,11 +45,17 @@ function AgentPanel() {
   ])
 
   const onToggleConvs = () => {
+    if (!expandConvs) {
+      setIsModelSelectorOpen(false)
+    }
     setExpandConvs(!expandConvs)
     setSettingsOpen(false)
   }
 
   const onToggleSettings = () => {
+    if (!settingsOpen) {
+      setIsModelSelectorOpen(false)
+    }
     setSettingsOpen(!settingsOpen)
     setExpandConvs(false)
   }
@@ -64,11 +69,11 @@ function AgentPanel() {
           variant="outline"
           className="p-2 rounded-md h-6 px-1 flex items-center justify-between pr-2"
         >
-          {
-            (expandConvs)
-              ? <ChevronDownIcon strokeWidth={1.6} />
-              : <ChevronRightIcon strokeWidth={1.6} />
-            }
+          {expandConvs ? (
+            <ChevronDownIcon strokeWidth={1.6} />
+          ) : (
+            <ChevronRightIcon strokeWidth={1.6} />
+          )}
           <p className="text-xs max-h-[15px] max-w-[150px] text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
             Conversation Title
           </p>
@@ -88,7 +93,7 @@ function AgentPanel() {
         </div>
       </Sidebar.Header>
 
-      { /* Conversation history */ }
+      {/* Conversation history */}
       <div
         className="absolute top-[30px] w-full h-0 bg-[#E5E9EF] hidden data-[is-expanded=true]:block data-[is-expanded=true]:h-[calc(100vh-35px-30px)] z-1"
         data-is-expanded={expandConvs}
@@ -96,7 +101,7 @@ function AgentPanel() {
         <Conversation.Body body={conversations} />
       </div>
 
-      { /* Agent Settings */ }
+      {/* Agent Settings */}
       <div
         className="absolute top-[30px] w-full h-0 bg-[#E5E9EF] hidden data-[is-expanded=true]:block data-[is-expanded=true]:h-[calc(100vh-35px-30px)] z-1"
         data-is-expanded={settingsOpen}
@@ -104,7 +109,7 @@ function AgentPanel() {
         <AgentSettings />
       </div>
 
-      { /* Message Input Field */ }
+      {/* Message Input Field */}
       <div className="w-full h-[150px] bg-[#EDF0F4] outline outline-[#AEB3C0] p-2 flex flex-col justify-between">
         <div className="flex-1 relative">
           <textarea
@@ -113,11 +118,13 @@ function AgentPanel() {
           />
         </div>
         <div className="flex flex-row items-center justify-between">
-          <Combobox>
+          <Combobox
+            open={isModelSelectorOpen}
+            onOpenChange={setIsModelSelectorOpen}
+          >
             <Combobox.Trigger>
               <Button
                 variant="outline"
-                tooltip="Select Model"
                 className="p-2 text-xs rounded-sm h-6 px-1 flex items-center justify-between"
               >
                 No Model Selected

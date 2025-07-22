@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::openai::{OpenAIError, FunctionDefinition};
+use crate::openai::{ErrorAPI, FunctionDefinition};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -327,7 +327,7 @@ pub struct StreamResponse {
     pub kind: StreamEventType,
 
     /// Possible error body for [StreamEventType::Error] responses.
-    pub error: Option<OpenAIError>,
+    pub error: Option<ErrorAPI>,
 
     /// Possible delta body for [StreamEventType::ContentBlockDelta]
     /// responses.

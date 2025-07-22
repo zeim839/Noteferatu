@@ -22,7 +22,7 @@ impl<I> SSE<I> {
     }
 
     /// Get the next SSE event.
-    pub async fn next<E: Display + Debug>(&mut self) -> Option<Result<I, Error<E>>> {
+    pub async fn next<E: Display + Debug>(&mut self) -> Option<Result<I, Error>> {
         let mut buffer = String::new();
         while let Some(chunk) = self.inner.next().await {
             match chunk {
@@ -33,7 +33,7 @@ impl<I> SSE<I> {
                         None => continue,
                     }
                 },
-                Err(e) => return Some(Err(Error::Http(e))),
+                Err(e) => return Some(Err(e.into())),
             }
         }
         match (self.parser)(&mut buffer) {

@@ -17,15 +17,36 @@ import {
   PopoverTrigger,
 } from "@/components/core/popover"
 
-function Combobox({children} : React.ComponentProps<"div">) {
-  const [open, setOpen] = React.useState(false)
+interface ComboboxProps extends React.ComponentProps<"div"> {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+function Combobox({
+  children,
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
+}: ComboboxProps) {
+  const [internalOpen, setInternalOpen] = React.useState(false)
+
+  const isControlled = openProp !== undefined
+  const open = isControlled ? openProp : internalOpen
+
+  const handleOpenChange = (value: boolean) => {
+    if (onOpenChangeProp) {
+      onOpenChangeProp(value)
+    }
+    if (!isControlled) {
+      setInternalOpen(value)
+    }
+  }
 
   // Deconstruct combobox subcomponents.
   const slots = React.useMemo(() => {
     let trigger: React.ReactNode | null = null
     let values: React.ReactNode | null = null
     let emptyBody: React.ReactNode | null = null
-    React.Children.forEach(children, child => {
+    React.Children.forEach(children, (child) => {
       if (!React.isValidElement(child)) return
       if (child.type === Combobox.Trigger) {
         trigger = child
@@ -47,39 +68,35 @@ function Combobox({children} : React.ComponentProps<"div">) {
   }, [children])
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        { slots.trigger }
-      </PopoverTrigger>
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>{slots.trigger}</PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
-        {
-          (slots.values !== null) ?
-            <Command>
-              <CommandInput placeholder="Search..." className="h-9" />
-              <CommandList>
-                <CommandGroup>
-                  { slots.values }
-                </CommandGroup>
-              </CommandList>
-            </Command> :
-            slots.emptyBody
-        }
+        {slots.values !== null ? (
+          <Command>
+            <CommandInput placeholder="Search..." className="h-9" />
+            <CommandList>
+              <CommandGroup>{slots.values}</CommandGroup>
+            </CommandList>
+          </Command>
+        ) : (
+          slots.emptyBody
+        )}
       </PopoverContent>
     </Popover>
   )
 }
 
 function ComboboxSlot({ ...props }: React.ComponentProps<"div">) {
-  return (<Slot {...props} />)
+  return <Slot {...props} />
 }
 
 function ComboboxEmptyBody({ ...props }: React.ComponentProps<"div">) {
-  return (<Slot {...props} />)
+  return <Slot {...props} />
 }
 
 export type ComboboxValue = {
-  value: string,
-  label: string,
+  value: string
+  label: string
 }
 
 interface ComboboxValuesProps extends React.ComponentProps<"div"> {
@@ -87,19 +104,15 @@ interface ComboboxValuesProps extends React.ComponentProps<"div"> {
 }
 
 function ComboboxValues({ values, ...props }: ComboboxValuesProps) {
-  return (values.length > 0) ?
+  return values.length > 0 ? (
     <div {...props}>
-      {
-        values.map((value) => (
-          <CommandItem
-            key={value.value}
-            value={value.value}
-          >
-            {value.label}
-          </CommandItem>
-        ))
-      }
-    </div> : null
+      {values.map((value) => (
+        <CommandItem key={value.value} value={value.value}>
+          {value.label}
+        </CommandItem>
+      ))}
+    </div>
+  ) : null
 }
 
 // Combobox Subcomponents.

@@ -1,6 +1,5 @@
 use crate::{anthropic, google, ollama, openai, openrouter};
-
-type AgentError = crate::Error<String>;
+use crate::error::Error;
 
 pub struct Agent {
     anthropic: Option<anthropic::Client>,
@@ -24,28 +23,43 @@ impl Agent {
     }
 
     /// Register an Anthropic client.
-    pub fn register_anthropic(&mut self, api_key: &str) {
-        self.anthropic = Some(anthropic::Client::new(api_key));
+    pub async fn register_anthropic(&mut self, api_key: &str) -> Result<(), Error> {
+        let client = anthropic::Client::new(api_key);
+        client.list_models().await?;
+        self.anthropic = Some(client);
+        Ok(())
     }
 
     /// Register a Google Gemini client.
-    pub fn register_google(&mut self, api_key: &str) {
-        self.google = Some(google::Client::new(api_key));
+    pub async fn register_google(&mut self, api_key: &str) -> Result<(), Error> {
+        let client = google::Client::new(api_key);
+        client.list_models().await?;
+        self.google = Some(client);
+        Ok(())
     }
 
     /// Register an Ollama client.
-    pub fn register_ollama(&mut self) {
-        self.ollama = Some(ollama::Client::new());
+    pub async fn register_ollama(&mut self, endpoint: &str) -> Result<(), Error> {
+        let client = ollama::Client::new(endpoint);
+        client.list_models().await?;
+        self.ollama = Some(client);
+        Ok(())
     }
 
     /// Register an OpenAI client.
-    pub fn register_openai(&mut self, api_key: &str) {
-        self.openai = Some(openai::Client::new(api_key));
+    pub async fn register_openai(&mut self, api_key: &str) -> Result<(), Error> {
+        let client = openai::Client::new(api_key);
+        client.list_models().await?;
+        self.openai = Some(client);
+        Ok(())
     }
 
     /// Register an OpenRouter client.
-    pub fn register_openrouter(&mut self, api_key: &str) {
-        self.openrouter = Some(openrouter::Client::new(api_key));
+    pub async fn register_openrouter(&mut self, api_key: &str) -> Result<(), Error> {
+        let client = openrouter::Client::new(api_key);
+        client.list_models().await?;
+        self.openrouter = Some(client);
+        Ok(())
     }
 }
 

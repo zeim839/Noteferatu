@@ -34,7 +34,7 @@
 //! ### Streaming
 //! ```no_run
 //! use agent::openrouter::*;
-//! use agent::openai::ChatRequest;
+//! use agent::openai::{ChatRequest, ErrorAPI};
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -43,7 +43,7 @@
 //!     let req = ChatRequest::from_prompt(model, "Hello, deepseek!");
 //!
 //!     let mut sse = client.stream_completion(req).await.unwrap();
-//!     while let Some(event) = sse.next::<OpenRouterError>().await {
+//!     while let Some(event) = sse.next::<ErrorAPI>().await {
 //!         match event {
 //!             Ok(response) => println!("{response:?}"),
 //!             Err(e) => panic!("Stream error: {e}"),
@@ -57,6 +57,3 @@ pub use client::*;
 
 mod models;
 pub use models::*;
-
-mod error;
-pub use error::*;

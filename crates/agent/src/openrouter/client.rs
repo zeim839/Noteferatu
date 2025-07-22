@@ -1,7 +1,8 @@
 use crate::openai::{ChatRequest, ChatResponse};
-use super::error::{Error, OpenRouterError};
 use crate::openai::Client as OAI;
+use crate::openai::ErrorAPI;
 use super::models::Model;
+use crate::error::Error;
 use crate::sse::SSE;
 
 use reqwest::header;
@@ -46,8 +47,11 @@ impl Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenRouterError = from_value(error.clone())?;
-            return Err(crate::error::Error::Api(err));
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("OPENROUTER_{}_ERR", err.code),
+                message: err.message,
+            });
         }
 
         let chat_res: ChatResponse = from_value(json)?;
@@ -73,6 +77,14 @@ impl Client {
             .send().await?;
 
         let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("OPENROUTER_{}_ERR", err.code),
+                message: err.message,
+            });
+        }
+
         let models: Vec<Model> = from_value(json["data"].clone())?;
         Ok(models)
     }
@@ -109,20 +121,6 @@ mod tests {
         assert!(res.usage.unwrap().completion_tokens == 5);
     }
 
-    #[tokio::test]
-    async fn test_api_error() {
-        let client = get_test_client();
-        let req = ChatRequest::from_prompt("fake model", "?");
-        let res = client.completion(req).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            if let Error::Api(err) = err {
-                assert!(err.code == 400);
-                return;
-            }
-        }
-        panic!("expected ClientError::Api error type");
-    }
 
     #[tokio::test]
     async fn test_stream_completion() {
@@ -132,7 +130,7 @@ mod tests {
 
         let mut sse = client.stream_completion(req).await.unwrap();
         let mut response_count = 0;
-        while let Some(msg) = sse.next::<OpenRouterError>().await {
+        while let Some(msg) = sse.next::<ErrorAPI>().await {
             match msg {
                 Ok(_) => {
                     response_count += 1;
