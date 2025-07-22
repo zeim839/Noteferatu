@@ -3,13 +3,14 @@ resolver = "2"
 members = [
         "crates/agent",
         "crates/helsync",
-        "crates/macwindow",
+        "crates/plugins/macwindow",
+        "crates/plugins/agent",
         "src-tauri"
 ]
 
 [profile.release]
 strip = true      # Automaticaly strip symbols from the binary.
-opt-level = "z"   # Optimize for size.
+opt-level = "s"   # Optimize for size.
 lto = true        # Link-time optimization.
 codegen-units = 1 # Reduce parallel code generation for better optimization.
 panic = "abort"   # Abort on panic.
