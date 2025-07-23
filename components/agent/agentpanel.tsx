@@ -6,6 +6,7 @@ import { Button } from "@/components/core/button"
 import { Combobox } from "@/components/core/combobox"
 import * as Conversation from "./conversation"
 import { AgentSettings } from "./settings"
+import { useAgentContext } from "./agent"
 
 import {
   Tooltip,
@@ -22,42 +23,53 @@ import {
   PlusIcon,
 } from "lucide-react"
 
+// Converts a token count into a string. If less than 1000, then
+// `tokens` is returned, otherwise truncate and add a 'k' prefix.
 const tokenStr = (tokens: number) => {
   return tokens < 1000
     ? tokens.toString()
     : (tokens / 1000).toFixed(tokens % 1000 == 0 ? 0 : 1).toString() + "k"
 }
 
+// AgentPanel is the parent element of the chat sidebar.
 function AgentPanel() {
-  const [expandConvs, setExpandConvs] = React.useState<boolean>(false)
-  const [usedTokens /*setUsedTokens*/] = React.useState<number>(0)
-  const [totalTokens /*setTotalTokens*/] = React.useState<number>(200000)
-  const [settingsOpen, setSettingsOpen] = React.useState<boolean>(false)
   const [isModelSelectorOpen, setIsModelSelectorOpen] = React.useState<boolean>(false)
-  const [conversations /*setConversations*/] = React.useState<Conversation.Conversation[]>([
-    {
-      id: "0",
-      name: "Software Engineering Assistance Request (need help)",
-      createdAt: 1752250136,
-    },
-    { id: "1", name: "Software Engineering Help", createdAt: 1752240136 },
-    { id: "2", name: "Another Example Conversation", createdAt: 1752230136 },
-  ])
+  const agentContext = useAgentContext()
 
   const onToggleConvs = () => {
-    if (!expandConvs) {
+    if (!agentContext.isConvsOpen()) {
       setIsModelSelectorOpen(false)
     }
-    setExpandConvs(!expandConvs)
-    setSettingsOpen(false)
+    agentContext.toggleConvs()
   }
 
   const onToggleSettings = () => {
-    if (!settingsOpen) {
+    if (!agentContext.isSettingsOpen()) {
       setIsModelSelectorOpen(false)
     }
-    setSettingsOpen(!settingsOpen)
-    setExpandConvs(false)
+    agentContext.toggleSettings()
+  }
+
+  const modelGroups = () => {
+    const models = agentContext.models()
+    const groups = []
+    for (const key in models) {
+      groups.push(
+        <Combobox.Group key={key} heading={key}>
+          {
+            models[key].map((model) => (
+              <Combobox.Item
+                key={`${model.provider}/${model.id}`}
+                value={`${model.provider}/${model.id}`}
+              >
+                {model.displayName}
+              </Combobox.Item>
+            ))
+          }
+        </Combobox.Group>
+      )
+    }
+    return groups
   }
 
   return (
@@ -69,7 +81,7 @@ function AgentPanel() {
           variant="outline"
           className="p-2 rounded-md h-6 px-1 flex items-center justify-between pr-2"
         >
-          {expandConvs ? (
+          {agentContext.isConvsOpen() ? (
             <ChevronDownIcon strokeWidth={1.6} />
           ) : (
             <ChevronRightIcon strokeWidth={1.6} />
@@ -96,15 +108,15 @@ function AgentPanel() {
       {/* Conversation history */}
       <div
         className="absolute top-[30px] w-full h-0 bg-[#E5E9EF] hidden data-[is-expanded=true]:block data-[is-expanded=true]:h-[calc(100vh-35px-30px)] z-1"
-        data-is-expanded={expandConvs}
+        data-is-expanded={agentContext.isConvsOpen()}
       >
-        <Conversation.Body body={conversations} />
+        <Conversation.Body body={agentContext.convHistory()} />
       </div>
 
       {/* Agent Settings */}
       <div
         className="absolute top-[30px] w-full h-0 bg-[#E5E9EF] hidden data-[is-expanded=true]:block data-[is-expanded=true]:h-[calc(100vh-35px-30px)] z-1"
-        data-is-expanded={settingsOpen}
+        data-is-expanded={agentContext.isSettingsOpen()}
       >
         <AgentSettings />
       </div>
@@ -131,7 +143,6 @@ function AgentPanel() {
                 <ChevronsUpDownIcon strokeWidth={1.6} />
               </Button>
             </Combobox.Trigger>
-            <Combobox.Values values={[]} />
             <Combobox.EmptyBody className="p-4">
               <div className="flex flex-col items-center gap-2.5">
                 <p className="text-sm text-center">
@@ -142,13 +153,15 @@ function AgentPanel() {
                 </Button>
               </div>
             </Combobox.EmptyBody>
+            { modelGroups() }
           </Combobox>
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="h-6 px-1 flex items-center">
                   <p className="text-xs max-h-[15px]">
-                    {tokenStr(usedTokens)}/{tokenStr(totalTokens)}
+                    {tokenStr(agentContext.tokensUsed())}/
+                    {tokenStr(agentContext.totalTokens())}
                   </p>
                 </div>
               </TooltipTrigger>

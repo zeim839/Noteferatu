@@ -2,10 +2,12 @@
 
 import { Window, WindowProvider } from "@/components/window/window"
 import { Explorer } from "@/components/explorer/explorer"
-import { AgentPanel } from "@/components/agent/agentpanel"
 import { Button } from "@/components/core/button"
 import { BufferGroup } from "@/components/buffer/group"
 import { useState } from "react"
+
+import { AgentProvider } from "@/components/agent/agent"
+import { AgentPanel } from "@/components/agent/agentpanel"
 
 import {
   PanelLeftDashedIcon,
@@ -58,7 +60,9 @@ export default function Home() {
           <BufferGroup />
         </Window.Content>
         <Window.RightSidebar>
-          <AgentPanel />
+          <AgentProvider>
+            <AgentPanel />
+          </AgentProvider>
         </Window.RightSidebar>
       </Window>
     </WindowProvider>
