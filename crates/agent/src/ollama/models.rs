@@ -20,24 +20,13 @@ pub struct Model {
     pub context_length: Option<u64>,
 }
 
-impl crate::ModelDefinition for Model {
-    fn id(&self) -> String {
-        self.model.clone()
-    }
-
-    fn display_name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn context_length(&self) -> u64 {
-        self.context_length.unwrap_or(20000)
-    }
-
-    fn supports_tool_calls(&self) -> bool {
-        self.supports_tool_calls.unwrap_or(false)
-    }
-
-    fn supports_web_search(&self) -> bool {
-        false
+impl Into<crate::Model> for Model {
+    fn into(self) -> crate::Model {
+        crate::Model {
+            id: self.name.clone(),
+            display_name: self.name.clone(),
+            provider: "Ollama".to_string(),
+            context_size: self.context_length.unwrap_or(20000),
+        }
     }
 }

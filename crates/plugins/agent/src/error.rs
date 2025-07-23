@@ -1,32 +1,23 @@
-use serde::ser::Serializer;
 use serde::Serialize;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize)]
+#[serde(tag = "type", content = "error", rename_all = "camelCase")]
 pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
+    #[error("io: {0}")]
+    Io(String),
 
     #[error(transparent)]
-    Api(agent::Error),
+    Api(#[from] agent::Error),
 
     #[cfg(mobile)]
     #[error(transparent)]
     PluginInvoke(#[from] tauri::plugin::mobile::PluginInvokeError),
 }
 
-impl Serialize for Error {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_ref())
-    }
-}
-
-impl From<agent::Error> for Error {
-    fn from(value: agent::Error) -> Self {
-        Self::Api(value)
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Self::Io(e.to_string())
     }
 }

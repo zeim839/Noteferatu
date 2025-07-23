@@ -1,4 +1,4 @@
-const COMMANDS: &[&str] = &["try_connect"];
+const COMMANDS: &[&str] = &["try_connect", "list_models"];
 
 fn main() {
     tauri_plugin::Builder::new(COMMANDS)

@@ -14,7 +14,7 @@ pub trait Client {
     type StreamResponse: std::iter::Iterator<Item: Response>;
 
     /// Definition & capabilities of an LLM.
-    type ModelDefinition: ModelDefinition;
+    type ModelDefinition: Into<Model>;
 
     /// The client-specific error implementation.
     type Error: std::error::Error;
@@ -32,23 +32,15 @@ pub trait Client {
         Result<Vec<Self::ModelDefinition>, Self::Error>;
 }
 
-/// Interface for retrieving model metadata.
-pub trait ModelDefinition {
-
-    /// The client's unique identifier for the model.
-    fn id(&self) -> String;
-
-    /// A user-friendly display name for the model.
-    fn display_name(&self) -> String;
-
-    /// Get the token context length,
-    fn context_length(&self) -> u64;
-
-    /// Whether the model supports tool calling.
-    fn supports_tool_calls(&self) -> bool;
-
-    /// Whether the model supports web search.
-    fn supports_web_search(&self) -> bool;
+/// Implements a generic LLM definition that captures basic attributes
+/// from all clients.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Model {
+    pub id: String,
+    pub display_name: String,
+    pub provider: String,
+    pub context_size: u64,
 }
 
 /// Completion generation parameters.

@@ -5,6 +5,7 @@ Default permissions for the plugin
 #### This default permission set includes the following:
 
 - `allow-try-connect`
+- `allow-list-models`
 
 ## Permission Table
 
@@ -14,6 +15,32 @@ Default permissions for the plugin
 <th>Description</th>
 </tr>
 
+
+<tr>
+<td>
+
+`plugin-agent:allow-list-models`
+
+</td>
+<td>
+
+Enables the list_models command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`plugin-agent:deny-list-models`
+
+</td>
+<td>
+
+Denies the list_models command without any pre-configured scope.
+
+</td>
+</tr>
 
 <tr>
 <td>

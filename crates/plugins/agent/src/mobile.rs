@@ -24,8 +24,17 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Agent<R: Runtime>(PluginHandle<R>);
 
 impl<R: Runtime> Agent<R> {
-    pub fn try_connect(&self, payload: TryConnectRequest) -> Result<()> {
-        self.0.run_mobile_plugin("try_connect", payload)
+    pub async fn try_connect(&self, payload: TryConnectRequest) -> Result<()> {
+        self.0
+            .call("try_connect", payload)
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn list_models(&self, payload: ListModelsRequest) -> Result<Vec<agent::Model>> {
+        self.0
+            .call("list_models", payload)
+            .await
             .map_err(Into::into)
     }
 }

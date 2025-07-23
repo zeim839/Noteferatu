@@ -32,7 +32,10 @@ impl<R: Runtime, T: Manager<R>> crate::AgentExt<R> for T {
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("plugin-agent")
-        .invoke_handler(tauri::generate_handler![commands::try_connect])
+        .invoke_handler(tauri::generate_handler![
+            commands::try_connect,
+            commands::list_models,
+        ])
         .setup(|app, api| {
             #[cfg(mobile)]
             let agent = mobile::init(app, api)?;

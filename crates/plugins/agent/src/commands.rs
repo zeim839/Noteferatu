@@ -11,3 +11,11 @@ pub(crate) async fn try_connect<R: Runtime>(
 ) -> Result<()> {
     app.agent().try_connect(payload).await
 }
+
+#[command]
+pub(crate) async fn list_models<R: Runtime>(
+    app: AppHandle<R>,
+    payload: ListModelsRequest,
+) -> Result<Vec<agent::Model>> {
+    app.agent().list_models(payload).await
+}

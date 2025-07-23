@@ -44,7 +44,7 @@ function Combobox({
   // Deconstruct combobox subcomponents.
   const slots = React.useMemo(() => {
     let trigger: React.ReactNode | null = null
-    let values: React.ReactNode | null = null
+    let groups: Array<React.ReactNode> | null = null
     let emptyBody: React.ReactNode | null = null
     React.Children.forEach(children, (child) => {
       if (!React.isValidElement(child)) return
@@ -52,11 +52,11 @@ function Combobox({
         trigger = child
         return
       }
-      if (child.type === Combobox.Values) {
-        if ((child.props as ComboboxValuesProps).values.length == 0) {
-          return
+      if (child.type === Combobox.Group) {
+        if (groups === null) {
+          groups = []
         }
-        values = child
+        groups.push(child)
         return
       }
       if (child.type === Combobox.EmptyBody) {
@@ -64,18 +64,18 @@ function Combobox({
         return
       }
     })
-    return { trigger, values, emptyBody }
+    return { trigger, groups, emptyBody }
   }, [children])
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>{slots.trigger}</PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
-        {slots.values !== null ? (
+        {slots.groups !== null ? (
           <Command>
             <CommandInput placeholder="Search..." className="h-9" />
             <CommandList>
-              <CommandGroup>{slots.values}</CommandGroup>
+              {slots.groups}
             </CommandList>
           </Command>
         ) : (
@@ -99,25 +99,10 @@ export type ComboboxValue = {
   label: string
 }
 
-interface ComboboxValuesProps extends React.ComponentProps<"div"> {
-  values: ComboboxValue[]
-}
-
-function ComboboxValues({ values, ...props }: ComboboxValuesProps) {
-  return values.length > 0 ? (
-    <div {...props}>
-      {values.map((value) => (
-        <CommandItem key={value.value} value={value.value}>
-          {value.label}
-        </CommandItem>
-      ))}
-    </div>
-  ) : null
-}
-
 // Combobox Subcomponents.
 Combobox.Trigger = ComboboxSlot
 Combobox.EmptyBody = ComboboxEmptyBody
-Combobox.Values = ComboboxValues
+Combobox.Group = CommandGroup
+Combobox.Item = CommandItem
 
 export { Combobox }

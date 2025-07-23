@@ -1,10 +1,34 @@
-import { invoke } from '@tauri-apps/api/core'
+import { invoke } from "@tauri-apps/api/core"
 
-export async function tryConnect(provider: string, apiKey: string): Promise<null> {
-  return await invoke<{value?: string}>('plugin:plugin-agent|try_connect', {
+export type Model = {
+  id: string
+  displayName: string
+  provider: string
+  contextSize: number
+}
+
+export type AgentErr = {
+  type: string,
+  error: {
+    type?: string,
+    message?: string,
+  },
+}
+
+export async function tryConnect(
+  provider: string,
+  apiKey: string,
+): Promise<null> {
+  return await invoke("plugin:plugin-agent|try_connect", {
     payload: {
       provider,
       apiKey,
     },
-  }).then(() => null)
+  })
+}
+
+export async function listModels(provider?: string): Promise<Array<Model>> {
+  return await invoke<Array<Model>>("plugin:plugin-agent|list_models", {
+    payload: { provider },
+  })
 }

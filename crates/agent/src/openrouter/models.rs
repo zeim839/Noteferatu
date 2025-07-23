@@ -45,26 +45,13 @@ pub struct Architecture {
     pub instruct_type: Option<String>,
 }
 
-impl crate::ModelDefinition for Model {
-    fn id(&self) -> String {
-        self.id.clone()
-    }
-
-    fn display_name(&self) -> String {
-        self.name.clone()
-    }
-
-    fn context_length(&self) -> u64 {
-        self.context_length.unwrap_or(20000) as u64
-    }
-
-    fn supports_tool_calls(&self) -> bool {
-        use crate::GenerationParam::Tools;
-        self.supported_parameters.as_ref()
-            .is_some_and(|params| params.iter().find(|p| **p == Tools).is_some())
-    }
-
-    fn supports_web_search(&self) -> bool {
-        true
+impl Into<crate::Model> for Model {
+    fn into(self) -> crate::Model {
+        crate::Model {
+            id: self.id,
+            display_name: self.name,
+            provider: "OpenRouter".to_string(),
+            context_size: self.context_length.unwrap_or(20000) as u64,
+        }
     }
 }

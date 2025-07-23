@@ -1,5 +1,6 @@
 use crate::{anthropic, google, ollama, openai, openrouter};
 use crate::error::Error;
+use crate::client::Model;
 
 pub struct Agent {
     anthropic: Option<anthropic::Client>,
@@ -61,6 +62,48 @@ impl Agent {
         self.openrouter = Some(client);
         Ok(())
     }
+
+    /// List available models across all registered providers.
+    pub async fn list_models(&self, provider: Option<&str>) -> Result<Vec<Model>, Error> {
+        let mut models: Vec<Model> = Vec::new();
+        let provider = provider.unwrap_or("all").to_lowercase();
+        if let Some(anthropic) = &self.anthropic {
+            if provider == "all" || provider == "anthropic" {
+                for model in anthropic.list_models().await? {
+                    models.push(model.into());
+                }
+            }
+        }
+        if let Some(google) = &self.google {
+            if provider == "all" || provider == "google" {
+                for model in google.list_models().await? {
+                    models.push(model.into());
+                }
+            }
+        }
+        if let Some(ollama) = &self.ollama {
+            if provider == "all" || provider == "ollama" {
+                for model in ollama.list_models().await? {
+                    models.push(model.into());
+                }
+            }
+        }
+        if let Some(openai) = &self.openai {
+            if provider == "all" || provider == "openai" {
+                for model in openai.list_models().await? {
+                    models.push(model.into());
+                }
+            }
+        }
+        if let Some(openrouter) = &self.openrouter {
+            if provider == "all" || provider == "openrouter" {
+                for model in openrouter.list_models().await? {
+                    models.push(model.into());
+                }
+            }
+        }
+        Ok(models)
+    }
 }
 
 pub struct ChatRequest {
@@ -74,15 +117,4 @@ impl std::iter::Iterator for crate::SSE<ChatResponse> {
     fn next(&mut self) -> Option<Self::Item> {
         unimplemented!();
     }
-}
-
-/// Implements a generic LLM definition that captures basic attributes
-/// from all clients.
-pub struct Model {
-    pub provider: String,
-    pub name: String,
-    pub supports_tools: bool,
-    pub supports_search: bool,
-    pub params: Vec<crate::GenerationParam>,
-    pub context: u64,
 }

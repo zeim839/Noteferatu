@@ -16,24 +16,13 @@ pub struct Model {
     pub id: String,
 }
 
-impl crate::ModelDefinition for Model {
-    fn id(&self) -> String {
-        self.id.clone()
-    }
-
-    fn display_name(&self) -> String {
-        self.display_name.clone()
-    }
-
-    fn context_length(&self) -> u64 {
-        200000
-    }
-
-    fn supports_tool_calls(&self) -> bool {
-        true
-    }
-
-    fn supports_web_search(&self) -> bool {
-        true
+impl Into<crate::Model> for Model {
+    fn into(self) -> crate::Model {
+        crate::Model {
+            id: self.id,
+            display_name: self.display_name,
+            provider: "Anthropic".to_string(),
+            context_size: 200000,
+        }
     }
 }
