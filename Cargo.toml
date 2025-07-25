@@ -3,7 +3,8 @@ resolver = "2"
 members = [
         "crates/agent",
         "crates/helsync",
-        "crates/plugins/macwindow",
+        "crates/macwindow",
+        "crates/database",
         "crates/plugins/agent",
         "src-tauri"
 ]
