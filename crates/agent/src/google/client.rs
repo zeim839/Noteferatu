@@ -81,6 +81,23 @@ impl Client {
         Ok(from_value(json["models"].clone())?)
     }
 
+    /// Check whether the client is connected.
+    pub async fn check(&self) -> Result<(), Error> {
+        let res = self.0.get(format!("{API_ENDPOINT}/models?pageSize=1"))
+            .send().await?;
+
+        let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("GOOGLE_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
+        }
+
+        Ok(())
+    }
+
     /// Parses a Gemini SSE event.
     fn parse_event(buffer: &mut String) -> Option<ChatResponse> {
         let mut start_idx = 0;
@@ -219,6 +236,15 @@ mod tests {
         let client = get_test_client();
         let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_check() {
+        let client = get_test_client();
+        assert!(client.check().await.is_ok());
+
+        let client = Client::new("bad-api-token");
+        assert!(client.check().await.is_err());
     }
 
     #[tokio::test]

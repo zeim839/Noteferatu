@@ -94,6 +94,23 @@ impl Client {
         Ok(models)
     }
 
+    /// Check if the client is connected.
+    pub async fn check(&self) -> Result<(), Error> {
+        let res = self.client.get(format!("{}/tags", self.endpoint))
+            .send().await?;
+
+        let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: String = from_value(error.clone())?;
+            return Err(Error {
+                kind: "OLLAMA_ERR".to_string(),
+                message: err,
+            });
+        }
+
+        Ok(())
+    }
+
     /// Parses an Ollama SSE event.
     fn parse_event(buffer: &mut String) -> Option<ChatResponse> {
         while let Some(newline_pos) = buffer.find("\n") {
@@ -150,6 +167,16 @@ mod tests {
     async fn test_list_models() {
         let models = Client::new("http://localhost:11434").list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_check() {
+        let check = Client::new("http://localhost:11434")
+            .check().await;
+
+        assert!(check.is_ok());
+        let check = Client::new("bad-url").check().await;
+        assert!(check.is_err())
     }
 
     #[tokio::test]

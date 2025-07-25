@@ -1,17 +1,16 @@
 use serde::{Serialize, Deserialize};
-use crate::openai::FunctionDefinition;
 
 /// Common interface for LLM API clients.
 pub trait Client {
 
     /// The client-specific chat completion request type.
-    type Request: Request;
+    type Request: Into<Request>;
 
     /// A non-streaming response to a chat completion request.
-    type StaticResponse: Response;
+    type StaticResponse: Into<Response>;
 
     /// A streaming response to a chat completion request.
-    type StreamResponse: std::iter::Iterator<Item: Response>;
+    type StreamResponse: std::iter::Iterator<Item: Into<Response>>;
 
     /// Definition & capabilities of an LLM.
     type ModelDefinition: Into<Model>;
@@ -115,40 +114,8 @@ pub enum GenerationParam {
     Seed,
 }
 
-/// Common interface for chat completion requests.
-pub trait Request {
-
-    /// Set the maximum chat completion output tokens.
-    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self;
-
-    /// Set the model temperature parameter.
-    fn with_temperature(self, temperature: Option<f64>) -> Self;
-
-    /// Configure web search results options.
-    fn with_web_search_results(self, web_search_results: Option<i64>) -> Self;
-
-    /// Configure tool calling.
-    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self;
+pub struct Request {
 }
 
-/// Common interface for chat completion responses.
-pub trait Response {
-
-    /// Get the text response, if available.
-    fn get_text(&self) -> Option<String>;
-
-    /// Get the tool call ID, if available.
-    fn get_tool_call_id(&self) -> Option<String>;
-
-    /// Get tool calls, if available.
-    fn get_tool_calls(&self) -> Option<Vec<()>>;
-
-    /// Get refusal, if available.
-    fn get_refusal(&self) -> Option<String>;
-
-    /// Get thinking traces, if available.
-    fn get_thinking(&self) -> Option<String>;
-
-    /// Get usage data, if available.
-    fn get_usage(&self) -> Option<()>;
+pub struct Response {
 }

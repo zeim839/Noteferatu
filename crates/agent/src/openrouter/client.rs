@@ -88,6 +88,33 @@ impl Client {
         let models: Vec<Model> = from_value(json["data"].clone())?;
         Ok(models)
     }
+
+    /// Check if the client is connected.
+    pub async fn check(&self) -> Result<(), Error> {
+        let res = self.0.post(format!("{API_ENDPOINT}/completions"))
+            .json(&serde_json::json!({
+                "model": "mistralai/devstral-small-2505:free",
+                "models": vec![
+                    "google/gemma-3n-e2b-it:free",
+                    "mistralai/mistral-small-3.2-24b-instruct:free",
+                    "deepseek/deepseek-r1-0528:free",
+                ],
+                "prompt": "hi",
+                "max_tokens": 1,
+            }))
+            .send().await?;
+
+        let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("OPENROUTER_{}_ERR", err.code),
+                message: err.message,
+            });
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -111,7 +138,7 @@ mod tests {
     async fn test_completion() {
         let client = get_test_client();
         let req = ChatRequest::from_prompt(TEST_MODEL, "hi")
-            .with_max_tokens(Some(5));
+            .with_max_completion_tokens(Some(5));
 
         let res = client.completion(req).await.unwrap();
         assert!(res.choices.len() > 0);
@@ -126,7 +153,7 @@ mod tests {
     async fn test_stream_completion() {
         let client = get_test_client();
         let req = ChatRequest::from_prompt(TEST_MODEL, "hi")
-            .with_max_tokens(Some(10));
+            .with_max_completion_tokens(Some(10));
 
         let mut sse = client.stream_completion(req).await.unwrap();
         let mut response_count = 0;
@@ -152,6 +179,14 @@ mod tests {
         let client = get_test_client();
         let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_check() {
+        let check = get_test_client().check().await;
+        assert!(check.is_ok());
+        let check = Client::new("badd-key").check().await;
+        assert!(check.is_err());
     }
 
     #[tokio::test]

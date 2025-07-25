@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use crate::openai::FunctionDefinition;
 
 /// Specifies the producer of message content.
 #[derive(Debug, Serialize, Deserialize)]
@@ -564,51 +563,6 @@ impl GenerationConfig {
     /// Populates the [Self::thinking_config] field with the given value.
     pub fn with_thinking_config(self, thinking_config: Option<ThinkingConfig>) -> Self {
         Self { thinking_config, ..self }
-    }
-}
-
-impl crate::Request for ChatRequest {
-    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
-        let mut config = self.generation_config.unwrap_or_default();
-        config.max_output_tokens = max_tokens;
-        Self { generation_config: Some(config), ..self }
-    }
-
-    fn with_temperature(self, temperature: Option<f64>) -> Self {
-        let mut config = self.generation_config.unwrap_or_default();
-        config.temperature = temperature;
-        Self { generation_config: Some(config), ..self }
-    }
-
-    fn with_web_search_results(self, _: Option<i64>) -> Self {
-        let mut tools = self.tools.unwrap_or_default();
-        tools.push(Tool {
-            function_declarations: None,
-            google_search_retrieval: None,
-            url_context: None,
-            google_search: Some(GoogleSearch{
-                time_range_filter: None,
-            }),
-        });
-        Self { tools: Some(tools), ..self }
-    }
-
-    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
-        let tools = tools.map(|v| v.iter().map(|item| {
-            Tool {
-                google_search_retrieval: None,
-                google_search: None,
-                url_context: None,
-                function_declarations: Some(vec![
-                    FunctionDeclaration {
-                        name: item.name.clone(),
-                        description: item.description.clone().unwrap_or_default(),
-                        parameters: item.parameters.clone(),
-                    }
-                ])
-            }
-        }).collect());
-        Self { tools, ..self }
     }
 }
 

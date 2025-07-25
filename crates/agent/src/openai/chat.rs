@@ -86,7 +86,6 @@ pub struct Message {
     /// Only specified in `assistant` responses that use tool calls.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ToolCall>>,
-
 }
 
 /// Describes the possible response types of a [Message].
@@ -143,65 +142,16 @@ pub struct ChatRequest {
     /// The model ID to use.
     pub model: String,
 
-    /// Number between -2.0 and 2.0. Positive values penalize new
-    /// tokens based on their existing frequency in the text so far,
-    /// decreasing the model's likelihood to repeat the same line
-    /// verbatim.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub frequency_penalty: Option<i64>,
-
     /// An upper bound for the number of tokens that can be generated
     /// for a completion, including visible output tokens and
     /// reasoning tokens.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "max_tokens")]
     pub max_completion_tokens: Option<i64>,
-
-    /// How many chat completion choices to generate for each input
-    /// message. Note that you will be charged based on the number of
-    /// generated tokens across all of the choices. Keep `n` as 1 to
-    /// minimize costs.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub n: Option<i64>,
-
-    /// Whether to enable parallel function calling during tool use.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parallel_tool_calls: Option<bool>,
-
-    /// Number between -2.0 and 2.0. Positive values penalize new
-    /// tokens based on whether they appear in the text so far,
-    /// increasing the model's likelihood to talk about new topics.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub presence_penalty: Option<f64>,
-
-    /// Constrains effort on reasoning for reasoning models. Currently
-    /// supported values are `low`, `medium`, and `high`. Reducing
-    /// reasoning effort can result in faster responses and fewer
-    /// tokens used on reasoning in a response.
-    ///
-    /// o-series models only.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reasoning_effort: Option<ReasoningEffort>,
-
-    /// Specifies the processing type used for serving the request.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub service_tier: Option<ServiceTier>,
 
     /// If set to true, the model response data will be streamed to
     /// the client as it is generated using server-sent events.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream: Option<bool>,
-
-    /// Options for streaming response.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stream_options: Option<StreamOptions>,
-
-    /// What sampling temperature to use, between 0 and 2. Higher
-    /// values like 0.8 will make the output more random, while lower
-    /// values like 0.2 will make it more focused and
-    /// deterministic. We generally recommend altering this or top_p
-    /// but not both.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<f64>,
 
     /// A list of tools the model may call. Currently, only functions
     /// are supported as a tool. Use this to provide a list of
@@ -210,21 +160,9 @@ pub struct ChatRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<ToolDefinition>>,
 
-    /// An alternative to sampling with temperature, called nucleus
-    /// sampling, where the model considers the results of the tokens
-    /// with top_p probability mass. So 0.1 means only the tokens
-    /// comprising the top 10% probability mass are considered.
+    /// Whether a model's response may include multiple tool calls.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<f64>,
-
-    /// This tool searches the web for relevant results to use in a
-    /// response.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub web_search_options: Option<WebSearchOptions>,
-
-    /// Maximum number of tokens (range: [1, context_length)).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_tokens: Option<i64>,
+    pub parallel_tool_calls: Option<bool>,
 }
 
 impl ChatRequest {
@@ -251,19 +189,9 @@ impl ChatRequest {
         req
     }
 
-    /// Populates the [Self::frequency_penalty] field with the given value.
-    pub fn with_frequency_penaly(self, frequency_penalty: Option<i64>) -> Self {
-        Self { frequency_penalty, ..self }
-    }
-
     /// Populates the [Self::max_completion_tokens] field with the given value.
     pub fn with_max_completion_tokens(self, max_completion_tokens: Option<i64>) -> Self {
         Self { max_completion_tokens, ..self }
-    }
-
-    /// Populates the [Self::n] field with the given value.
-    pub fn with_n(self, n: Option<i64>) -> Self {
-        Self { n, ..self }
     }
 
     /// Populates the [Self::parallel_tool_calls] field with the given value.
@@ -271,129 +199,15 @@ impl ChatRequest {
         Self { parallel_tool_calls, ..self }
     }
 
-    /// Populates the [Self::presence_penalty] field with the given value.
-    pub fn with_presence_penalty(self, presence_penalty: Option<f64>) -> Self {
-        Self { presence_penalty, ..self }
-    }
-
-    /// Populates the [Self::reasoning_effort] field with the given value.
-    pub fn with_reasoning_effort(self, reasoning_effort: Option<ReasoningEffort>) -> Self {
-        Self { reasoning_effort, ..self }
-    }
-
-    /// Populates the [Self::service_tier] field with the given value.
-    pub fn with_service_tier(self, service_tier: Option<ServiceTier>) -> Self {
-        Self { service_tier, ..self }
-    }
-
     /// Populates the [Self::stream] field with the given value.
     pub fn with_stream(self, stream: Option<bool>) -> Self {
         Self { stream, ..self }
-    }
-
-    /// Populates the [Self::max_tokens] field with the given value.
-    pub fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
-        Self { max_tokens, ..self }
-    }
-
-    /// Populates the [Self::stream_options] field with the given value.
-    pub fn with_stream_options(self, stream_options: Option<StreamOptions>) -> Self {
-        Self { stream_options, ..self }
-    }
-
-    /// Populates the [Self::temperature] field with the given value.
-    pub fn with_temperature(self, temperature: Option<f64>) -> Self {
-        Self { temperature, ..self }
     }
 
     /// Populates the [Self::tools] field with the given value.
     pub fn with_tools(self, tools: Option<Vec<ToolDefinition>>) -> Self {
         Self { tools, ..self }
     }
-
-    /// Populates the [Self::top_p] field with the given value.
-    pub fn with_top_p(self, top_p: Option<f64>) -> Self {
-        Self { top_p, ..self }
-    }
-
-    /// Populates the [Self::web_search_options] field with the given value.
-    pub fn with_web_search_options(self, web_search_options: Option<WebSearchOptions>) -> Self {
-        Self { web_search_options, ..self }
-    }
-}
-
-impl crate::Request for ChatRequest {
-    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
-        self.with_max_completion_tokens(max_tokens)
-    }
-
-    fn with_temperature(self, temperature: Option<f64>) -> Self {
-        self.with_temperature(temperature)
-    }
-
-    fn with_web_search_results(self, _: Option<i64>) -> Self {
-        self.with_web_search_options(Some(WebSearchOptions {
-            search_context_size: None,
-        }))
-    }
-
-    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
-        let tools = tools.map(|v| v.iter().map(|item| {
-            ToolDefinition {
-                kind: "function".to_string(),
-                function: (*item).clone(),
-            }
-        }).collect());
-        Self { tools, ..self }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ReasoningEffort {
-    Low,
-    Medium,
-    High,
-}
-
-/// Specifies the processing type used for serving the request.
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ServiceTier {
-    /// The request will be processed with the service tier configured
-    /// in the Project settings. Unless otherwise configured, the
-    /// Project will use 'default'.
-    #[serde(rename = "auto")]
-    Auto,
-
-    /// The request will be processed with the standard pricing and
-    /// performance for the selected model.
-    #[serde(rename = "default")]
-    Default,
-
-    /// The request will be processed with the 'flex' service tier.
-    #[serde(rename = "flex")]
-    Flex,
-
-    /// The request will be processed with the 'priority' service tier.
-    #[serde(rename = "priority")]
-    Priority,
-}
-
-/// Options for streaming response.
-#[derive(Serialize, Deserialize)]
-pub struct StreamOptions {
-
-    /// If set, an additional chunk will be streamed before the data:
-    /// `[DONE]` message. The usage field on this chunk shows the token
-    /// usage statistics for the entire request, and the choices field
-    /// will always be an empty array.
-    ///
-    /// All other chunks will also include a usage field, but with a
-    /// null value. NOTE: If the stream is interrupted, you may not
-    /// receive the final usage chunk which contains the total token
-    /// usage for the request.
-    pub include_usage: Option<bool>,
 }
 
 /// Tool Definition.
@@ -433,18 +247,6 @@ pub struct FunctionDefinition {
     pub strict: Option<bool>,
 }
 
-/// Web search options: this tool searches the web for relevant
-/// results to use in a response.
-#[derive(Serialize, Deserialize)]
-pub struct WebSearchOptions {
-
-    /// High level guidance for the amount of context window space to
-    /// use for the search. One of `low`, `medium`, or `high`. medium
-    /// is the default.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub search_context_size: Option<ReasoningEffort>,
-}
-
 /// ChatResponse represents a successful chat completion.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChatResponse {
@@ -463,12 +265,8 @@ pub struct ChatResponse {
     /// The model used for the chat completion.
     pub model: String,
 
-    /// Specifies the processing type used for serving the request.
-    pub service_tier: Option<ServiceTier>,
-
     /// Usage statistics for the completion request.
     pub usage: Option<Usage>,
-
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::openai::{ToolCall, ToolDefinition, FunctionDefinition};
+use crate::openai::{ToolCall, ToolDefinition};
 use crate::openai::Role;
 
 /// ChatRequest represents a chat completion request.
@@ -72,30 +72,6 @@ impl ChatRequest {
     /// Populates the [Self::stream] field with the given value.
     pub fn with_stream(self, stream: Option<bool>) -> Self {
         Self { stream, ..self }
-    }
-}
-
-impl crate::Request for ChatRequest {
-    fn with_max_tokens(self, _: Option<i64>) -> Self {
-        self // not available.
-    }
-
-    fn with_temperature(self, _: Option<f64>) -> Self {
-        self // not available.
-    }
-
-    fn with_web_search_results(self, _: Option<i64>) -> Self {
-        self // not available.
-    }
-
-    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
-        let tools = tools.map(|v| v.iter().map(|item| {
-            ToolDefinition {
-                kind: "function".to_string(),
-                function: (*item).clone(),
-            }
-        }).collect());
-        Self { tools, ..self }
     }
 }
 

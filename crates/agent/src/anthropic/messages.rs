@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use crate::openai::{ErrorAPI, FunctionDefinition};
+use crate::openai::ErrorAPI;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -153,46 +153,6 @@ impl MessageRequest {
     /// Populates the [Self::top_p] field with the given value.
     pub fn with_top_p(self, top_p: Option<f64>) -> Self {
         Self { top_p, ..self }
-    }
-}
-
-impl crate::Request for MessageRequest {
-
-    /// Populates the [Self::max_tokens] field with the given value.
-    fn with_max_tokens(self, max_tokens: Option<i64>) -> Self {
-        if max_tokens.is_none() { self } else {
-            Self { max_tokens: max_tokens.unwrap_or(1024), ..self }
-        }
-    }
-
-    /// Populates the [Self::temperature] field with the given value.
-    fn with_temperature(self, temperature: Option<f64>) -> Self {
-        Self { temperature, ..self }
-    }
-
-    fn with_web_search_results(self, web_search_results: Option<i64>) -> Self {
-        let mut tools = self.tools.unwrap_or_default();
-        tools.push(ToolDefinition{
-            name: "web_search".to_string(),
-            kind: Some("web_search_20250305".to_string()),
-            max_uses: web_search_results.map(|v| v as u64),
-            input_schema: None,
-            description: None,
-        });
-        Self { tools: Some(tools), ..self }
-    }
-
-    fn with_tools(self, tools: Option<Vec<FunctionDefinition>>) -> Self {
-        let tools = tools.map(|v| v.iter().map(|item| {
-            ToolDefinition{
-                name: item.name.clone(),
-                description: item.description.clone(),
-                input_schema: item.parameters.clone(),
-                kind: None,
-                max_uses: None,
-            }
-        }).collect());
-        Self { tools, ..self }
     }
 }
 

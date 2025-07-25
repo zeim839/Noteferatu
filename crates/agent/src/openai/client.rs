@@ -83,6 +83,23 @@ impl Client {
         Ok(from_value(json["data"].clone())?)
     }
 
+    /// Check if the client is connected.
+    pub async fn check(&self) -> Result<(), Error> {
+        let res = self.0.get(format!("{API_ENDPOINT}/models"))
+            .send().await?;
+
+        let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: ErrorAPI = from_value(error.clone())?;
+            return Err(Error {
+                kind: format!("OPENAI_{}_ERR", err.code.to_uppercase()),
+                message: err.message,
+            });
+        }
+
+        Ok(())
+    }
+
     /// Parses an OpenAI SSE event.
     pub fn parse_event(buffer: &mut String) -> Option<ChatResponse> {
         while let Some(double_newline_pos) = buffer.find("\n\n") {
@@ -177,6 +194,14 @@ mod tests {
         let client = get_test_client();
         let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
+    }
+
+    #[tokio::test]
+    async fn test_check() {
+        let check = get_test_client().check().await;
+        assert!(check.is_ok());
+        let check = Client::new("baddd-key").check().await;
+        assert!(check.is_err());
     }
 
     #[tokio::test]

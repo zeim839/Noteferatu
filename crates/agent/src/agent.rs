@@ -26,7 +26,7 @@ impl Agent {
     /// Register an Anthropic client.
     pub async fn register_anthropic(&mut self, api_key: &str) -> Result<(), Error> {
         let client = anthropic::Client::new(api_key);
-        client.list_models().await?;
+        client.check().await?;
         self.anthropic = Some(client);
         Ok(())
     }
@@ -34,7 +34,7 @@ impl Agent {
     /// Register a Google Gemini client.
     pub async fn register_google(&mut self, api_key: &str) -> Result<(), Error> {
         let client = google::Client::new(api_key);
-        client.list_models().await?;
+        client.check().await?;
         self.google = Some(client);
         Ok(())
     }
@@ -42,7 +42,7 @@ impl Agent {
     /// Register an Ollama client.
     pub async fn register_ollama(&mut self, endpoint: &str) -> Result<(), Error> {
         let client = ollama::Client::new(endpoint);
-        client.list_models().await?;
+        client.check().await?;
         self.ollama = Some(client);
         Ok(())
     }
@@ -50,7 +50,7 @@ impl Agent {
     /// Register an OpenAI client.
     pub async fn register_openai(&mut self, api_key: &str) -> Result<(), Error> {
         let client = openai::Client::new(api_key);
-        client.list_models().await?;
+        client.check().await?;
         self.openai = Some(client);
         Ok(())
     }
@@ -58,7 +58,7 @@ impl Agent {
     /// Register an OpenRouter client.
     pub async fn register_openrouter(&mut self, api_key: &str) -> Result<(), Error> {
         let client = openrouter::Client::new(api_key);
-        client.list_models().await?;
+        client.check().await?;
         self.openrouter = Some(client);
         Ok(())
     }
