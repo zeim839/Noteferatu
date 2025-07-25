@@ -1,9 +1,9 @@
+use crate::errors::Result;
+use super::Config;
+
 use std::time::{SystemTime, UNIX_EPOCH};
 use reqwest::header::CONTENT_TYPE;
 use serde::{Serialize, Deserialize};
-use anyhow::Result;
-
-use super::Config;
 
 /// OAuth2 access and refresh tokens.
 ///

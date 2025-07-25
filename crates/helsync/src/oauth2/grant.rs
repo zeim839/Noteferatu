@@ -1,13 +1,13 @@
+use super::pkce::PKCE;
+use super::token::{Token, TokenResponse};
+use super::Config;
+use crate::errors::{Error, Result};
+
 use std::collections::HashMap;
 use std::process::Command as CMD;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use reqwest::header::{CONTENT_TYPE, ACCEPT};
-use anyhow::Result;
-
-use super::pkce::PKCE;
-use super::token::{Token, TokenResponse};
-use super::Config;
 
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufStream};
 use tokio::net::TcpListener;
@@ -76,7 +76,7 @@ impl Grant {
         let pkce = PKCE::new();
         request_auth_grant(&pkce, &config)?;
         let grant = rx.recv().await
-            .ok_or(anyhow::anyhow!("failed to capture authorization grant"))?;
+            .ok_or(Error::Auth("failed to capture authorization grant".to_string()))?;
 
         Ok(Self {code: grant, pkce, config: config.clone()})
     }
@@ -205,14 +205,14 @@ async fn parse_request(
 
     let mut parts = line_buffer.split_whitespace();
     let method = parts.next()
-        .ok_or(anyhow::anyhow!("missing method"))?;
+        .ok_or(Error::Auth("missing method".to_string()))?;
 
     if method != "GET" {
-        return Err(anyhow::anyhow!("unsupported method: {}", method));
+        return Err(Error::Auth(format!("unsupported method: {}", method)));
     }
 
     let path: String = parts.next()
-        .ok_or(anyhow::anyhow!("missing path"))
+        .ok_or(Error::Auth("missing path".to_string()))
         .map(Into::into)?;
 
     Ok(extract_query_params(&path))
@@ -231,7 +231,7 @@ async fn send_html_response(
     );
 
     stream.write_all(response.as_bytes()).await?;
-        stream.flush().await?;
+    stream.flush().await?;
 
     Ok(())
 }

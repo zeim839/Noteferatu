@@ -1,4 +1,4 @@
-//! Authentication for cloud APIs.
+//! OAuth2 Authentication for cloud APIs.
 //!
 //! It exposes [Grant] and [Token], which abstract each step
 //! in the PKCE authorization flow in a composable functional
@@ -106,16 +106,3 @@ pub use token::*;
 
 mod utils;
 pub use utils::*;
-
-// let app_config = oauth2::Config{
-//     auth_endpoint: "http://...",
-//     token_endpoint: "http://...",
-//     client_id: "...",
-//     client_secret: None,
-//     redirect_uri: "http://localhost:6969",
-//     scope: "...",
-// };
-//
-// let token = app_config
-//     .from_grant_server(port)?
-//     .to_token()?;

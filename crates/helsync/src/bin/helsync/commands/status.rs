@@ -1,9 +1,4 @@
-use crate::database::{Database, Drive, Filesystem, App, CloudProvider};
-use helsync::oauth2;
-use helsync::fs;
-use super::errors::*;
-
-use sqlx::Error as SqlxError;
+use crate::database::Database;
 use anyhow::Result;
 use clap::Parser;
 
@@ -15,7 +10,7 @@ pub struct StatusOpt {
 }
 
 impl StatusOpt {
-    pub async fn run (&self, db: &Database) -> Result<()> {
+    pub async fn run (&self, _: &Database) -> Result<()> {
         unimplemented!();
     }
 }

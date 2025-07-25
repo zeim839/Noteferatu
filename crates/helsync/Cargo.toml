@@ -1,25 +1,43 @@
 [package]
 name = "helsync"
 version = "0.1.0"
-edition = "2024"
+authors = [ "NoteFeratu" ]
+description = ""
+edition = "2021"
+rust-version = "1.77.2"
+links = "helsync"
 
 [dependencies]
-anyhow = "1.0.98"
+tauri = { version = "2.2.4", optional = true }
+thiserror = { version = "2", optional = true }
+clap = { version = "4.5.40", features = ["derive"], optional = true }
+console = { version = "0.16.0", optional = true }
+sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"], optional = true }
+dirs = { version = "6.0.0", optional = true }
+anyhow = { version = "1.0.98", optional = true }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.45.1", features = ["full"] }
+reqwest = { version = "0.12.20", features = ["json"] }
+form_urlencoded = "1.2.1"
+serde_json = "1.0.140"
+rand = "0.9.2"
+sha2 = "0.10.9"
 base64 = "0.22.1"
 chrono = "0.4.41"
-clap = { version = "4.5.40", features = ["derive"] }
-console = "0.16.0"
-dirs = "6.0.0"
-form_urlencoded = "1.2.1"
-futures-core = "0.3.31"
-rand = "0.9.1"
-reqwest = { version = "0.12.20", features = ["json"] }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-sha2 = "0.10.9"
-sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"] }
-tokio = { version = "1.45.1", features = ["full"] }
-uuid = { version = "1.17.0", features = ["v4"] }
+database = { path = "../database" }
+
+[build-dependencies]
+tauri-plugin = { version = "2.0.3", features = ["build"], optional = true }
 
 [dev-dependencies]
 dotenv = "0.15.0"
+
+[features]
+default = ["binary", "plugin"]
+binary = ["dep:clap", "dep:console", "dep:sqlx", "dep:dirs", "dep:anyhow"]
+plugin = ["dep:tauri", "dep:thiserror", "dep:tauri-plugin"]
+
+[[bin]]
+name = "helsync"
+path = "src/bin/helsync/main.rs"
+required-features = ["binary"]

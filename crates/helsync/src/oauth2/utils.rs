@@ -1,38 +1,41 @@
-// -- TODO --
-// Are the provider functions still needed? They should at least use a
-// cloud provider enumeration instead of &str.
-// -----------
-use anyhow::Result;
-
 /// Get the OAuth2 authorization endpoint for the given cloud
 /// provider. Currently supported options are "OneDrive" and
 /// "GoogleDrive".
-pub fn auth_endpoint(provider: &str) -> Result<String> {
-    match provider {
-        "OneDrive" => Ok(ONEDRIVE_AUTH_ENDPOINT.to_string()),
-        "GoogleDrive" => Ok(GOOGLEDRIVE_AUTH_ENDPOINT.to_string()),
-        _ => Err(anyhow::anyhow!("unsupported provider \"{provider}\"")),
+///
+/// # Panics
+/// Panics if `provider` is neither `OneDrive` nor `GoogleDrive`.
+pub fn auth_endpoint(provider: &str) -> String {
+    match provider.to_lowercase().as_str() {
+        "onedrive" => ONEDRIVE_AUTH_ENDPOINT.to_string(),
+        "googledrive" => GOOGLEDRIVE_AUTH_ENDPOINT.to_string(),
+        _ => panic!("unsupported provider \"{provider}\""),
     }
 }
 
 /// Get the OAuth2 token endpoint for the given cloud
 /// provider. Currently supported options are "OneDrive" and
 /// "GoogleDrive".
-pub fn token_endpoint(provider: &str) -> Result<String> {
-    match provider {
-        "OneDrive" => Ok(ONEDRIVE_TOKEN_ENDPOINT.to_string()),
-        "GoogleDrive" => Ok(GOOGLEDRIVE_TOKEN_ENDPOINT.to_string()),
-        _ => Err(anyhow::anyhow!("unsupported provider \"{provider}\"")),
+///
+/// # Panics
+/// Panics if `provider` is neither `OneDrive` nor `GoogleDrive`.
+pub fn token_endpoint(provider: &str) -> String {
+    match provider.to_lowercase().as_str() {
+        "onedrive" => ONEDRIVE_TOKEN_ENDPOINT.to_string(),
+        "googledrive" => GOOGLEDRIVE_TOKEN_ENDPOINT.to_string(),
+        _ => panic!("unsupported provider \"{provider}\""),
     }
 }
 
 /// Get the API OAuth2 scope for the given cloud provider. Currently
 /// supported options are "OneDrive" and "GoogleDrive".
-pub fn scope(provider: &str) -> Result<String> {
-    match provider {
-        "OneDrive" => Ok(ONEDRIVE_SCOPE.to_string()),
-        "GoogleDrive" => Ok(GOOGLEDRIVE_SCOPE.to_string()),
-        _ => Err(anyhow::anyhow!("unsupported provider \"{provider}\"")),
+///
+/// # Panics
+/// Panics if `provider` is neither `OneDrive` nor `GoogleDrive`.
+pub fn scope(provider: &str) -> String {
+    match provider.to_lowercase().as_str() {
+        "onedrive" => ONEDRIVE_SCOPE.to_string(),
+        "googledrive" => GOOGLEDRIVE_SCOPE.to_string(),
+        _ => panic!("unsupported provider \"{provider}\""),
     }
 }
 

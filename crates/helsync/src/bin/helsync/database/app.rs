@@ -32,12 +32,12 @@ impl Into<Config> for App {
     fn into(self) -> Config {
         let provider = self.provider.to_string();
         Config {
-            auth_endpoint: oauth2::auth_endpoint(&provider).unwrap(),
-            token_endpoint: oauth2::token_endpoint(&provider).unwrap(),
+            auth_endpoint: oauth2::auth_endpoint(&provider),
+            token_endpoint: oauth2::token_endpoint(&provider),
             client_id: self.client_id,
             client_secret: self.client_secret,
             redirect_uri: format!("http://localhost:{}", self.port),
-            scope: oauth2::scope(&provider).unwrap(),
+            scope: oauth2::scope(&provider),
         }
     }
 }

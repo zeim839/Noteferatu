@@ -4,6 +4,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(macwindow::init())
         .plugin(plugin_agent::init())
+        .plugin(helsync::plugin::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

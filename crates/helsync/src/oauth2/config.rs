@@ -1,6 +1,6 @@
 use super::utils::*;
 use super::grant::Grant;
-use anyhow::Result;
+use crate::errors::Result;
 
 /// An OAuth2 app configuration.
 ///
@@ -26,24 +26,24 @@ impl Config {
     /// Constructs an [Config] for a OneDrive API client.
     pub fn onedrive(client_id: &str, redirect_uri: &str) -> Self {
         Self {
-            auth_endpoint: auth_endpoint("OneDrive").unwrap(),
-            token_endpoint: token_endpoint("OneDrive").unwrap(),
+            auth_endpoint: auth_endpoint("OneDrive"),
+            token_endpoint: token_endpoint("OneDrive"),
             client_id: client_id.to_string(),
             client_secret: None,
             redirect_uri: redirect_uri.to_string(),
-            scope: scope("OneDrive").unwrap(),
+            scope: scope("OneDrive"),
         }
     }
 
     /// Constructs an [Config] for a Google Drive API client.
     pub fn googledrive(client_id: &str, client_secret: &str, redirect_uri: &str) -> Self {
         Self {
-            auth_endpoint: auth_endpoint("GoogleDrive").unwrap(),
-            token_endpoint: token_endpoint("GoogleDrive").unwrap(),
+            auth_endpoint: auth_endpoint("GoogleDrive"),
+            token_endpoint: token_endpoint("GoogleDrive"),
             client_id: client_id.to_string(),
             client_secret: Some(client_secret.to_string()),
             redirect_uri: redirect_uri.to_string(),
-            scope: scope("GoogleDrive").unwrap(),
+            scope: scope("GoogleDrive"),
         }
     }
 
