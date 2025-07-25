@@ -1,0 +1,13 @@
+[package]
+name = "database"
+version = "0.1.0"
+authors = [ "NoteFeratu" ]
+description = ""
+edition = "2021"
+rust-version = "1.77.2"
+
+[dependencies]
+sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"] }
+
+[dev-dependencies]
+tokio = { version = "1.46.1", features = ["full"] }
