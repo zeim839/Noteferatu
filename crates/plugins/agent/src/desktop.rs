@@ -28,7 +28,11 @@ impl<R: Runtime> Agent<R> {
         match payload.provider.to_lowercase().as_str() {
             "anthropic" => client.register_anthropic(&payload.api_key).await?,
             "google" => client.register_google(&payload.api_key).await?,
-            "ollama" => client.register_ollama(&payload.api_key).await?,
+            "ollama" => client.register_ollama(&payload.api_key).await
+                .map_err(|err| agent::Error{
+                    kind: "OLLAMA_ERR".to_string(),
+                    message: "invalid connection URL".to_string(),
+                })?,
             "openai" => client.register_openai(&payload.api_key).await?,
             "openrouter" => client.register_openrouter(&payload.api_key).await?,
             _ => panic!("unknown provider"),
