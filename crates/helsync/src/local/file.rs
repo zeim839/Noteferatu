@@ -2,7 +2,7 @@ use crate::filesystem::{Delta, File};
 use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
 
-#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFile {
     pub id: i64,

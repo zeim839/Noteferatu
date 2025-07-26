@@ -83,7 +83,7 @@ impl Filesystem for LocalFS {
 
         let name = match name {
             Some(name) => name.to_string(),
-            None => original.name,
+            None => original.name.clone(),
         };
 
         let created_at: i64 = SystemTime::now()
@@ -91,17 +91,17 @@ impl Filesystem for LocalFS {
             .unwrap_or_default()
             .as_secs() as i64;
 
-        let parent_id: Option<String> = match parent_id {
+        let new_parent_id: Option<String> = match parent_id {
             Some(parent_id) => Some(parent_id.to_string()),
             None => original.parent.map(|p| p.to_string()),
         };
 
-        // Create copy.
+        // Create root copy.
         let res = sqlx::query("INSERT INTO File (name, parent,
         is_deleted, created_at, modified_at, is_folder) VALUES (?, ?,
         FALSE, ?, ?, ?)")
             .bind(name)
-            .bind(parent_id)
+            .bind(new_parent_id)
             .bind(created_at)
             .bind(created_at)
             .bind(original.is_folder)
@@ -114,22 +114,35 @@ impl Filesystem for LocalFS {
             .fetch_one(&mut *tx)
             .await?;
 
-        // TODO Copy children.
-        // if original.is_folder {
-        //     let children: Vec<LocalFile> = sqlx::query_as("SELECT *
-        // FROM File WHERE parent=? AND is_deleted=FALSE")
-        //         .bind(source_id)
-        //         .fetch_all(&mut *tx)
-        //         .await?;
+        if !original.is_folder {
+            tx.commit().await?;
+            return Ok(copied_file);
+        }
 
-        //     for child in children {
-        //         self.copy_file(
-        //             &child.id.to_string(),
-        //             Some(&original.id.to_string()),
-        //             None
-        //         ).await?;
-        //     }
-        // }
+        // Recursively copy children using a stack for DFS traversal.
+        let mut stack: Vec<(i64, i64)> = vec![(original.id, copied_file.id)];
+
+        while let Some((old_parent_id, new_parent_id)) = stack.pop() {
+            let children: Vec<LocalFile> = sqlx::query_as("SELECT * FROM File WHERE parent=? AND is_deleted=FALSE")
+                .bind(old_parent_id)
+                .fetch_all(&mut *tx)
+                .await?;
+
+            for child in children {
+                let res = sqlx::query("INSERT INTO File (name, parent, is_deleted, created_at, modified_at, is_folder) VALUES (?, ?, FALSE, ?, ?, ?)")
+                    .bind(&child.name)
+                    .bind(new_parent_id)
+                    .bind(created_at)
+                    .bind(created_at)
+                    .bind(child.is_folder)
+                    .execute(&mut *tx)
+                    .await?;
+
+                if child.is_folder {
+                    stack.push((child.id, res.last_insert_rowid()));
+                }
+            }
+        }
 
         tx.commit().await?;
         Ok(copied_file)
@@ -311,6 +324,32 @@ INSERT INTO File VALUES
 
     #[tokio::test]
     async fn test_copy_file() {
+        let fs = get_local_fs().await;
+
+        // Copy a file.
+        let copied = fs.copy_file("0", Some("2"), Some("copied.txt")).await.unwrap();
+        assert_eq!(copied.name, "copied.txt");
+        assert_eq!(copied.parent, Some(2));
+
+        let parent_files = fs.list_files(Some("2")).await.unwrap();
+        assert!(parent_files.iter().any(|f| f.id == copied.id));
+
+        // Copy a folder.
+        let copied_folder = fs.copy_file("7", Some("2"), Some("copied_folder")).await.unwrap();
+        assert_eq!(copied_folder.name, "copied_folder");
+        assert_eq!(copied_folder.parent, Some(2));
+        assert!(copied_folder.is_folder);
+
+        let children = fs.list_files(Some(&copied_folder.id.to_string())).await.unwrap();
+        assert_eq!(children.len(), 1);
+        assert_eq!(children[0].name, "list-child.txt");
+
+        // Do not allow copying deleted files.
+        assert!(fs.copy_file("1", None, None).await.is_err());
+
+        // Should preserve original names.
+        let new_copied = fs.copy_file("0", None, None).await.unwrap();
+        assert!(new_copied.name == "test.txt");
     }
 
     #[tokio::test]
