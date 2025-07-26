@@ -12,10 +12,10 @@ tauri = { version = "2.2.4", optional = true }
 thiserror = { version = "2", optional = true }
 clap = { version = "4.5.40", features = ["derive"], optional = true }
 console = { version = "0.16.0", optional = true }
-sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"], optional = true }
 dirs = { version = "6.0.0", optional = true }
 anyhow = { version = "1.0.98", optional = true }
 serde = { version = "1.0", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"] }
 tokio = { version = "1.45.1", features = ["full"] }
 reqwest = { version = "0.12.20", features = ["json"] }
 form_urlencoded = "1.2.1"
@@ -33,8 +33,7 @@ tauri-plugin = { version = "2.0.3", features = ["build"], optional = true }
 dotenv = "0.15.0"
 
 [features]
-default = ["binary", "plugin"]
-binary = ["dep:clap", "dep:console", "dep:sqlx", "dep:dirs", "dep:anyhow"]
+binary = ["dep:clap", "dep:console", "dep:dirs", "dep:anyhow"]
 plugin = ["dep:tauri", "dep:thiserror", "dep:tauri-plugin"]
 
 [[bin]]

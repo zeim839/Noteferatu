@@ -2,7 +2,7 @@
 name = "NoteFeratu"
 version = "1.0.0"
 description = "NoteFeratu!"
-authors = ["Michael Zeipekkis"]
+authors = ["NoteFeratu"]
 license = "GPL-3.0"
 repository = ""
 edition = "2021"

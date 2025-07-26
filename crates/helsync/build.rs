@@ -1,5 +1,12 @@
 #[cfg(feature = "plugin")]
-const COMMANDS: &[&str] = &["ping"];
+const COMMANDS: &[&str] = &[
+    "get_file",
+    "copy_file",
+    "move_file",
+    "remove_file",
+    "create_folder",
+    "list_files"
+];
 
 fn main() {
     #[cfg(feature = "plugin")]
