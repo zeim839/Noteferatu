@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-create-folder"
+description = "Enables the create-folder command without any pre-configured scope."
+commands.allow = ["create-folder"]
+
+[[permission]]
+identifier = "deny-create-folder"
+description = "Denies the create-folder command without any pre-configured scope."
+commands.deny = ["create-folder"]
