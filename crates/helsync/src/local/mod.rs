@@ -4,3 +4,6 @@ pub use file::*;
 
 mod local;
 pub use local::*;
+
+mod schema;
+pub use schema::*;

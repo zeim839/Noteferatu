@@ -1,15 +1,20 @@
 use crate::filesystem::{Delta, File};
+use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
 
-#[derive(FromRow)]
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LocalFile {
     pub id: i64,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub parent: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub remote_id: Option<String>,
     pub is_deleted: bool,
     pub created_at: i64,
     pub modified_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_at: Option<i64>,
     pub is_folder: bool,
 }

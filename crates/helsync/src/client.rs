@@ -4,7 +4,7 @@ use crate::errors::Result;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
 
-use reqwest::{Response, RequestBuilder, header};
+use reqwest::{Response, RequestBuilder};
 use tokio::time::sleep;
 
 pub(crate) struct Client {
@@ -84,21 +84,6 @@ impl Client {
         let token = self.token.read().unwrap();
         return Ok(format!("Bearer {}", token.access_token));
     }
-}
-
-/// Constructs a reqwest client and sets its timeout and OAuth2
-/// authorization header.
-fn build_client(token: &Token) -> reqwest::Client {
-    let mut headers = header::HeaderMap::new();
-    let bearer_str = format!("Bearer {}", &token.access_token);
-    let bearer = header::HeaderValue::from_str(&bearer_str).unwrap();
-    headers.insert(header::AUTHORIZATION, bearer);
-    return reqwest::Client::builder()
-        .default_headers(headers)
-        .user_agent("helsync/1.0")
-        .timeout(std::time::Duration::from_secs(10))
-        .build()
-        .unwrap();
 }
 
 /// Determines if a status code should trigger a retry

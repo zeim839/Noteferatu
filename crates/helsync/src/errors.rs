@@ -10,6 +10,7 @@ pub enum Error {
     Client(reqwest::Error),
     Json(serde_json::Error),
     SystemTime(SystemTimeError),
+    Database(sqlx::Error),
     Auth(String),
     Io(std::io::Error),
 }
@@ -20,6 +21,7 @@ impl Display for Error {
             Error::Client(err) => write!(f, "client error: {err}"),
             Error::Json(err) => write!(f, "json error: {err}"),
             Error::SystemTime(err) => write!(f, "system time error: {err}"),
+            Error::Database(err) => write!(f, "database error: {err}"),
             Error::Auth(err) => write!(f, "auth error: {err}"),
             Error::Io(err) => write!(f, "io error: {err}"),
         }
@@ -41,6 +43,12 @@ impl From<serde_json::Error> for Error {
 impl From<SystemTimeError> for Error {
     fn from(error: SystemTimeError) -> Self {
         Self::SystemTime(error)
+    }
+}
+
+impl From<sqlx::Error> for Error {
+    fn from(error: sqlx::Error) -> Self {
+        Self::Database(error)
     }
 }
 

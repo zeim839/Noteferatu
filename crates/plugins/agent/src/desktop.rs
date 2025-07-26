@@ -11,14 +11,14 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
     _api: PluginApi<R, C>,
 ) -> Result<Agent<R>> {
     Ok(Agent {
-        app: app.clone(),
+        _app: app.clone(),
         client: Mutex::new(agent::Agent::new()),
     })
 }
 
 /// Access to the agent APIs.
 pub struct Agent<R: Runtime> {
-    app: AppHandle<R>,
+    _app: AppHandle<R>,
     client: Mutex<agent::Agent>,
 }
 
