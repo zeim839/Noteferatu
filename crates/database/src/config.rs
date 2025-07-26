@@ -34,7 +34,7 @@ pub struct Migration {
 pub(crate) const MIGRATION_SCHEMA: &str = "
 CREATE TABLE IF NOT EXISTS _migrations (
   version INTEGER PRIMARY KEY,
-  sql     TEXT    NOT NULL,
+  sql     TEXT    NOT NULL
 );
 ";
 
