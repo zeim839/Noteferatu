@@ -62,9 +62,11 @@ impl Database {
         Ok(conn)
     }
 
-    /// Get the latest applied migration version.
-    pub async fn version(&self) -> Result<i64> {
-        let res = sqlx::query("SELECT MAX(version) AS version FROM _migrations WHERE success=TRUE")
+    /// Get the latest applied [Migration] version.
+    ///
+    /// If output is `None`, then no migrations have been applied.
+    pub async fn version(&self) -> Result<Option<i64>> {
+        let res = sqlx::query("SELECT MAX(version) AS version FROM _migrations")
             .fetch_one(&self.0).await?;
 
         Ok(res.get("version"))
@@ -72,16 +74,17 @@ impl Database {
 
     /// Apply the given migrations and then return the current schema
     /// version.
-    pub(crate) async fn apply_migrations(&self, migrations: &[Migration]) -> Result<i64> {
+    pub(crate) async fn apply_migrations(&self, migrations: &[Migration]) -> Result<Option<i64>> {
         let mut migrations: Vec<Migration> = migrations.to_vec();
         migrations.sort_by_cached_key(|m| m.version);
-
         let current_version = self.version().await?;
         for migration in migrations {
 
             // Skip applied migrations.
-            if migration.version >= current_version {
-                continue;
+            if let Some(current_version) = current_version {
+                if migration.version <= current_version {
+                    continue;
+                }
             }
             if migration.kind != MigrationType::Up {
                 continue;
