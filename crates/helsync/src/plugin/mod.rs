@@ -57,6 +57,21 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                     migrations: vec![schema::MIGRATION_V0],
                 }).await.unwrap();
 
+                let mut pool = db.acquire().await.unwrap();
+                sqlx::query("
+INSERT INTO File(id, name, parent, is_deleted, created_at, modified_at,
+is_folder) VALUES
+  (0, \"Introduction\", NULL, FALSE, 0, 0, FALSE),
+  (1, \"NoteFeratu Tutorial\", NULL, FALSE, 0, 0, FALSE),
+  (2, \"Roman Empire\", NULL, FALSE, 0, 0, FALSE),
+  (3, \"First Order Theory\", NULL, FALSE, 0, 0, FALSE),
+  (4, \"Coursework\", NULL, FALSE, 0, 0, TRUE),
+  (5, \"Normal Forms\", 4, FALSE, 0, 0, FALSE),
+  (6, \"Foreign Policy\", 4, FALSE, 0, 0, FALSE);
+")
+                .execute(&mut *pool)
+                    .await.unwrap();
+
                 #[cfg(mobile)]
                 let helsync = mobile::init(app, api).unwrap();
 

@@ -2,6 +2,7 @@ use crate::filesystem::{Delta, File};
 use serde::{Serialize, Deserialize};
 use sqlx::FromRow;
 
+/// LocalFile is a [LocalFS](super::LocalFS) SQLite file.
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFile {

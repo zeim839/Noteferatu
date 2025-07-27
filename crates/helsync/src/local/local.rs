@@ -72,6 +72,11 @@ impl Filesystem for LocalFS {
         Ok(file)
     }
 
+    /// Recursively copy the file `source_id` to the folder
+    /// `parent_id` with its name set to `name`.
+    ///
+    /// If `parent_id` is `None`, the file is copied to the root
+    /// directory.
     async fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<Self::File> {
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;

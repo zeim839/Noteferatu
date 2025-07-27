@@ -28,10 +28,8 @@ function Combobox({
   onOpenChange: onOpenChangeProp,
 }: ComboboxProps) {
   const [internalOpen, setInternalOpen] = React.useState(false)
-
   const isControlled = openProp !== undefined
   const open = isControlled ? openProp : internalOpen
-
   const handleOpenChange = (value: boolean) => {
     if (onOpenChangeProp) {
       onOpenChangeProp(value)
