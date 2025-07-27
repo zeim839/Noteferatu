@@ -1,5 +1,9 @@
 //! SQLite Database Wrapper.
 //!
+//! The `database` crate is a simple SQLite wrapper over
+//! [sqlx](https://github.com/launchbadge/sqlx). It manages its own
+//! migrations table and doesn't rely on custom SQLx migration files.
+//!
 //! # Examples
 //! ## Initialize database and execute a query.
 //! ```no_run
@@ -59,7 +63,7 @@
 //!     let db = Database::new(&config).await.unwrap();
 //!
 //!     // Get current schema version.
-//!     let version = db.version().await.unwrap();
+//!     let version = db.version().await.unwrap().unwrap();
 //!     println!("{version}");
 //! }
 //! ```

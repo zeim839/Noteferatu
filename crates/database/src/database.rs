@@ -109,12 +109,45 @@ impl Database {
 #[cfg(test)]
 mod tests {
 
+    use super::*;
+
     #[tokio::test]
     async fn test_execute_query() {
+        let db = Database::new(&Config {
+            max_connections: 5,
+            local_path: "./database-test-db.sqlite".to_string(),
+            migrations: vec![],
+        }).await.unwrap();
 
+        let mut conn = db.acquire().await.unwrap();
+        sqlx::query("CREATE TABLE IF NOT EXISTS TestTable (id INTEGER
+        PRIMARY KEY);")
+            .execute(&mut *conn)
+            .await.unwrap();
+
+        conn.close().await.unwrap();
     }
 
     #[tokio::test]
     async fn test_apply_migrations() {
+        let db = Database::new(&Config {
+            max_connections: 5,
+            local_path: "./database-test-db-1.sqlite".to_string(),
+            migrations: vec![
+                Migration {
+                    version: 0,
+                    sql: "CREATE TABLE IF NOT EXISTS TestTable (id INTEGER PRIMARY KEY);",
+                    kind: MigrationType::Up,
+                },
+                Migration {
+                    version: 1,
+                    sql: "INSERT INTO TestTable VALUES (0);",
+                    kind: MigrationType::Up,
+                },
+            ],
+        }).await.unwrap();
+
+        assert!(db.version().await.
+                is_ok_and(|r| r.is_some_and(|v| v == 1)));
     }
 }
