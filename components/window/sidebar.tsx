@@ -69,7 +69,7 @@ function Sidebar({
         </div>
         {/* Resize handle */}
         <div
-          className="absolute top-0 w-1 h-full cursor-col-resize group-data-[side=left]:right-0 group-data-[side=right]:left-0 z-100"
+          className="absolute top-0 w-1 h-full cursor-col-resize group-data-[side=left]:right-0 group-data-[side=right]:left-0 z-40"
           onMouseDown={handleMouseDown}
         />
       </div>

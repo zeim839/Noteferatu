@@ -19,6 +19,8 @@ type EntryProps = {
   expandedFolders: Set<string>,
   setExpandedFolders: (fn: (prev: Set<string>) => Set<string>) => void
   isLast?: boolean,
+  sortFileKey: () => 'name' | 'createdAt' | 'modifiedAt',
+  sortFileAsc: () => boolean,
 }
 
 // File explorer entry.
@@ -27,7 +29,9 @@ export function Entry({
   depth = 0,
   expandedFolders,
   setExpandedFolders,
-  isLast = true
+  isLast = true,
+  sortFileKey,
+  sortFileAsc,
 }: EntryProps) {
 
   const entryId = file.id.toString()
@@ -54,10 +58,25 @@ export function Entry({
     (<ChevronRightIcon strokeWidth={1.6} />)) :
     null
 
+  const compareFn = (a: FileEntry, b: FileEntry): number => {
+    const key = sortFileKey()
+    const asc = sortFileAsc()
+    const valueA = a[key]
+    const valueB = b[key]
+
+    if (valueA < valueB) {
+      return asc ? -1 : 1
+    }
+    if (valueA > valueB) {
+      return asc ? 1 : -1
+    }
+    return 0
+  }
+
   return (
     <>
       <div
-        className="relative grid grid-cols-[20px_auto_30px] items-center font-light text-sm hover:bg-[#DCE0E8] hover:rounded-md gap-2 h-[32px]"
+        className="relative grid grid-cols-[20px_auto_30px] items-center font-light text-sm hover:bg-[#DCE0E8] hover:rounded-sm gap-2 h-[32px]"
         style={{ paddingLeft: `${depth * 16}px` }}
       >
         {/* Connecting lines */}
@@ -99,7 +118,7 @@ export function Entry({
       {/* Render children if expanded */}
       {isExpanded && file.children && (
         <>
-          {file.children.map((child, i) => (
+          {[...file.children].sort(compareFn).map((child, i) => (
             <Entry
               key={child.id}
               file={child}
@@ -107,6 +126,8 @@ export function Entry({
               expandedFolders={expandedFolders}
               setExpandedFolders={setExpandedFolders}
               isLast={i === file.children!.length - 1}
+              sortFileKey={sortFileKey}
+              sortFileAsc={sortFileAsc}
             />
           ))}
           {/* Vertical line continuation for non-last folders */}
