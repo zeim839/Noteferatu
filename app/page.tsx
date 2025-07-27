@@ -1,10 +1,12 @@
 "use client"
 
 import { Window, WindowProvider } from "@/components/window/window"
-import { Explorer } from "@/components/explorer/explorer"
 import { Button } from "@/components/core/button"
 import { BufferGroup } from "@/components/buffer/group"
 import { useState } from "react"
+
+import { ExplorerProvider } from "@/components/explorer/explorer"
+import { ExplorerPanel } from "@/components/explorer/explorerpanel"
 
 import { AgentProvider } from "@/components/agent/agent"
 import { AgentPanel } from "@/components/agent/agentpanel"
@@ -54,7 +56,9 @@ export default function Home() {
           </Window.Titlebar.ToolGroup>
         </Window.Titlebar>
         <Window.LeftSidebar>
-          <Explorer />
+          <ExplorerProvider>
+            <ExplorerPanel />
+          </ExplorerProvider>
         </Window.LeftSidebar>
         <Window.Content>
           <BufferGroup />
