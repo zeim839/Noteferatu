@@ -8,14 +8,18 @@ export type SortFileKey = 'name' | 'createdAt' | 'modifiedAt'
 export type ExplorerContextType = {
 
   // Control the available documents.
-  documents: () => Array<FileEntry>,
-  setDocuments: (docs: Array<FileEntry>) => void,
+  documents: () => Array<FileEntry>
+  setDocuments: (docs: Array<FileEntry>) => void
 
   // Control document sorting.
-  sortFileKey: () => SortFileKey,
-  setSortFileKey: (key: SortFileKey) => void,
-  sortFileAsc: () => boolean,
-  setSortFileAsc: (asc: boolean) => void,
+  sortFileKey: () => SortFileKey
+  setSortFileKey: (key: SortFileKey) => void
+  sortFileAsc: () => boolean
+  setSortFileAsc: (asc: boolean) => void
+
+  // Control explorer view.
+  isViewDocuments: () => boolean
+  setIsViewDocuments: (isViewDocuments: boolean) => void
 }
 
 // Implements ExporerContextType.
@@ -26,6 +30,7 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   const [documents, setDocuments] = React.useState<FileEntry[]>([])
   const [sortFileKey, setSortFileKey] = React.useState<SortFileKey>('name')
   const [sortFileAsc, setSortFileAsc] = React.useState<boolean>(true)
+  const [isViewDocuments, setIsViewDocuments] = React.useState<boolean>(true)
 
   // Recursively builds a file tree.
   React.useEffect(() => {
@@ -59,6 +64,8 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
     setSortFileKey: (key) => setSortFileKey(key),
     sortFileAsc: () => { return sortFileAsc },
     setSortFileAsc: (asc) => setSortFileAsc(asc),
+    isViewDocuments: () => { return isViewDocuments },
+    setIsViewDocuments: (isDocs) => setIsViewDocuments(isDocs)
   }
 
   return (
