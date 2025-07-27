@@ -48,11 +48,13 @@ function Button({
   size,
   asChild = false,
   tooltip,
+  tooltipSide,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
     tooltip?: string
+    tooltipSide?: "top" | "right" | "bottom" | "left"
   }) {
     const Comp = asChild ? Slot : "button"
 
@@ -66,7 +68,7 @@ function Button({
               {...props}
             />
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent side={tooltipSide}>
             <p>{tooltip}</p>
           </TooltipContent>
         </Tooltip>
