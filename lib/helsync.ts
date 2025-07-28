@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
 
+// A Helsync virtual file. Can be either a document or folder.
 export type File = {
   id:         number,
   name:       string,
@@ -10,6 +11,12 @@ export type File = {
   modifiedAt: number,
   syncedAt?:  number,
   isFolder:   boolean,
+}
+
+// Describes a change made to the filesystem. Sent as a tauri event.
+export type FileChangeEvent = {
+  event: "copy" | "move" | "remove" | "createFolder"
+  data: object,
 }
 
 // Reads the file with the given `id`.
@@ -58,4 +65,16 @@ export async function listFiles(parentId?: string): Promise<Array<File>> {
   return await invoke<Array<File>>("plugin:helsync|list_files", {
     payload: { parentId }
   })
+}
+
+// Write to a file in the filesystem, creating it if it doesn't
+// exist.
+export async function writeToFile(name: string, contents: Uint8Array, parentId?: string): Promise<File> {
+    return await invoke<File>("plugin:helsync|write_to_file", {
+        payload: {
+            parentId,
+            name,
+            contents: Array.from(contents),
+        }
+    })
 }

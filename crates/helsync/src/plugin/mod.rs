@@ -43,8 +43,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::move_file,
             commands::remove_file,
             commands::create_folder,
-            commands::create_folder,
             commands::list_files,
+            commands::write_to_file,
         ])
         .setup(|app, api| {
             let setup = async || {
@@ -54,11 +54,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                 let db = Database::new(&Config {
                     max_connections: 5,
                     local_path: String::from(path.to_str().unwrap()),
-                    migrations: vec![schema::MIGRATION_V0],
-                }).await.unwrap();
-
-                let mut pool = db.acquire().await.unwrap();
-                sqlx::query("
+                    migrations: vec![
+                        schema::MIGRATION_V0,
+                        database::Migration{
+                            version: 1,
+                            sql: "
 INSERT INTO File(id, name, parent, is_deleted, created_at, modified_at,
 is_folder) VALUES
   (0, \"Introduction\", NULL, FALSE, 0, 0, FALSE),
@@ -68,9 +68,10 @@ is_folder) VALUES
   (4, \"Coursework\", NULL, FALSE, 0, 0, TRUE),
   (5, \"Normal Forms\", 4, FALSE, 0, 0, FALSE),
   (6, \"Foreign Policy\", 4, FALSE, 0, 0, FALSE);
-")
-                .execute(&mut *pool)
-                    .await.unwrap();
+",
+                            kind: database::MigrationType::Up,
+                        }],
+                }).await.unwrap();
 
                 #[cfg(mobile)]
                 let helsync = mobile::init(app, api).unwrap();

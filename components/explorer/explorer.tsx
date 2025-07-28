@@ -1,6 +1,7 @@
 import * as React from "react"
-import { listFiles, File } from "@/lib/helsync"
+import { listFiles, File, FileChangeEvent } from "@/lib/helsync"
 import { FileEntry } from "./entry"
+import { listen } from '@tauri-apps/api/event'
 
 export type SortFileKey = 'name' | 'createdAt' | 'modifiedAt'
 
@@ -32,31 +33,43 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   const [sortFileAsc, setSortFileAsc] = React.useState<boolean>(true)
   const [isViewDocuments, setIsViewDocuments] = React.useState<boolean>(true)
 
-  // Recursively builds a file tree.
+  // Recursively fetch files, directories, and their children.
+  const buildTree = async (parentId?: string): Promise<FileEntry[]> => {
+    const files = await listFiles(parentId)
+    return Promise.all(
+      files.map(async (file: File): Promise<FileEntry> => {
+        const entry: FileEntry = { ...file }
+        if (file.isFolder) {
+          entry.children = await buildTree(file.id.toString())
+        }
+        return entry
+      }),
+    )
+  }
+
+  // Fetch files from helsync.
+  const fetchFiles = async () => {
+    try {
+      const tree = await buildTree()
+      setDocuments(tree)
+    } catch (error) {
+      console.error("Failed to fetch file tree:", error)
+    }
+  }
+
+  // Initial file fetch and register event listener.
   React.useEffect(() => {
-    const buildTree = async (parentId?: string): Promise<FileEntry[]> => {
-      const files = await listFiles(parentId)
-      return Promise.all(
-        files.map(async (file: File): Promise<FileEntry> => {
-          const entry: FileEntry = { ...file }
-          if (file.isFolder) {
-            entry.children = await buildTree(file.id.toString())
-          }
-          return entry
-        }),
-      )
-    }
-    const fetchFiles = async () => {
-      try {
-        const tree = await buildTree()
-        setDocuments(tree)
-      } catch (error) {
-        console.error("Failed to fetch file tree:", error)
-      }
-    }
     fetchFiles()
+    const unlistenPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
+      console.log("asd")
+      fetchFiles()
+    })
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten())
+    }
   }, [])
 
+  // Construct ExplorerContextType.
   const context: ExplorerContextType = {
     documents: () => { return documents },
     setDocuments: (docs) => { setDocuments(docs) },
