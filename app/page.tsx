@@ -5,8 +5,8 @@ import { Button } from "@/components/core/button"
 import { BufferGroup } from "@/components/buffer/group"
 import { useState } from "react"
 
-import { ExplorerProvider } from "@/components/explorer/explorer"
-import { ExplorerPanel } from "@/components/explorer/explorerpanel"
+import { ExplorerProvider } from "@/components/explorer/context"
+import { Explorer } from "@/components/explorer/explorer"
 
 import { AgentProvider } from "@/components/agent/agent"
 import { AgentPanel } from "@/components/agent/agentpanel"
@@ -57,7 +57,7 @@ export default function Home() {
         </Window.Titlebar>
         <Window.LeftSidebar>
           <ExplorerProvider>
-            <ExplorerPanel />
+            <Explorer />
           </ExplorerProvider>
         </Window.LeftSidebar>
         <Window.Content>

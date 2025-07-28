@@ -1,97 +1,52 @@
+"use client"
+
 import * as React from "react"
-import { listFiles, File, FileChangeEvent } from "@/lib/helsync"
-import { FileEntry } from "./entry"
-import { listen } from '@tauri-apps/api/event'
+import { useExplorerContext } from "./context"
+import { ExplorerHeader } from "./header"
+import { ExplorerContextMenu } from "./menus/explorer"
+import { Entry } from "./entry"
+import { FileEntry } from "@/lib/helsync"
 
-export type SortFileKey = 'name' | 'createdAt' | 'modifiedAt'
+// File explorer shows a tree of all available directories, documents,
+// and their subchildren.
+function Explorer() {
+  const [expandedFolders, setExpandedFolders] = React.useState<Set<string>>(new Set())
+  const explorer = useExplorerContext()
 
-// Defines a common context for explorer.
-export type ExplorerContextType = {
-
-  // Control the available documents.
-  documents: () => Array<FileEntry>
-  setDocuments: (docs: Array<FileEntry>) => void
-
-  // Control document sorting.
-  sortFileKey: () => SortFileKey
-  setSortFileKey: (key: SortFileKey) => void
-  sortFileAsc: () => boolean
-  setSortFileAsc: (asc: boolean) => void
-
-  // Control explorer view.
-  isViewDocuments: () => boolean
-  setIsViewDocuments: (isViewDocuments: boolean) => void
-}
-
-// Implements ExporerContextType.
-export const ExplorerContext = React.createContext<ExplorerContextType | null>(null)
-
-// Exposes ExplorerContext.
-export function ExplorerProvider({ children }: { children: React.ReactNode }) {
-  const [documents, setDocuments] = React.useState<FileEntry[]>([])
-  const [sortFileKey, setSortFileKey] = React.useState<SortFileKey>('name')
-  const [sortFileAsc, setSortFileAsc] = React.useState<boolean>(true)
-  const [isViewDocuments, setIsViewDocuments] = React.useState<boolean>(true)
-
-  // Recursively fetch files, directories, and their children.
-  const buildTree = async (parentId?: string): Promise<FileEntry[]> => {
-    const files = await listFiles(parentId)
-    return Promise.all(
-      files.map(async (file: File): Promise<FileEntry> => {
-        const entry: FileEntry = { ...file }
-        if (file.isFolder) {
-          entry.children = await buildTree(file.id.toString())
-        }
-        return entry
-      }),
-    )
-  }
-
-  // Fetch files from helsync.
-  const fetchFiles = async () => {
-    try {
-      const tree = await buildTree()
-      setDocuments(tree)
-    } catch (error) {
-      console.error("Failed to fetch file tree:", error)
+  // Compares two file entries (used for sorting).
+  const compareFn = (a: FileEntry, b: FileEntry): number => {
+    const [keyA, keyB] = [a[explorer.sortFileKey()], b[explorer.sortFileKey()]]
+    const asc = explorer.sortFileAsc()
+    if (keyA < keyB) {
+      return asc ? -1 : 1
     }
-  }
-
-  // Initial file fetch and register event listener.
-  React.useEffect(() => {
-    fetchFiles()
-    const unlistenPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
-      console.log("asd")
-      fetchFiles()
-    })
-    return () => {
-      unlistenPromise.then((unlisten) => unlisten())
+    if (keyA > keyB) {
+      return asc ? 1 : -1
     }
-  }, [])
-
-  // Construct ExplorerContextType.
-  const context: ExplorerContextType = {
-    documents: () => { return documents },
-    setDocuments: (docs) => { setDocuments(docs) },
-    sortFileKey: () => { return sortFileKey },
-    setSortFileKey: (key) => setSortFileKey(key),
-    sortFileAsc: () => { return sortFileAsc },
-    setSortFileAsc: (asc) => setSortFileAsc(asc),
-    isViewDocuments: () => { return isViewDocuments },
-    setIsViewDocuments: (isDocs) => setIsViewDocuments(isDocs)
+    return 0
   }
 
   return (
-    <ExplorerContext.Provider value={context}>
-      {children}
-    </ExplorerContext.Provider>
+    <ExplorerContextMenu className="w-full max-h-[calc(100vh-35px)] h-[calc(100vh-35px)] min-w-[200px] flex flex-col">
+      <ExplorerHeader />
+      <div className="w-full flex flex-col px-1 pt-1 flex-1 overflow-auto scrollbar-hide relative">
+        {
+          (explorer.isViewDocuments()) ?
+            [...explorer.documents()].sort(compareFn).map((doc, i) => (
+              <Entry
+                key={doc.id}
+                file={doc}
+                expandedFolders={expandedFolders}
+                setExpandedFolders={setExpandedFolders}
+                isLast={i === explorer.documents.length - 1}
+                sortFileKey={explorer.sortFileKey}
+                sortFileAsc={explorer.sortFileAsc}
+              />
+            )) : null
+        }
+      </div>
+    </ExplorerContextMenu>
   )
 }
 
-export function useExplorerContext() {
-  const context = React.useContext(ExplorerContext)
-  if (!context) {
-    throw new Error("useExplorerContext must be called within ExplorerProvider")
-  }
-  return context
-}
+export { Explorer }

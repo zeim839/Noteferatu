@@ -1,38 +1,13 @@
 import * as React from "react"
-import { Button } from "@/components/core/button"
-import { File, copyFile, removeFile, moveFile } from "@/lib/helsync"
-
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubTrigger,
-  ContextMenuSubContent,
-} from "@/components/core/context-menu"
+import { FileEntry, moveFile } from "@/lib/helsync"
+import { EntryContextMenu } from "./menus/entry"
 
 import {
   FolderIcon,
   NotepadTextIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  Trash2Icon,
-  FilePenLineIcon,
-  FilesIcon,
-  BookmarkIcon,
-  SquareArrowOutUpRightIcon,
-  CirclePlusIcon,
-  ShareIcon,
-  CheckIcon,
-  XIcon,
 } from "lucide-react"
-
-// Extend File to include children
-export interface FileEntry extends File {
-  children?: FileEntry[]
-}
 
 type EntryProps = {
   file: FileEntry
@@ -126,134 +101,61 @@ export function Entry({
   }
 
   return (
-    <>
-      <ContextMenu>
-        <ContextMenuTrigger>
-          <div
-            data-is-being-renamed={isBeingRenamed}
-            className="relative grid grid-cols-[20px_auto_20px] data-[is-being-renamed=true]:grid-cols-[20px_auto_50px] items-center font-light text-sm hover:bg-[#DCE0E8] hover:rounded-sm gap-2 h-[32px]"
-            style={{ paddingLeft: `${depth * 16}px` }}
-            onClick={() => {
-              if (hasChildren && !isBeingRenamed) {
-                toggleExpanded()
-              }
-            }}
-          >
-            {/* Connecting lines */}
-            {depth > 0 && (
-              <>
-                {/* Vertical line from parent */}
-                <div
-                  className="absolute bg-gray-300"
-                  style={{
-                    left: `${(depth - 1) * 16 + 10}px`,
-                    top: 0,
-                    width: "1px",
-                    height: isLast ? "16px" : "32px",
-                  }}
-                />
-                {/* Horizontal line to icon */}
-                <div
-                  className="absolute bg-gray-300"
-                  style={{
-                    left: `${(depth - 1) * 16 + 10}px`,
-                    top: "15px",
-                    width: `${16}px`,
-                    height: "1px",
-                  }}
-                />
-              </>
-            )}
-            {icon}
-            {isBeingRenamed ? (
-              <input
-                ref={inputRef}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleRename()
-                  if (e.key === "Escape") cancelRename()
-                }}
-                onBlur={cancelRename}
-                className="px-1 rounded-sm text-sm h-[22px] w-full"
-              />
-            ) : (
-              <p className="max-h-[17px] text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
-                {file.name}
-              </p>
-            )}
-            {
-              (isBeingRenamed) ?
-                <div className="flex gap-1 items-center justify-center">
-                  <Button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={handleRename}
-                    variant="confirmation"
-                    size="icon"
-                    className="p-0 m-0 size-4"
-                  >
-                    <CheckIcon strokeWidth={2.5} className="max-h-3 max-w-3" />
-                  </Button>
-                  <Button
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={cancelRename}
-                    variant="destructive"
-                    size="icon"
-                    className="p-0 m-0 size-4"
-                  >
-                    <XIcon strokeWidth={2.5} className="max-h-3 max-w-3" />
-                  </Button>
-                </div> : chevronIcon
-            }
-          </div>
-        </ContextMenuTrigger>
-        <ContextMenuContent className="text-xs">
-          {
-            (file.isFolder) ?
-              <ContextMenuItem onSelect={() => {console.log("new file", file.id)}}>
-                <CirclePlusIcon className="size-3" />
-                <span>New File</span>
-              </ContextMenuItem> :
-              <ContextMenuItem onSelect={() => {console.log("open", file.id)}} disabled>
-                <SquareArrowOutUpRightIcon className="size-3" />
-                <span>Open</span>
-              </ContextMenuItem>
+    <EntryContextMenu file={file} setIsBeingRenamed={setIsBeingRenamed}>
+      <div
+        className="relative grid grid-cols-[20px_auto_20px] items-center font-light text-sm hover:bg-[#DCE0E8] hover:rounded-sm gap-2 h-[32px]"
+        style={{ paddingLeft: `${depth * 16}px` }}
+        onClick={() => {
+          if (hasChildren && !isBeingRenamed) {
+            toggleExpanded()
           }
-          <ContextMenuSub>
-            <ContextMenuSubTrigger disabled>
-              <ShareIcon className="size-3" />
-              <span>Export As</span>
-            </ContextMenuSubTrigger>
-            <ContextMenuSubContent>
-              <ContextMenuItem>
-                TODO
-              </ContextMenuItem>
-            </ContextMenuSubContent>
-          </ContextMenuSub>
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={() => setIsBeingRenamed(true)}>
-            <FilePenLineIcon className="size-3" />
-            <span>Rename</span>
-          </ContextMenuItem>
-          <ContextMenuItem onSelect={() => {
-            copyFile(file.id.toString(), file.parent?.toString())
-          }}>
-            <FilesIcon className="size-3" />
-            <span>Duplicate</span>
-          </ContextMenuItem>
-          <ContextMenuItem onSelect={() => {console.log("Tags", file.id)}}>
-            <BookmarkIcon className="size-3" />
-            <span>Manage Tags</span>
-          </ContextMenuItem>
-          <ContextMenuSeparator />
-          <ContextMenuItem onSelect={() => {
-            removeFile(file.id.toString())
-          }}>
-            <Trash2Icon className="size-3" />
-            <span>Delete</span>
-          </ContextMenuItem>
-        </ContextMenuContent>
-      </ContextMenu>
+        }}
+      >
+        {/* Connecting lines */}
+        {depth > 0 && (
+          <>
+            {/* Vertical line from parent */}
+            <div
+              className="absolute bg-gray-300"
+              style={{
+                left: `${(depth - 1) * 16 + 10}px`,
+                top: 0,
+                width: "1px",
+                height: isLast ? "16px" : "32px",
+              }}
+            />
+            {/* Horizontal line to icon */}
+            <div
+              className="absolute bg-gray-300"
+              style={{
+                left: `${(depth - 1) * 16 + 10}px`,
+                top: "15px",
+                width: `${16}px`,
+                height: "1px",
+              }}
+            />
+          </>
+        )}
+        {icon}
+        {isBeingRenamed ? (
+          <input
+            ref={inputRef}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRename()
+              if (e.key === "Escape") cancelRename()
+            }}
+            onBlur={cancelRename}
+            className="px-1 rounded-sm text-sm h-[22px] w-full"
+          />
+        ) : (
+          <p className="max-h-[17px] text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
+            {file.name}
+          </p>
+        )}
+        {chevronIcon}
+      </div>
 
       {/* Render children if expanded */}
       {isExpanded && file.children && (
@@ -285,6 +187,6 @@ export function Entry({
           )}
         </>
       )}
-    </>
+    </EntryContextMenu>
   )
 }
