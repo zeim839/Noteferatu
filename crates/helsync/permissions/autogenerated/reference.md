@@ -4,6 +4,11 @@ Default permissions for the plugin
 
 #### This default permission set includes the following:
 
+- `allow-get-file`
+- `allow-copy-file`
+- `allow-move-file`
+- `allow-remove-file`
+- `allow-create-folder`
 - `allow-list-files`
 
 ## Permission Table

@@ -1,3 +1,10 @@
 [default]
 description = "Default permissions for the plugin"
-permissions = ["allow-list-files"]
+permissions = [
+    "allow-get-file",
+    "allow-copy-file",
+    "allow-move-file",
+    "allow-remove-file",
+    "allow-create-folder",
+    "allow-list-files"
+]

@@ -451,10 +451,10 @@
           "markdownDescription": "Denies the remove_file command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-list-files`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-file`\n- `allow-copy-file`\n- `allow-move-file`\n- `allow-remove-file`\n- `allow-create-folder`\n- `allow-list-files`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-list-files`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-file`\n- `allow-copy-file`\n- `allow-move-file`\n- `allow-remove-file`\n- `allow-create-folder`\n- `allow-list-files`"
         }
       ]
     }
