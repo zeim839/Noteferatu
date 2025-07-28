@@ -89,8 +89,8 @@ function ExplorerPanel() {
                 </SelectTrigger>
                 <SelectContent className="bg-[#EDF0F4]">
                   <SelectItem value="name">File Name</SelectItem>
-                  <SelectItem value="createdAt">Created</SelectItem>
-                  <SelectItem value="modifiedAt">Last modified</SelectItem>
+                  <SelectItem value="createdAt">Date Created</SelectItem>
+                  <SelectItem value="modifiedAt">Date Modified</SelectItem>
                 </SelectContent>
               </Select>
               <Select
@@ -112,17 +112,17 @@ function ExplorerPanel() {
       <div className="w-full flex flex-col px-1 pt-1 flex-1 overflow-auto scrollbar-hide relative">
         {
           (explorer.isViewDocuments()) ?
-          [...explorer.documents()].sort(compareFn).map((doc, i) => (
-            <Entry
-              key={doc.id}
-              file={doc}
-              expandedFolders={expandedFolders}
-              setExpandedFolders={setExpandedFolders}
-              isLast={i === explorer.documents.length - 1}
-              sortFileKey={explorer.sortFileKey}
-              sortFileAsc={explorer.sortFileAsc}
-            />
-          )) : null
+            [...explorer.documents()].sort(compareFn).map((doc, i) => (
+              <Entry
+                key={doc.id}
+                file={doc}
+                expandedFolders={expandedFolders}
+                setExpandedFolders={setExpandedFolders}
+                isLast={i === explorer.documents.length - 1}
+                sortFileKey={explorer.sortFileKey}
+                sortFileAsc={explorer.sortFileAsc}
+              />
+            )) : null
         }
       </div>
     </div>

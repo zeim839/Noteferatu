@@ -157,17 +157,24 @@ impl Filesystem for LocalFS {
     async fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<Self::File> {
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
+        let modified_at: i64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+
         match name {
             Some(name) =>
-                sqlx::query("UPDATE FILE SET parent=?, name=? WHERE id=?")
+                sqlx::query("UPDATE FILE SET parent=?, name=?, modified_at=? WHERE id=?")
                 .bind(parent_id)
                 .bind(name)
+                .bind(modified_at)
                 .bind(source_id)
                 .execute(&mut *tx)
                 .await?,
             None =>
-                sqlx::query("UPDATE File SET parent=? WHERE id=?")
+                sqlx::query("UPDATE File SET parent=?, modified_at=? WHERE id=?")
                 .bind(parent_id)
+                .bind(modified_at)
                 .bind(source_id)
                 .execute(&mut *tx)
                 .await?,
@@ -253,7 +260,7 @@ impl Filesystem for LocalFS {
         unimplemented!();
     }
 
-    async fn write_to_file(&self, _: &[u8], _: Option<&str>, _: &str) -> Result<Self::File> {
+    async fn write_to_file(&self, buf: &[u8], parent_id: Option<&str>, name: &str) -> Result<Self::File> {
         unimplemented!();
     }
 
@@ -330,12 +337,21 @@ INSERT INTO File VALUES
     #[tokio::test]
     async fn test_copy_file() {
         let fs = get_local_fs().await;
+        let ts: i64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
 
         // Copy a file.
         let copied = fs.copy_file("0", Some("2"), Some("copied.txt")).await.unwrap();
         assert_eq!(copied.name, "copied.txt");
         assert_eq!(copied.parent, Some(2));
 
+        // Ensure timestamp is set.
+        assert!(copied.created_at >= ts);
+        assert!(copied.modified_at >= ts);
+
+        // Ensure copied file appears within parent directory.
         let parent_files = fs.list_files(Some("2")).await.unwrap();
         assert!(parent_files.iter().any(|f| f.id == copied.id));
 
@@ -344,6 +360,8 @@ INSERT INTO File VALUES
         assert_eq!(copied_folder.name, "copied_folder");
         assert_eq!(copied_folder.parent, Some(2));
         assert!(copied_folder.is_folder);
+        assert!(copied_folder.created_at >= ts);
+        assert!(copied_folder.modified_at >= ts);
 
         let children = fs.list_files(Some(&copied_folder.id.to_string())).await.unwrap();
         assert_eq!(children.len(), 1);
@@ -360,11 +378,19 @@ INSERT INTO File VALUES
     #[tokio::test]
     async fn test_move_file() {
         let fs = get_local_fs().await;
+        let ts: i64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+
         let moved = fs.move_file("3", Some("2"), Some("renamed.txt"))
             .await.unwrap();
 
         assert!(moved.parent.is_some_and(|p| p == 2));
         assert!(moved.name == "renamed.txt");
+
+        // Moving a file should update its `modified_at` field.
+        assert!(moved.modified_at >= ts);
 
         // Should not be able to move file to non-folder.
         assert!(fs.move_file("3", Some("0"), None).await.is_err());
