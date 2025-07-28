@@ -331,6 +331,18 @@
           "markdownDescription": "Denies the create-folder command without any pre-configured scope."
         },
         {
+          "description": "Enables the create_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-create-file",
+          "markdownDescription": "Enables the create_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the create_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-create-file",
+          "markdownDescription": "Denies the create_file command without any pre-configured scope."
+        },
+        {
           "description": "Enables the create_folder command without any pre-configured scope.",
           "type": "string",
           "const": "allow-create-folder",
@@ -451,10 +463,10 @@
           "markdownDescription": "Denies the remove_file command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-file`\n- `allow-copy-file`\n- `allow-move-file`\n- `allow-remove-file`\n- `allow-create-folder`\n- `allow-list-files`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-file`\n- `allow-copy-file`\n- `allow-move-file`\n- `allow-remove-file`\n- `allow-create-folder`\n- `allow-create-file`\n- `allow-list-files`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-file`\n- `allow-copy-file`\n- `allow-move-file`\n- `allow-remove-file`\n- `allow-create-folder`\n- `allow-list-files`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-get-file`\n- `allow-copy-file`\n- `allow-move-file`\n- `allow-remove-file`\n- `allow-create-folder`\n- `allow-create-file`\n- `allow-list-files`"
         }
       ]
     }

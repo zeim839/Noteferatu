@@ -43,9 +43,13 @@
 //!
 //!     let client = onedrive::OneDrive::new(&token, &app_config);
 //!
-//!     // Read file from local path.
+//!     // First, create a new file to get an ID.
+//!     let file = client.create_file(None, "file.txt")
+//!         .await.unwrap();
+//!
+//!     // Then, write the content to it.
 //!     let bytes = std::fs::read("./some/local/file.txt").unwrap();
-//!     let item = client.write_to_file(&bytes, None, "file.txt")
+//!     let item = client.write_to_file(&file.id, &bytes)
 //!         .await.unwrap();
 //!
 //!     println!("Successfully uploaded item: {}", item.name.unwrap());
@@ -98,10 +102,11 @@
 //!     let (_, delta) = client.track_changes(None, Some("latest"))
 //!         .await.unwrap();
 //!
-//!     // Perform some change (e.g. create a file).
-//!     let buf = "Hello, World!".as_bytes();
-//!     let file = client.write_to_file(buf, None, "my-new-file.txt")
+//!     // Perform some change (e.g. create and write to a file).
+//!     let file = client.create_file(None, "my-new-file.txt")
 //!         .await.unwrap();
+//!     let buf = "Hello, World!".as_bytes();
+//!     client.write_to_file(&file.id, buf).await.unwrap();
 //!
 //!     // Fetch changes using latest delta token.
 //!     let (changes, _) = client.track_changes(None, Some(delta.as_str()))

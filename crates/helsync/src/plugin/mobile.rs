@@ -50,6 +50,11 @@ impl<R: Runtime> Helsync<R> {
             .await.map_err(Into::into)
     }
 
+    pub async fn create_file(&self, payload: CreateFileRequest) -> Result<LocalFile> {
+        self.0.run_mobile_plugin("create_file", payload)
+            .await.map_err(Into::into)
+    }
+
     pub async fn list_files(&self, payload: ListFilesRequest) -> Result<Vec<LocalFile>> {
         self.0.run_mobile_plugin("list_files", payload)
             .await.map_err(Into::into)

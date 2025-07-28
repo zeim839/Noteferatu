@@ -126,15 +126,17 @@ impl Filesystem for LocalFS {
 
         // Recursively copy children using a stack for DFS traversal.
         let mut stack: Vec<(i64, i64)> = vec![(original.id, copied_file.id)];
-
         while let Some((old_parent_id, new_parent_id)) = stack.pop() {
-            let children: Vec<LocalFile> = sqlx::query_as("SELECT * FROM File WHERE parent=? AND is_deleted=FALSE")
+            let children: Vec<LocalFile> = sqlx::query_as("SELECT *
+        FROM File WHERE parent=? AND is_deleted=FALSE")
                 .bind(old_parent_id)
                 .fetch_all(&mut *tx)
                 .await?;
 
             for child in children {
-                let res = sqlx::query("INSERT INTO File (name, parent, is_deleted, created_at, modified_at, is_folder) VALUES (?, ?, FALSE, ?, ?, ?)")
+                let res = sqlx::query("INSERT INTO File (name, parent,
+                is_deleted, created_at, modified_at, is_folder) VALUES
+                (?, ?, FALSE, ?, ?, ?)")
                     .bind(&child.name)
                     .bind(new_parent_id)
                     .bind(created_at)
@@ -240,6 +242,35 @@ impl Filesystem for LocalFS {
         Ok(folder)
     }
 
+    /// Create a new file.
+    async fn create_file(&self, parent_id: Option<&str>, name: &str) -> Result<Self::File> {
+        let mut conn = self.db.acquire().await?;
+        let mut tx = conn.begin().await?;
+        let created_at: i64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+
+        let res = sqlx::query("INSERT INTO File(name, parent,
+        is_deleted, created_at, modified_at, is_folder) VALUES (?, ?,
+        FALSE, ?, ?, FALSE)")
+            .bind(name)
+            .bind(parent_id)
+            .bind(created_at)
+            .bind(created_at)
+            .execute(&mut *tx)
+            .await?;
+
+        let file: LocalFile = sqlx::query_as("SELECT * FROM File WHERE id=?")
+            .bind(res.last_insert_rowid())
+            .fetch_one(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(file)
+    }
+
+    /// List files under a parent.
     async fn list_files(&self, parent_id: Option<&str>) -> Result<Vec<Self::File>> {
         let mut conn = self.db.acquire().await?;
         let files: Vec<LocalFile> = match parent_id {
@@ -260,7 +291,7 @@ impl Filesystem for LocalFS {
         unimplemented!();
     }
 
-    async fn write_to_file(&self, buf: &[u8], parent_id: Option<&str>, name: &str) -> Result<Self::File> {
+    async fn write_to_file(&self, _: &str, _: &[u8]) -> Result<Self::File> {
         unimplemented!();
     }
 
@@ -369,10 +400,6 @@ INSERT INTO File VALUES
 
         // Do not allow copying deleted files.
         assert!(fs.copy_file("1", None, None).await.is_err());
-
-        // Should preserve original names.
-        let new_copied = fs.copy_file("0", None, None).await.unwrap();
-        assert!(new_copied.name == "test.txt");
     }
 
     #[tokio::test]
@@ -427,6 +454,20 @@ INSERT INTO File VALUES
 
         // Do not allow creating folders under files.
         assert!(fs.create_folder(Some("0"), "invalid-folder")
+                .await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_create_file() {
+        let fs = get_local_fs().await;
+        let file = fs.create_file(None, "created_file.txt")
+            .await.unwrap();
+
+        assert!(file.name == "new_file.txt");
+        assert!(file.parent.is_none());
+
+        // Do not allow creating files under deleted folders.
+        assert!(fs.create_file(Some("1"), "invalid_file.txt")
                 .await.is_err());
     }
 

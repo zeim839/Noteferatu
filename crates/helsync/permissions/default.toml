@@ -6,5 +6,6 @@ permissions = [
     "allow-move-file",
     "allow-remove-file",
     "allow-create-folder",
+    "allow-create-file",
     "allow-list-files"
 ]

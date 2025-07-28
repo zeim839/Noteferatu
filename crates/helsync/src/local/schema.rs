@@ -40,4 +40,35 @@ BEGIN
     THEN RAISE(ABORT, 'Parent must not be deleted')
   END;
 END;
+
+CREATE TRIGGER prevent_duplicate_filenames_insert
+BEFORE INSERT ON File
+FOR EACH ROW
+BEGIN
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM File
+      WHERE name = NEW.name
+        AND parent IS NEW.parent
+        AND is_deleted = 0
+    )
+    THEN RAISE(ABORT, 'A file with this name already exists in the directory')
+  END;
+END;
+
+CREATE TRIGGER prevent_duplicate_filenames_update
+BEFORE UPDATE OF name, parent ON File
+FOR EACH ROW
+BEGIN
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM File
+      WHERE name = NEW.name
+        AND parent IS NEW.parent
+        AND id != NEW.id
+        AND is_deleted = 0
+    )
+    THEN RAISE(ABORT, 'A file with this name already exists in the directory')
+  END;
+END;
 ";

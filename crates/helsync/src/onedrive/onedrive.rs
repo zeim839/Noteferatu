@@ -21,6 +21,7 @@ pub struct OneDrive {
 }
 
 impl OneDrive {
+
     /// Instantiate new OneDrive client.
     pub fn new(token: &Token, config: &Config) -> Self {
         Self {
@@ -30,26 +31,15 @@ impl OneDrive {
     }
 
     /// Upload small files (< 4MB) directly.
-    async fn upload_small_file(
-        &self,
-        buf: &[u8],
-        parent_id: Option<&str>,
-        name: &str,
-    ) -> Result<DriveItem> {
-        let url = match parent_id {
-            Some(p) => format!("{}/items/{}:/{}:/content", API_ENDPOINT, p, name),
-            None => format!("{}/root:/{}:/content", API_ENDPOINT, name),
-        };
-
-        let req = self
-            .req
-            .clone()
-            .put(&url)
+    async fn upload_small_file(&self, id: &str, buf: &[u8]) -> Result<DriveItem> {
+        let url = format!("{API_ENDPOINT}/items/{id}/content");
+        let req = self.req.clone().put(&url)
             .header(AUTHORIZATION, self.client.bearer().await?)
             .header(CONTENT_TYPE, "application/octet-stream")
             .body(buf.to_vec());
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let json: Value = res.json().await?;
         let item: DriveItem = from_value(json)?;
@@ -58,32 +48,22 @@ impl OneDrive {
     }
 
     /// Upload large files (>= 4MB) using upload session.
-    async fn upload_large_file(
-        &self,
-        buf: &[u8],
-        parent_id: Option<&str>,
-        name: &str,
-    ) -> Result<DriveItem> {
-        // Create upload session.
-        let session_url = match parent_id {
-            Some(p) => format!("{}/items/{}:/{}:/createUploadSession", API_ENDPOINT, p, name),
-            None => format!("{}/root:/{}:/createUploadSession", API_ENDPOINT, name),
-        };
-
+    async fn upload_large_file(&self, id: &str, buf: &[u8]) -> Result<DriveItem> {
+        let session_url = format!("{API_ENDPOINT}/items/{id}/createUploadSession");
         let session_body = serde_json::json!({
-            "item": {
-                "@microsoft.graph.conflictBehavior": "replace"
-            }
+            "item": {"@microsoft.graph.conflictBehavior": "replace"}
         });
 
-        let req = self.req.clone().post(&session_url).header(AUTHORIZATION, self.client.bearer().await?).json(&session_body);
+        let req = self.req.clone().post(&session_url)
+            .header(AUTHORIZATION, self.client.bearer().await?)
+            .json(&session_body);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let session_json: Value = res.json().await?;
-        let upload_url = session_json["uploadUrl"]
-            .as_str()
-            .ok_or(Error::Auth("no uploadUrl in session response".to_string()))?;
+        let upload_url = session_json["uploadUrl"].as_str()
+            .ok_or(Error::Other("onedrive: no uploadUrl in session response".to_string()))?;
 
         // Upload file in chunks.
         let chunk_size = 320 * 1024; // 320 KB chunks.
@@ -93,22 +73,16 @@ impl OneDrive {
         while offset < total_size {
             let end = std::cmp::min(offset + chunk_size, total_size);
             let chunk = &buf[offset..end];
-
-            let req = self
-                .req
-                .clone()
-                .put(upload_url)
-                .header(
-                    "Content-Range",
-                    format!("bytes {}-{}/{}", offset, end - 1, total_size),
-                )
+            let req = self.req.clone().put(upload_url)
+                .header("Content-Range", format!("bytes {}-{}/{}", offset, end - 1, total_size))
                 .header("Content-Length", chunk.len())
                 .body(chunk.to_vec());
 
-            let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+            let res = self.client.execute_with_retry(req).await?
+                .error_for_status()?;
 
             // Check if upload is complete.
-            if res.status() == 201 {
+            if res.status() == 201 || res.status() == 200 {
                 let json: Value = res.json().await?;
                 let item: DriveItem = from_value(json)?;
                 return Ok(item);
@@ -117,8 +91,9 @@ impl OneDrive {
             offset = end;
         }
 
-        Err(Error::Auth(
-            "upload completed but no response received".to_string(),
+        Err(Error::Other(
+            "onedrive: upload completed but no response received"
+                .to_string(),
         ))
     }
 }
@@ -132,9 +107,11 @@ impl Filesystem for OneDrive {
     /// API Reference: [Get Item](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_get?view=odsp-graph-online)
     async fn get_file(&self, source_id: &str) -> Result<DriveItem> {
         let url = format!("{}/items/{}", API_ENDPOINT, source_id);
-        let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
+        let req = self.req.clone().get(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let json: Value = res.json().await?;
         let item: DriveItem = from_value(json)?;
@@ -150,12 +127,7 @@ impl Filesystem for OneDrive {
     /// the copied item.
     ///
     /// API Reference: [Copy a DriveItem](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_copy?view=odsp-graph-online)
-    async fn copy_file(
-        &self,
-        source_id: &str,
-        parent_id: Option<&str>,
-        name: Option<&str>,
-    ) -> Result<DriveItem> {
+    async fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<DriveItem> {
         let url = format!("{}/items/{}/copy", API_ENDPOINT, source_id);
         let mut body = serde_json::json!({});
         if let Some(parent_id) = parent_id {
@@ -171,18 +143,22 @@ impl Filesystem for OneDrive {
         }
 
         // Post the copy request.
-        let req = self.req.clone().post(&url).header(AUTHORIZATION, self.client.bearer().await?).json(&body);
+        let req = self.req.clone().post(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?)
+            .json(&body);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         // Extract the location header to monitor status.
-        let location_header = res
-            .headers()
-            .get("location")
-            .ok_or(Error::Auth("request did not respond with location header".to_string()))?;
+        let location_header = res.headers().get("location")
+            .ok_or(Error::Other("onedrive: request did not respond with location header".to_string()))?;
 
-        let location = location_header.to_str().map_err(|_| Error::Auth("invalid location header".to_string()))?;
-        let res = self.req.clone().get(location).send().await?.error_for_status()?;
+        let location = location_header.to_str()
+            .map_err(|_| Error::Other("onedrive: invalid location header".to_string()))?;
+
+        let res = self.req.clone().get(location)
+            .send().await?.error_for_status()?;
 
         // Monitor the operation's status.
         let json: Value = res.json().await?;
@@ -190,11 +166,12 @@ impl Filesystem for OneDrive {
         while status.status != StatusReport::Completed {
             match status.status {
                 StatusReport::Failed | StatusReport::CancelPending | StatusReport::Cancelled => {
-                    return Err(Error::Auth("operation was not completed".to_string()));
+                    return Err(Error::Other("onedrive: operation was not completed".to_string()));
                 }
                 StatusReport::Completed => break,
                 _ => {
-                    let res = self.req.clone().get(location).send().await?.error_for_status()?;
+                    let res = self.req.clone().get(location).send().await?
+                        .error_for_status()?;
 
                     let json: Value = res.json().await?;
                     status = from_value(json)?;
@@ -212,12 +189,7 @@ impl Filesystem for OneDrive {
     /// directory. Specifying a `name` renames the child.
     ///
     /// API Reference: [Move](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_move?view=odsp-graph-online)
-    async fn move_file(
-        &self,
-        source_id: &str,
-        parent_id: Option<&str>,
-        name: Option<&str>,
-    ) -> Result<DriveItem> {
+    async fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<DriveItem> {
         let url = format!("{}/items/{}", API_ENDPOINT, source_id);
         let mut body = serde_json::json!({
             "parentReference": {
@@ -237,9 +209,12 @@ impl Filesystem for OneDrive {
             body["name"] = serde_json::Value::String(new_name.to_string());
         }
 
-        let req = self.req.clone().patch(&url).header(AUTHORIZATION, self.client.bearer().await?).json(&body);
+        let req = self.req.clone().patch(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?)
+            .json(&body);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let json: Value = res.json().await?;
         let item: DriveItem = from_value(json)?;
@@ -255,9 +230,11 @@ impl Filesystem for OneDrive {
     /// API Reference: [Delete](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_delete?view=odsp-graph-online)
     async fn remove_file(&self, id: &str) -> Result<()> {
         let url = format!("{}/items/{}", API_ENDPOINT, id);
-        let req = self.req.clone().delete(&url).header(AUTHORIZATION, self.client.bearer().await?);
+        let req = self.req.clone().delete(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?);
 
-        self.client.execute_with_retry(req).await?.error_for_status()?;
+        self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         Ok(())
     }
@@ -278,10 +255,42 @@ impl Filesystem for OneDrive {
         let items = serde_json::json!({
             "name": name,
             "folder": {},
-            "@microsoft.graph.conflictBehavior": "fail",
+            "@microsoft.graph.conflictBehavior": "replace",
         });
 
-        let req = self.req.clone().post(&url).header(AUTHORIZATION, self.client.bearer().await?).json(&items);
+        let req = self.req.clone().post(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?)
+            .json(&items);
+
+        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+
+        let json: Value = res.json().await?;
+        let item: DriveItem = from_value(json)?;
+
+        Ok(item)
+    }
+
+    /// Create a new file.
+    ///
+    /// Uses the same route as [create_folder] but specifies file
+    /// metadata instead.
+    ///
+    /// API Reference: [Create folder](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_post_children?view=odsp-graph-online)
+    async fn create_file(&self, parent_id: Option<&str>, name: &str) -> Result<Self::File> {
+        let url = match parent_id {
+            Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
+            None => format!("{}/root/children", API_ENDPOINT),
+        };
+
+        let items = serde_json::json!({
+            "name": name,
+            "file": {},
+            "@microsoft.graph.conflictBehavior": "replace",
+        });
+
+        let req = self.req.clone().post(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?)
+            .json(&items);
 
         let res = self.client.execute_with_retry(req).await?.error_for_status()?;
 
@@ -307,9 +316,11 @@ impl Filesystem for OneDrive {
             None => format!("{}/root/children", API_ENDPOINT),
         };
 
-        let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
+        let req = self.req.clone().get(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let json: Value = res.json().await?;
         let items: Vec<DriveItem> = from_value(json["value"].clone())?;
@@ -324,11 +335,7 @@ impl Filesystem for OneDrive {
     /// to the latest changes.
     ///
     /// API Reference: [Sync Changes](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_delta?view=odsp-graph-online)
-    async fn track_changes(
-        &self,
-        id: Option<&str>,
-        delta: Option<&str>,
-    ) -> Result<(Vec<DriveItem>, String)> {
+    async fn track_changes(&self, id: Option<&str>, delta: Option<&str>) -> Result<(Vec<DriveItem>, String)> {
         // Paginated endpoint: initial request.
         let mut changes: Vec<DriveItem> = Vec::new();
         let url = match id {
@@ -342,9 +349,11 @@ impl Filesystem for OneDrive {
             None => url,
         };
 
-        let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
+        let req = self.req.clone().get(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let mut json: Value = res.json().await?;
         let mut items: Vec<DriveItem> = from_value(json["value"].clone())?;
@@ -352,13 +361,15 @@ impl Filesystem for OneDrive {
 
         // Subsequent pages.
         while let Some(url) = json.get("@odata.nextLink") {
-            let url_str = url.as_str().ok_or(Error::Auth(
-                "invalid URL in @odata.nextLink".to_string(),
+            let url_str = url.as_str().ok_or(Error::Other(
+                "onedrive: invalid URL in @odata.nextLink".to_string(),
             ))?;
 
-            let req = self.req.clone().get(url_str).header(AUTHORIZATION, self.client.bearer().await?);
+            let req = self.req.clone().get(url_str)
+                .header(AUTHORIZATION, self.client.bearer().await?);
 
-            let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+            let res = self.client.execute_with_retry(req).await?
+                .error_for_status()?;
 
             json = res.json().await?;
             let mut items: Vec<DriveItem> = from_value(json["value"].clone())?;
@@ -376,21 +387,12 @@ impl Filesystem for OneDrive {
 
     /// Upload or replace the contents of a [DriveItem].
     ///
-    /// Passing `None` to `parent_id` sets the root directory as the
-    /// parent. Use `name` to change the file's name (uses the local
-    /// file name by default).
-    ///
     /// API Reference: [Upload](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_createuploadsession?view=odsp-graph-online)
-    async fn write_to_file(
-        &self,
-        buf: &[u8],
-        parent_id: Option<&str>,
-        name: &str,
-    ) -> Result<DriveItem> {
+    async fn write_to_file(&self, id: &str, buf: &[u8]) -> Result<DriveItem> {
         if buf.len() <= 4 * 1024 * 1024 {
-            self.upload_small_file(buf, parent_id, name).await
+            self.upload_small_file(id, buf).await
         } else {
-            self.upload_large_file(buf, parent_id, name).await
+            self.upload_large_file(id, buf).await
         }
     }
 
@@ -403,7 +405,8 @@ impl Filesystem for OneDrive {
         let url = format!("{}/items/{}/content", API_ENDPOINT, id);
         let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
 
         let bytes = res.bytes().await?;
         Ok(bytes.to_vec())
@@ -424,26 +427,21 @@ mod tests {
 
     async fn get_test_client() -> OneDrive {
         dotenv().ok();
+        let client_id = env::var("ONEDRIVE_CLIENT_ID")
+            .expect("missing ONEDRIVE_CLIENT_ID env variable");
 
-        let client_id =
-            env::var("ONEDRIVE_CLIENT_ID").expect("missing ONEDRIVE_CLIENT_ID env variable");
-
-        let redirect_uri =
-            env::var("ONEDRIVE_REDIRECT_URI").expect("missing ONEDRIVE_REDIRECT_URI env variable");
+        let redirect_uri = env::var("ONEDRIVE_REDIRECT_URI")
+            .expect("missing ONEDRIVE_REDIRECT_URI env variable");
 
         let refresh_token = env::var("ONEDRIVE_REFRESH_TOKEN")
             .expect("missing ONEDRIVE_REFRESH_TOKEN env variable");
 
         let app_config = oauth2::Config::onedrive(&client_id, &redirect_uri);
 
-        let token = TOKEN
-            .get_or_init(|| async {
-                let token =
-                    oauth2::Token::from_refresh_token(&refresh_token, &app_config).await.unwrap();
-                Arc::new(token)
-            })
-            .await
-            .clone();
+        let token = TOKEN.get_or_init(|| async {
+            let token = oauth2::Token::from_refresh_token(&refresh_token, &app_config).await.unwrap();
+            Arc::new(token)
+        }).await.clone();
 
         OneDrive::new(&token, &app_config)
     }
@@ -451,8 +449,8 @@ mod tests {
     #[tokio::test]
     async fn test_get_file() {
         let client = get_test_client().await;
-        let buf = "Hello, World!".as_bytes();
-        let file = client.write_to_file(buf, None, "helsync-get-file.txt").await.unwrap();
+        let file = client.create_file(None, "helsync-get-file.txt")
+            .await.unwrap();
 
         let res = client.get_file(&file.id).await.unwrap();
         assert!(res.id == file.id);
@@ -462,10 +460,11 @@ mod tests {
     #[tokio::test]
     async fn test_copy_file() {
         let client = get_test_client().await;
-        let buf = "Hello, World!".as_bytes();
-        let file = client.write_to_file(buf, None, "helsync-copy-file.txt").await.unwrap();
+        let file = client.create_file(None, "helsync-copy-file.txt")
+            .await.unwrap();
 
-        let copied = client.copy_file(&file.id, None, Some("new-name.txt")).await.unwrap();
+        let copied = client.copy_file(&file.id, None, Some("new-name.txt"))
+            .await.unwrap();
 
         assert!(copied.id != file.id);
         assert!(copied.name.unwrap() == "new-name.txt");
@@ -481,12 +480,14 @@ mod tests {
     #[tokio::test]
     async fn test_move_file() {
         let client = get_test_client().await;
-        let buf = "Hello, World!".as_bytes();
-        let child = client.write_to_file(buf, None, "helsync-child-file.txt").await.unwrap();
+        let child = client.create_file(None, "helsync-child-file.txt")
+            .await.unwrap();
 
-        let parent = client.create_folder(None, "helsync-parent").await.unwrap();
+        let parent = client.create_folder(None, "helsync-parent")
+            .await.unwrap();
 
-        let moved = client.move_file(&child.id, Some(&parent.id), None).await.unwrap();
+        let moved = client.move_file(&child.id, Some(&parent.id), None)
+            .await.unwrap();
 
         assert!(moved.parent_reference.unwrap().name.unwrap() == "helsync-parent");
         client.remove_file(&parent.id).await.unwrap();
@@ -495,7 +496,8 @@ mod tests {
     #[tokio::test]
     async fn test_create_folder() {
         let client = get_test_client().await;
-        let parent = client.create_folder(None, "helsync-test-folder").await.unwrap();
+        let parent = client.create_folder(None, "helsync-test-folder")
+            .await.unwrap();
 
         assert!(parent.name.unwrap() == "helsync-test-folder");
         assert!(parent.folder.is_some());
@@ -507,7 +509,8 @@ mod tests {
     #[tokio::test]
     async fn test_list_files() {
         let client = get_test_client().await;
-        let parent = client.create_folder(None, "helsync-test-list").await.unwrap();
+        let parent = client.create_folder(None, "helsync-test-list")
+            .await.unwrap();
 
         let files = client.list_files(None).await.unwrap();
         let find = files.iter().find(|f| f.id == parent.id);
@@ -519,11 +522,12 @@ mod tests {
     #[tokio::test]
     async fn test_track_changes() {
         let client = get_test_client().await;
-        let (_, token) = client.track_changes(None, Some("latest")).await.unwrap();
+        let (_, token) = client.track_changes(None, Some("latest"))
+            .await.unwrap();
 
         // Make a change.
-        let buf = "Hello, World!".as_bytes();
-        let file = client.write_to_file(buf, None, "helsync-track-changes.txt").await.unwrap();
+        let file = client.create_file(None, "helsync-track-changes.txt")
+            .await.unwrap();
 
         let (changes, _) = client.track_changes(None, Some(&token)).await.unwrap();
         let find = changes.iter().find(|f| f.id == file.id);
@@ -535,8 +539,12 @@ mod tests {
     #[tokio::test]
     async fn test_read_write_small() {
         let client = get_test_client().await;
+        let file = client.create_file(None, "helsync-write-small.txt")
+            .await.unwrap();
+
         let buf = "Hello, World!".as_bytes();
-        let file = client.write_to_file(buf, None, "helsync-write-small.txt").await.unwrap();
+        let file = client.write_to_file(&file.id, buf)
+            .await.unwrap();
 
         assert!(file.name.unwrap() == "helsync-write-small.txt");
         let v = client.read_from_file(&file.id).await.unwrap();
@@ -549,12 +557,15 @@ mod tests {
     #[tokio::test]
     async fn test_read_write_large() {
         let client = get_test_client().await;
+        let file = client.create_file(None, "helsync-write-large.txt")
+            .await.unwrap();
 
         // 5MB of 'A' characters.
         let file_size = 5 * 1024 * 1024;
         let buf = vec![b'A'; file_size];
 
-        let file = client.write_to_file(&buf, None, "helsync-write-large.txt").await.unwrap();
+        let file = client.write_to_file(&file.id, &buf)
+            .await.unwrap();
 
         assert!(file.name.unwrap() == "helsync-write-large.txt");
         client.remove_file(&file.id).await.unwrap();

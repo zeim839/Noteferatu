@@ -50,6 +50,15 @@ pub(crate) async fn create_folder<R: Runtime>(
 }
 
 #[command]
+pub(crate) async fn create_file<R: Runtime>(
+    app: AppHandle<R>,
+    payload: CreateFileRequest,
+) -> Result<LocalFile> {
+    app.emit("helsync-fs-change", FsChangeEvent::CreateFile(payload.clone()))?;
+    app.helsync().create_file(payload).await
+}
+
+#[command]
 pub(crate) async fn list_files<R: Runtime>(
     app: AppHandle<R>,
     payload: ListFilesRequest,

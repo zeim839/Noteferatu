@@ -76,7 +76,7 @@ impl Grant {
         let pkce = PKCE::new();
         request_auth_grant(&pkce, &config)?;
         let grant = rx.recv().await
-            .ok_or(Error::Auth("failed to capture authorization grant".to_string()))?;
+            .ok_or(Error::Other("failed to capture authorization grant".to_string()))?;
 
         Ok(Self {code: grant, pkce, config: config.clone()})
     }
@@ -205,14 +205,14 @@ async fn parse_request(
 
     let mut parts = line_buffer.split_whitespace();
     let method = parts.next()
-        .ok_or(Error::Auth("missing method".to_string()))?;
+        .ok_or(Error::Other("oauth2: missing method".to_string()))?;
 
     if method != "GET" {
-        return Err(Error::Auth(format!("unsupported method: {}", method)));
+        return Err(Error::Other(format!("oauth2: unsupported method: {}", method)));
     }
 
     let path: String = parts.next()
-        .ok_or(Error::Auth("missing path".to_string()))
+        .ok_or(Error::Other("oauth2: missing path".to_string()))
         .map(Into::into)?;
 
     Ok(extract_query_params(&path))

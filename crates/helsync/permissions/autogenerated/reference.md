@@ -9,6 +9,7 @@ Default permissions for the plugin
 - `allow-move-file`
 - `allow-remove-file`
 - `allow-create-folder`
+- `allow-create-file`
 - `allow-list-files`
 
 ## Permission Table
@@ -94,6 +95,32 @@ Enables the create-folder command without any pre-configured scope.
 <td>
 
 Denies the create-folder command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-create-file`
+
+</td>
+<td>
+
+Enables the create_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-create-file`
+
+</td>
+<td>
+
+Denies the create_file command without any pre-configured scope.
 
 </td>
 </tr>

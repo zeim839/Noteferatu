@@ -57,16 +57,19 @@ impl<R: Runtime> Helsync<R> {
         ).await?)
     }
 
+    pub async fn create_file(&self, payload: CreateFileRequest) -> Result<LocalFile> {
+        Ok(self.local.create_file(
+            payload.parent_id.as_deref(),
+            &payload.name,
+        ).await?)
+    }
+
     pub async fn list_files(&self, payload: ListFilesRequest) -> Result<Vec<LocalFile>> {
         Ok(self.local.list_files(payload.parent_id.as_deref()).await?)
     }
 
     pub async fn write_to_file(&self, payload: WriteToFileRequest) -> Result<LocalFile> {
-        Ok(self.local.write_to_file(
-            &payload.contents,
-            payload.parent_id.as_deref(),
-            &payload.name,
-        ).await?)
+        Ok(self.local.write_to_file(&payload.id, &payload.contents).await?)
     }
 
     pub async fn read_from_file(&self) -> Result<()> {

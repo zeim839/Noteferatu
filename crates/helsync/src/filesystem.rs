@@ -6,43 +6,59 @@ pub trait Filesystem {
     type File: File;
     type Delta: Delta;
 
-    /// Reads the file with the given `id`.
+    /// Fetches metadata for the file with `id`.
     fn get_file(&self, id: &str) -> impl Future<Output = Result<Self::File>>;
 
-    /// Copy the file with `source_id` to the parent with `parent_id`,
-    /// optionally renaming it to `name`.
+    /// Copy a file.
+    ///
+    /// Copies a file and moves it under `parent_id`. If `parent_id` is
+    /// unspecified, then the file is moved to the root directory. If
+    /// `name` is specified, the file is renamed.
     fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) ->
     impl Future<Output = Result<Self::File>>;
 
-    /// Move the file with `source_id` to the parent with `parent_id`,
-    /// optionally renaming it to `name`.
+    /// Move a file.
+    ///
+    /// Sets the file's parent to `parent_id`. If `parent_id` is
+    /// unspecified, then the file is moved to the root directory. If
+    /// `name` is specified, the file is renamed.
     fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) ->
     impl Future<Output = Result<Self::File>>;
 
     /// Delete the file with the given `id`.
     fn remove_file(&self, id: &str) -> impl Future<Output = Result<()>>;
 
-    /// Create a new directory with name `name` at the parent
-    /// `parent_id`. If `parent_id` is unspecified, the directory is
-    /// created at the filesystem root.
+    /// Create a new directory.
+    ///
+    /// If `parent_id` is unspecified, the directory is created at the
+    /// filesystem root.
     fn create_folder(&self, parent_id: Option<&str>, name: &str) ->
     impl Future<Output = Result<Self::File>>;
 
-    /// Lists all immediate files belonging to `parent_id`. If
-    /// `parent_id` is unspecified, then it returns all files below
+    /// Create a new file.
+    ///
+    /// If `parent_id` is unspecified, the directory is created at the
+    /// filesystem root.
+    fn create_file(&self, parent_id: Option<&str>, name: &str) -> impl
+    Future<Output = Result<Self::File>>;
+
+    /// Lists all immediate files belonging to `parent_id`.
+    ///
+    /// If `parent_id` is unspecified, then it returns all files below
     /// the filesystem root.
     fn list_files(&self, parent_id: Option<&str>) ->
     impl Future<Output = Result<Vec<Self::File>>>;
 
-    /// Fetches the latest state of the filesystem. Specifying a
-    /// `source_id` fetches changes only from given source. `token` is
-    /// an optional token for omitting processed changes.
+    /// Fetches the latest state of the filesystem.
+    ///
+    /// Specifying a `source_id` fetches changes only from given
+    /// source. `token` is an optional token for omitting processed
+    /// changes.
     fn track_changes(&self, parent_id: Option<&str>, token: Option<&str>) ->
     impl Future<Output = Result<(Vec<Self::Delta>, String)>>;
 
-    /// Write to a file in the filesystem, creating it if it doesn't
-    /// exist.
-    fn write_to_file(&self, buf: &[u8], parent_id: Option<&str>, name: &str) ->
+    /// Write to a file in the filesystem.
+    fn write_to_file(&self, id: &str, buf: &[u8]) ->
     impl Future<Output = Result<Self::File>>;
 
     /// Read from a file in the filesystem.

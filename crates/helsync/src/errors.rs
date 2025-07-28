@@ -11,8 +11,8 @@ pub enum Error {
     Json(serde_json::Error),
     SystemTime(SystemTimeError),
     Database(sqlx::Error),
-    Auth(String),
     Io(std::io::Error),
+    Other(String),
 }
 
 impl Display for Error {
@@ -22,7 +22,7 @@ impl Display for Error {
             Error::Json(err) => write!(f, "json error: {err}"),
             Error::SystemTime(err) => write!(f, "system time error: {err}"),
             Error::Database(err) => write!(f, "database error: {err}"),
-            Error::Auth(err) => write!(f, "auth error: {err}"),
+            Error::Other(err) => write!(f, "{err}"),
             Error::Io(err) => write!(f, "io error: {err}"),
         }
     }

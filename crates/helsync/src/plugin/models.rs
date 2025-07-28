@@ -37,6 +37,13 @@ pub struct CreateFolderRequest {
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
+pub struct CreateFileRequest {
+    pub parent_id: Option<String>,
+    pub name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct ListFilesRequest {
     pub parent_id: Option<String>,
 }
@@ -44,8 +51,7 @@ pub struct ListFilesRequest {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct WriteToFileRequest {
-    pub parent_id: Option<String>,
-    pub name: String,
+    pub id: String,
     pub contents: Vec<u8>,
 }
 
@@ -60,4 +66,5 @@ pub enum FsChangeEvent {
     Move(MoveFileRequest),
     Remove(RemoveFileRequest),
     CreateFolder(CreateFolderRequest),
+    CreateFile(CreateFileRequest),
 }

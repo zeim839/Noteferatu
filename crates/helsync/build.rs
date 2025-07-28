@@ -5,6 +5,7 @@ const COMMANDS: &[&str] = &[
     "move_file",
     "remove_file",
     "create_folder",
+    "create_file",
     "list_files"
 ];
 
