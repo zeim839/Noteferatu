@@ -15,7 +15,7 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-internal-toggle-maximize",
     "opener:default",
-    "plugin-agent:default",
+    "agent:default",
     "helsync:default"
   ]
 }

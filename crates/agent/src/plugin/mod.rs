@@ -23,7 +23,7 @@ pub trait AgentExt<R: Runtime> {
     fn agent(&self) -> &Agent<R>;
 }
 
-impl<R: Runtime, T: Manager<R>> crate::AgentExt<R> for T {
+impl <R: Runtime, T: Manager<R>> AgentExt<R> for T {
     fn agent(&self) -> &Agent<R> {
         self.state::<Agent<R>>().inner()
     }
@@ -31,7 +31,7 @@ impl<R: Runtime, T: Manager<R>> crate::AgentExt<R> for T {
 
 /// Initializes the plugin.
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    Builder::new("plugin-agent")
+    Builder::new("agent")
         .invoke_handler(tauri::generate_handler![
             commands::try_connect,
             commands::list_models,

@@ -8,8 +8,8 @@ import { useState } from "react"
 import { ExplorerProvider } from "@/components/explorer/context"
 import { Explorer } from "@/components/explorer/explorer"
 
-import { AgentProvider } from "@/components/agent/agent"
-import { AgentPanel } from "@/components/agent/agentpanel"
+import { AgentProvider } from "@/components/agent/context"
+import { Agent } from "@/components/agent/agent"
 
 import {
   PanelLeftDashedIcon,
@@ -65,7 +65,7 @@ export default function Home() {
         </Window.Content>
         <Window.RightSidebar>
           <AgentProvider>
-            <AgentPanel />
+            <Agent />
           </AgentProvider>
         </Window.RightSidebar>
       </Window>

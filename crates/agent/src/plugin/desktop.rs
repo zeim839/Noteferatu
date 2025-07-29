@@ -2,8 +2,8 @@ use serde::de::DeserializeOwned;
 use tauri::plugin::PluginApi;
 use tauri::{AppHandle, Runtime};
 
-use crate::models::*;
-use crate::Result;
+use super::models::*;
+use super::Result;
 use tokio::sync::Mutex;
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
@@ -12,14 +12,14 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 ) -> Result<Agent<R>> {
     Ok(Agent {
         _app: app.clone(),
-        client: Mutex::new(agent::Agent::new()),
+        client: Mutex::new(crate::Agent::new()),
     })
 }
 
 /// Access to the agent APIs.
 pub struct Agent<R: Runtime> {
     _app: AppHandle<R>,
-    client: Mutex<agent::Agent>,
+    client: Mutex<crate::Agent>,
 }
 
 impl<R: Runtime> Agent<R> {
@@ -29,7 +29,8 @@ impl<R: Runtime> Agent<R> {
             "anthropic" => client.register_anthropic(&payload.api_key).await?,
             "google" => client.register_google(&payload.api_key).await?,
             "ollama" => client.register_ollama(&payload.api_key).await
-                .map_err(|err| agent::Error{
+                .map_err(|_| crate::Error{
+                    // Use custom error message.
                     kind: "OLLAMA_ERR".to_string(),
                     message: "invalid connection URL".to_string(),
                 })?,
@@ -40,7 +41,7 @@ impl<R: Runtime> Agent<R> {
         Ok(())
     }
 
-    pub async fn list_models(&self, payload: ListModelsRequest) -> Result<Vec<agent::Model>> {
+    pub async fn list_models(&self, payload: ListModelsRequest) -> Result<Vec<crate::Model>> {
         let client = self.client.lock().await;
         let models = client.list_models(payload.provider.as_deref()).await?;
         Ok(models)

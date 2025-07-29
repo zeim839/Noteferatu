@@ -19,7 +19,7 @@ export async function tryConnect(
   provider: string,
   apiKey: string,
 ): Promise<null> {
-  return await invoke("plugin:plugin-agent|try_connect", {
+  return await invoke("plugin:agent|try_connect", {
     payload: {
       provider,
       apiKey,
@@ -28,7 +28,7 @@ export async function tryConnect(
 }
 
 export async function listModels(provider?: string): Promise<Array<Model>> {
-  return await invoke<Array<Model>>("plugin:plugin-agent|list_models", {
+  return await invoke<Array<Model>>("plugin:agent|list_models", {
     payload: { provider },
   })
 }

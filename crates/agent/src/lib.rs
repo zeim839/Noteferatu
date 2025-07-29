@@ -15,3 +15,6 @@ pub use client::*;
 
 mod agent;
 pub use agent::*;
+
+#[cfg(feature = "plugin")]
+pub mod plugin;

@@ -19,7 +19,7 @@ Default permissions for the plugin
 <tr>
 <td>
 
-`plugin-agent:allow-list-models`
+`agent:allow-list-models`
 
 </td>
 <td>
@@ -32,7 +32,7 @@ Enables the list_models command without any pre-configured scope.
 <tr>
 <td>
 
-`plugin-agent:deny-list-models`
+`agent:deny-list-models`
 
 </td>
 <td>
@@ -45,7 +45,7 @@ Denies the list_models command without any pre-configured scope.
 <tr>
 <td>
 
-`plugin-agent:allow-try-connect`
+`agent:allow-try-connect`
 
 </td>
 <td>
@@ -58,7 +58,7 @@ Enables the try_connect command without any pre-configured scope.
 <tr>
 <td>
 
-`plugin-agent:deny-try-connect`
+`agent:deny-try-connect`
 
 </td>
 <td>

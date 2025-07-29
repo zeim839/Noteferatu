@@ -1,8 +1,8 @@
 use tauri::{AppHandle, command, Runtime};
 
-use crate::models::*;
-use crate::Result;
-use crate::AgentExt;
+use super::models::*;
+use super::Result;
+use super::AgentExt;
 
 #[command]
 pub(crate) async fn try_connect<R: Runtime>(
@@ -16,6 +16,6 @@ pub(crate) async fn try_connect<R: Runtime>(
 pub(crate) async fn list_models<R: Runtime>(
     app: AppHandle<R>,
     payload: ListModelsRequest,
-) -> Result<Vec<agent::Model>> {
+) -> Result<Vec<crate::Model>> {
     app.agent().list_models(payload).await
 }

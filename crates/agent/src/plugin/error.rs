@@ -9,7 +9,7 @@ pub enum Error {
     Io(String),
 
     #[error(transparent)]
-    Api(#[from] agent::Error),
+    Agent(#[from] crate::Error),
 
     #[cfg(mobile)]
     #[error(transparent)]

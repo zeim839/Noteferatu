@@ -1,6 +1,6 @@
 import * as React from "react"
 import { tryConnect, listModels }  from "@/lib/agent"
-import { useAgentContext } from "./agent"
+import { useAgentContext } from "./context"
 import { CheckIcon } from "lucide-react"
 
 import { Link } from "@/components/core/link"
