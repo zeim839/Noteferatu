@@ -1,5 +1,12 @@
 import * as React from "react"
 import { useExplorerContext, SortFileKey } from "../context"
+import { FileNameExistsError } from "./utils"
+
+import {
+  createFile,
+  HelsyncError,
+  createFolder
+} from "@/lib/helsync"
 
 import {
   ArrowDownWideNarrowIcon,
@@ -9,6 +16,7 @@ import {
   FolderPenIcon,
   FilesIcon,
   BookmarkIcon,
+  ShareIcon,
   ListOrderedIcon,
   ArrowDownAZIcon,
 } from "lucide-react"
@@ -28,6 +36,40 @@ import {
 
 function ExplorerContextMenu({ children, ...props }: React.ComponentProps<"div">) {
   const explorer = useExplorerContext()
+
+  // Creates a new file in the root directory with the name `Untitled`.
+  // If `Untitled` exists, it tries once more with a timestamp suffix.
+  const onCreateFile = () => {
+    createFile(`Untitled`)
+      .catch((err: HelsyncError) => {
+        if (err.error.type !== "database") {
+          throw err
+        }
+        if (err.error.error !== FileNameExistsError) {
+          throw err
+        }
+        const timestamp = new Date().toISOString()
+        createFile(`Untitled ${timestamp}`)
+      })
+  }
+
+  // Creates a new folder in the root directory with the name `Untitled
+  // Folder`. If `Untitled Folder` exists, it tries once more with a
+  // timestamp suffix.
+  const onCreateFolder = () => {
+    createFolder(`Untitled Folder`)
+      .catch((err: HelsyncError) => {
+        if (err.error.type !== "database") {
+          throw err
+        }
+        if (err.error.error !== FileNameExistsError) {
+          throw err
+        }
+        const timestamp = new Date().toISOString()
+        createFolder(`Untitled Folder ${timestamp}`)
+      })
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger {...props}>
@@ -40,13 +82,24 @@ function ExplorerContextMenu({ children, ...props }: React.ComponentProps<"div">
             <span>New</span>
           </ContextMenuSubTrigger>
           <ContextMenuSubContent>
-            <ContextMenuItem>
+            <ContextMenuItem onSelect={onCreateFile}>
               <FilePlusIcon className="size-3" />
               <span>File</span>
             </ContextMenuItem>
-            <ContextMenuItem>
+            <ContextMenuItem onSelect={onCreateFolder}>
               <FolderPenIcon className="size-3" />
               <span>Folder</span>
+            </ContextMenuItem>
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+        <ContextMenuSub>
+          <ContextMenuSubTrigger disabled>
+            <ShareIcon className="size-3" />
+            <span>Export As</span>
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            <ContextMenuItem>
+              TODO
             </ContextMenuItem>
           </ContextMenuSubContent>
         </ContextMenuSub>

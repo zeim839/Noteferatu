@@ -13,6 +13,14 @@ export type File = {
   isFolder:   boolean,
 }
 
+export interface HelsyncError {
+  type: "helsync"
+  error: {
+    type: string
+    error: string
+  }
+}
+
 // Extend File to include children
 export interface FileEntry extends File {
   children?: FileEntry[]

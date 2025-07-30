@@ -1,28 +1,33 @@
 use serde::{ser::Serializer, Serialize};
+use std::fmt::{Display, Formatter};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Serialize)]
+#[serde(tag = "type", content = "error", rename_all = "camelCase")]
 pub enum Error {
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
+    #[error("{0}")]
+    Io(String),
 
     #[error(transparent)]
     Helsync(#[from] crate::errors::Error),
 
-    #[error(transparent)]
-    Plugin(#[from] tauri::Error),
+    #[error("{0}")]
+    Plugin(String),
 
     #[cfg(mobile)]
     #[error(transparent)]
     PluginInvoke(#[from] tauri::plugin::mobile::PluginInvokeError),
 }
 
-impl Serialize for Error {
-    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(self.to_string().as_ref())
+impl From<std::io::Error> for Error {
+    fn from(error: std::io::Error) -> Self {
+        Self::Io(error.to_string())
+    }
+}
+
+impl From<tauri::Error> for Error {
+    fn from(error: tauri::Error) -> Self {
+        Self::Plugin(error.to_string())
     }
 }

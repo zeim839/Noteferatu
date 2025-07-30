@@ -17,7 +17,7 @@ const buttonVariants = cva(
         default:
           "border text-black shadow-md hover:bg-[#D4D8E1]",
         destructive:
-          "text-[#FF2400] shadow-xs",
+          "shadow-md border border-red-500 text-red-600 shadow-md hover:bg-[#e7000b] hover:text-white hover:border-black",
         confirmation:
           "text-[#008000] shadow-xs",
         outline:

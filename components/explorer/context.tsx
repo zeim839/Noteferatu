@@ -60,7 +60,6 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     fetchFiles()
     const unlistenPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
-      console.log("asd")
       fetchFiles()
     })
     return () => {
