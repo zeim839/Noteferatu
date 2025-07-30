@@ -1,9 +1,9 @@
-use tauri::{AppHandle, command, Runtime, Emitter};
-
 use crate::local::LocalFile;
 use super::models::*;
 use super::Result;
 use super::HelsyncExt;
+
+use tauri::{AppHandle, command, Runtime, Emitter};
 
 #[command]
 pub(crate) async fn get_file<R: Runtime>(
@@ -73,4 +73,29 @@ pub(crate) async fn write_to_file<R: Runtime>(
 ) -> Result<LocalFile> {
     // TODO: emit fs-change event
     app.helsync().write_to_file(payload).await
+}
+
+#[command]
+pub(crate) async fn list_bookmarks<R: Runtime>(
+    app: AppHandle<R>,
+) -> Result<Vec<LocalFile>> {
+    app.helsync().list_bookmarks().await
+}
+
+#[command]
+pub(crate) async fn create_bookmark<R: Runtime>(
+    app: AppHandle<R>,
+    payload: BookmarkRequest,
+) -> Result<()> {
+    app.emit("helsync-bookmark-change", "")?;
+    app.helsync().create_bookmark(payload).await
+}
+
+#[command]
+pub(crate) async fn remove_bookmark<R: Runtime>(
+    app: AppHandle<R>,
+    payload: BookmarkRequest,
+) -> Result<()> {
+    app.emit("helsync-bookmark-change", "")?;
+    app.helsync().remove_bookmark(payload).await
 }

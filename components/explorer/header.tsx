@@ -1,12 +1,15 @@
 import * as React from "react"
 import { Sidebar } from "@/components/window/sidebar"
 import { Button } from "@/components/core/button"
-import { useExplorerContext, SortFileKey } from "./context"
+import { useExplorerContext, SortFileKey, ViewType } from "./context"
 
 import {
   ChevronRightIcon,
   ChevronDownIcon,
   ArrowDownWideNarrowIcon,
+  BookmarkIcon,
+  FilesIcon,
+  GroupIcon,
 } from "lucide-react"
 
 import {
@@ -32,7 +35,7 @@ function ExplorerHeader() {
       <Select
         defaultOpen={false}
         onOpenChange={(open) => setIsSelectDocOpen(open)}
-        onValueChange={(value) => explorer.setIsViewDocuments(value === "documents")}
+        onValueChange={(value) => explorer.setView(value as ViewType)}
       >
         <SelectTrigger
           withIcon={false} size="sm"
@@ -44,12 +47,22 @@ function ExplorerHeader() {
             <ChevronRightIcon strokeWidth={1.6} />
           )}
           <p className="text-xs max-h-[15px]">
-            {(explorer.isViewDocuments()) ? "Documents" : "Tags"}
+            {explorer.view() === "documents" ? "Documents" : explorer.view() === "tags" ? "Tags" : "Bookmarks"}
           </p>
         </SelectTrigger>
         <SelectContent className="bg-[#EDF0F4]">
-          <SelectItem value="documents">Documents</SelectItem>
-          <SelectItem value="tags">Tags</SelectItem>
+          <SelectItem value="documents">
+            <FilesIcon className="size-3" />
+            <span>Documents</span>
+          </SelectItem>
+          <SelectItem value="bookmarks">
+            <BookmarkIcon className="size-3" />
+            <span>Bookmarks</span>
+          </SelectItem>
+          <SelectItem value="tags">
+            <GroupIcon className="size-3" />
+            <span>Tags</span>
+          </SelectItem>
         </SelectContent>
       </Select>
       <div className="flex flex-row">

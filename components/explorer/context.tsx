@@ -1,8 +1,16 @@
 import * as React from "react"
-import { listFiles, File, FileChangeEvent, FileEntry } from "@/lib/helsync"
 import { listen } from '@tauri-apps/api/event'
 
+import {
+  listFiles,
+  listBookmarks,
+  File,
+  FileChangeEvent,
+  FileEntry,
+} from "@/lib/helsync"
+
 export type SortFileKey = 'name' | 'createdAt' | 'modifiedAt'
+export type ViewType = 'documents' | 'tags' | 'bookmarks'
 
 // Defines a common context for explorer.
 export type ExplorerContextType = {
@@ -11,6 +19,9 @@ export type ExplorerContextType = {
   documents: () => Array<FileEntry>
   setDocuments: (docs: Array<FileEntry>) => void
 
+  // Control bookmarks.
+  bookmarks: () => Array<FileEntry>
+
   // Control document sorting.
   sortFileKey: () => SortFileKey
   setSortFileKey: (key: SortFileKey) => void
@@ -18,8 +29,8 @@ export type ExplorerContextType = {
   setSortFileAsc: (asc: boolean) => void
 
   // Control explorer view.
-  isViewDocuments: () => boolean
-  setIsViewDocuments: (isViewDocuments: boolean) => void
+  view: () => ViewType
+  setView: (view: ViewType) => void
 }
 
 // Implements ExporerContextType.
@@ -28,9 +39,10 @@ export const ExplorerContext = React.createContext<ExplorerContextType | null>(n
 // Exposes ExplorerContext.
 export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   const [documents, setDocuments] = React.useState<FileEntry[]>([])
+  const [bookmarks, setBookmarks] = React.useState<FileEntry[]>([])
   const [sortFileKey, setSortFileKey] = React.useState<SortFileKey>('name')
   const [sortFileAsc, setSortFileAsc] = React.useState<boolean>(true)
-  const [isViewDocuments, setIsViewDocuments] = React.useState<boolean>(true)
+  const [view, setView] = React.useState<ViewType>('documents')
 
   // Recursively fetch files, directories, and their children.
   const buildTree = async (parentId?: string): Promise<FileEntry[]> => {
@@ -56,14 +68,40 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Fetch bookmarks from helsync.
+  const fetchBookmarks = async () => {
+    try {
+      const bookmarkedFiles = await listBookmarks()
+      const bookmarkedEntries = await Promise.all(
+        bookmarkedFiles.map(async (file: File): Promise<FileEntry> => {
+          const entry: FileEntry = { ...file }
+          if (file.isFolder) {
+            entry.children = await buildTree(file.id.toString())
+          }
+          return entry
+        }),
+      )
+      setBookmarks(bookmarkedEntries)
+    } catch (error) {
+      console.error("Failed to fetch bookmarks:", error)
+    }
+  }
+
   // Initial file fetch and register event listener.
   React.useEffect(() => {
     fetchFiles()
-    const unlistenPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
+    fetchBookmarks()
+    const fsEventPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
       fetchFiles()
+      fetchBookmarks()
+    })
+    const bookmarkEventPromise = listen("helsync-bookmark-change", () => {
+      fetchFiles()
+      fetchBookmarks()
     })
     return () => {
-      unlistenPromise.then((unlisten) => unlisten())
+      fsEventPromise.then((unlisten) => unlisten())
+      bookmarkEventPromise.then((unlisten) => unlisten())
     }
   }, [])
 
@@ -71,12 +109,13 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   const context: ExplorerContextType = {
     documents: () => { return documents },
     setDocuments: (docs) => { setDocuments(docs) },
+    bookmarks: () => { return bookmarks },
     sortFileKey: () => { return sortFileKey },
     setSortFileKey: (key) => setSortFileKey(key),
     sortFileAsc: () => { return sortFileAsc },
     setSortFileAsc: (asc) => setSortFileAsc(asc),
-    isViewDocuments: () => { return isViewDocuments },
-    setIsViewDocuments: (isDocs) => setIsViewDocuments(isDocs)
+    view: () => { return view },
+    setView: (view) => setView(view),
   }
 
   return (

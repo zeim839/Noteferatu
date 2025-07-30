@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useExplorerContext, SortFileKey } from "../context"
+import { useExplorerContext, SortFileKey, ViewType } from "../context"
 import { FileNameExistsError } from "./utils"
 
 import {
@@ -19,6 +19,7 @@ import {
   ShareIcon,
   ListOrderedIcon,
   ArrowDownAZIcon,
+  GroupIcon,
 } from "lucide-react"
 
 import {
@@ -110,18 +111,18 @@ function ExplorerContextMenu({ children, ...props }: React.ComponentProps<"div">
             <span>Filter</span>
           </ContextMenuSubTrigger>
           <ContextMenuSubContent>
-            <ContextMenuRadioGroup
-              value={(explorer.isViewDocuments()) ? "documents" : "tags"}
-              onValueChange={
-                (value) => explorer.setIsViewDocuments(value === "documents")
-              }
-            >
+            <ContextMenuRadioGroup value={explorer.view()}
+              onValueChange={(value) => explorer.setView(value as ViewType)}>
               <ContextMenuRadioItem value="documents">
                 <FilesIcon className="size-3" />
                 <span>Documents</span>
               </ContextMenuRadioItem>
-              <ContextMenuRadioItem value="tags">
+              <ContextMenuRadioItem value="bookmarks">
                 <BookmarkIcon className="size-3" />
+                <span>Bookmarks</span>
+              </ContextMenuRadioItem>
+              <ContextMenuRadioItem value="tags">
+                <GroupIcon className="size-3" />
                 <span>Tags</span>
               </ContextMenuRadioItem>
             </ContextMenuRadioGroup>

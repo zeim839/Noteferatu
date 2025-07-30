@@ -18,6 +18,7 @@ pub struct LocalFile {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_at: Option<i64>,
     pub is_folder: bool,
+    pub is_bookmarked: bool,
 }
 
 impl File for LocalFile {

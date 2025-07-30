@@ -1,5 +1,19 @@
 use serde::{Deserialize, Serialize};
 
+/// Describes a change made to files in the filesystem.
+///
+/// Sent as a [global tauri event](https://v2.tauri.app/develop/calling-frontend/#global-events)
+/// whenever a filesystem change is detected.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all="camelCase", rename_all_fields="camelCase", tag="event", content="data")]
+pub enum FsChangeEvent {
+    Copy(CopyFileRequest),
+    Move(MoveFileRequest),
+    Remove(RemoveFileRequest),
+    CreateFolder(CreateFolderRequest),
+    CreateFile(CreateFileRequest),
+}
+
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GetFileRequest {
@@ -55,16 +69,8 @@ pub struct WriteToFileRequest {
     pub contents: Vec<u8>,
 }
 
-/// Describes a change made to files in the filesystem.
-///
-/// Sent as a [global tauri event](https://v2.tauri.app/develop/calling-frontend/#global-events)
-/// whenever a filesystem change is detected.
 #[derive(Debug, Deserialize, Serialize, Clone)]
-#[serde(rename_all="camelCase", rename_all_fields="camelCase", tag="event", content="data")]
-pub enum FsChangeEvent {
-    Copy(CopyFileRequest),
-    Move(MoveFileRequest),
-    Remove(RemoveFileRequest),
-    CreateFolder(CreateFolderRequest),
-    CreateFile(CreateFileRequest),
+#[serde(rename_all = "camelCase")]
+pub struct BookmarkRequest {
+    pub id: String,
 }

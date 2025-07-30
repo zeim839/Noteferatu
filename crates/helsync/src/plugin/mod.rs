@@ -46,6 +46,9 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::create_file,
             commands::list_files,
             commands::write_to_file,
+            commands::list_bookmarks,
+            commands::create_bookmark,
+            commands::remove_bookmark,
         ])
         .setup(|app, api| {
             let setup = async || {
@@ -61,14 +64,14 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                             version: 1,
                             sql: "
 INSERT INTO File(id, name, parent, is_deleted, created_at, modified_at,
-is_folder) VALUES
-  (0, \"Introduction\", NULL, FALSE, 0, 0, FALSE),
-  (1, \"NoteFeratu Tutorial\", NULL, FALSE, 0, 0, FALSE),
-  (2, \"Roman Empire\", NULL, FALSE, 0, 0, FALSE),
-  (3, \"First Order Theory\", NULL, FALSE, 0, 0, FALSE),
-  (4, \"Coursework\", NULL, FALSE, 0, 0, TRUE),
-  (5, \"Normal Forms\", 4, FALSE, 0, 0, FALSE),
-  (6, \"Foreign Policy\", 4, FALSE, 0, 0, FALSE);
+is_folder, is_bookmarked) VALUES
+  (0, \"Introduction\", NULL, FALSE, 0, 0, FALSE, FALSE),
+  (1, \"NoteFeratu Tutorial\", NULL, FALSE, 0, 0, FALSE, FALSE),
+  (2, \"Roman Empire\", NULL, FALSE, 0, 0, FALSE, FALSE),
+  (3, \"First Order Theory\", NULL, FALSE, 0, 0, FALSE, FALSE),
+  (4, \"Coursework\", NULL, FALSE, 0, 0, TRUE, FALSE),
+  (5, \"Normal Forms\", 4, FALSE, 0, 0, FALSE, FALSE),
+  (6, \"Foreign Policy\", 4, FALSE, 0, 0, FALSE, FALSE);
 ",
                             kind: database::MigrationType::Up,
                         }],

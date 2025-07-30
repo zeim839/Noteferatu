@@ -11,6 +11,9 @@ Default permissions for the plugin
 - `allow-create-folder`
 - `allow-create-file`
 - `allow-list-files`
+- `allow-list-bookmarks`
+- `allow-create-bookmark`
+- `allow-remove-bookmark`
 
 ## Permission Table
 
@@ -95,6 +98,32 @@ Enables the create-folder command without any pre-configured scope.
 <td>
 
 Denies the create-folder command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-create-bookmark`
+
+</td>
+<td>
+
+Enables the create_bookmark command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-create-bookmark`
+
+</td>
+<td>
+
+Denies the create_bookmark command without any pre-configured scope.
 
 </td>
 </tr>
@@ -232,6 +261,32 @@ Denies the list-files command without any pre-configured scope.
 <tr>
 <td>
 
+`helsync:allow-list-bookmarks`
+
+</td>
+<td>
+
+Enables the list_bookmarks command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-list-bookmarks`
+
+</td>
+<td>
+
+Denies the list_bookmarks command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `helsync:allow-list-files`
 
 </td>
@@ -355,6 +410,32 @@ Enables the remove-file command without any pre-configured scope.
 <td>
 
 Denies the remove-file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-remove-bookmark`
+
+</td>
+<td>
+
+Enables the remove_bookmark command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-remove-bookmark`
+
+</td>
+<td>
+
+Denies the remove_bookmark command without any pre-configured scope.
 
 </td>
 </tr>

@@ -8,19 +8,24 @@ import {
   removeFile,
   createFile,
   HelsyncError,
-  createFolder
+  createFolder,
+  removeBookmark,
+  createBookmark,
 } from "@/lib/helsync"
 
 import {
   Trash2Icon,
   FilePenLineIcon,
   FilesIcon,
-  BookmarkIcon,
+  LibraryIcon,
+  GroupIcon,
   SquareArrowOutUpRightIcon,
   CirclePlusIcon,
   ShareIcon,
   FilePlusIcon,
   FolderPenIcon,
+  BookmarkXIcon,
+  BookmarkPlusIcon,
 } from "lucide-react"
 
 import {
@@ -156,6 +161,32 @@ function EntryContextMenu({ file, setIsBeingRenamed, children, ...props} : Entry
           </ContextMenuSubContent>
         </ContextMenuSub>
         <ContextMenuSeparator />
+        <ContextMenuSub>
+          <ContextMenuSubTrigger>
+            <LibraryIcon className="size-3" />
+            <span>Organize</span>
+          </ContextMenuSubTrigger>
+          <ContextMenuSubContent>
+            <ContextMenuItem>
+              <GroupIcon className="size-3" />
+              <span>Manage Tags</span>
+            </ContextMenuItem>
+            {
+              (file.isBookmarked) ?
+                <ContextMenuItem
+                  onSelect={() => removeBookmark(file.id.toString())}>
+                  <BookmarkXIcon className="size-3" />
+                  <span>Remove Bookmark</span>
+                </ContextMenuItem> :
+                <ContextMenuItem
+                  onSelect={() => createBookmark(file.id.toString())}>
+                  <BookmarkPlusIcon className="size-3" />
+                  <span>Add Bookmark</span>
+                </ContextMenuItem>
+            }
+          </ContextMenuSubContent>
+        </ContextMenuSub>
+        <ContextMenuSeparator />
         <ContextMenuItem onSelect={() => setIsBeingRenamed(true)}>
           <FilePenLineIcon className="size-3" />
           <span>Rename</span>
@@ -163,10 +194,6 @@ function EntryContextMenu({ file, setIsBeingRenamed, children, ...props} : Entry
         <ContextMenuItem onSelect={onDuplicate}>
           <FilesIcon className="size-3" />
           <span>Duplicate</span>
-        </ContextMenuItem>
-        <ContextMenuItem>
-          <BookmarkIcon className="size-3" />
-          <span>Manage Tags</span>
         </ContextMenuItem>
         <ContextMenuSeparator />
         <Dialog open={isDeleteDialogOpen} onOpenChange={handleDialogOpenChange}>

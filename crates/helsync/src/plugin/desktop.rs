@@ -1,7 +1,7 @@
-use super::models::*;
-use super::error::Result;
 use crate::local::{LocalFS, LocalFile};
 use crate::filesystem::Filesystem;
+use super::models::*;
+use super::error::Result;
 
 use std::sync::Arc;
 use tauri::{plugin::PluginApi, AppHandle, Runtime};
@@ -74,5 +74,17 @@ impl<R: Runtime> Helsync<R> {
 
     pub async fn read_from_file(&self) -> Result<()> {
         unimplemented!();
+    }
+
+    pub async fn list_bookmarks(&self) -> Result<Vec<LocalFile>> {
+        Ok(self.local.list_bookmarks().await?)
+    }
+
+    pub async fn create_bookmark(&self, payload: BookmarkRequest) -> Result<()> {
+        Ok(self.local.create_bookmark(&payload.id).await?)
+    }
+
+    pub async fn remove_bookmark(&self, payload: BookmarkRequest) -> Result<()> {
+        Ok(self.local.remove_bookmark(&payload.id).await?)
     }
 }

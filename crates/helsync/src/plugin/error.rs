@@ -1,5 +1,4 @@
-use serde::{ser::Serializer, Serialize};
-use std::fmt::{Display, Formatter};
+use serde::Serialize;
 
 pub type Result<T> = std::result::Result<T, Error>;
 

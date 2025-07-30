@@ -7,5 +7,8 @@ permissions = [
     "allow-remove-file",
     "allow-create-folder",
     "allow-create-file",
-    "allow-list-files"
+    "allow-list-files",
+    "allow-list-bookmarks",
+    "allow-create-bookmark",
+    "allow-remove-bookmark"
 ]

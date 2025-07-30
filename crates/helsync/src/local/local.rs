@@ -55,6 +55,49 @@ impl LocalFS {
         }
         Self { onedrive: Some(Arc::new(onedrive)), ..self }
     }
+
+    /// Fetch all bookmarked files.
+    pub async fn list_bookmarks(&self) -> Result<Vec<LocalFile>> {
+        let mut conn = self.db.acquire().await?;
+        let bookmarks: Vec<LocalFile> = sqlx::query_as("SELECT * FROM
+    File WHERE is_bookmarked=TRUE AND is_deleted=FALSE")
+            .fetch_all(&mut *conn)
+            .await?;
+
+        Ok(bookmarks)
+    }
+
+    /// Bookmark a file for convenient retrieval.
+    pub async fn create_bookmark(&self, file_id: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        let res = sqlx::query("UPDATE File SET is_bookmarked=TRUE WHERE
+    id=? AND is_deleted=FALSE AND is_bookmarked=FALSE")
+            .bind(file_id)
+            .execute(&mut *conn)
+            .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound.into());
+        }
+
+        Ok(())
+    }
+
+    /// Removes a bookmark from a file.
+    pub async fn remove_bookmark(&self, file_id: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        let res = sqlx::query("UPDATE File SET is_bookmarked=FALSE WHERE
+    id=? AND is_deleted=FALSE AND is_bookmarked=TRUE")
+            .bind(file_id)
+            .execute(&mut *conn)
+            .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound.into());
+        }
+
+        Ok(())
+    }
 }
 
 impl Filesystem for LocalFS {
@@ -224,8 +267,8 @@ impl Filesystem for LocalFS {
             .as_secs() as i64;
 
         let res = sqlx::query("INSERT INTO File(name, parent,
-        is_deleted, created_at, modified_at, is_folder) VALUES (?, ?,
-        FALSE, ?, ?, TRUE)")
+        is_deleted, created_at, modified_at, is_folder, is_bookmarked)
+        VALUES (?, ?, FALSE, ?, ?, TRUE, FALSE)")
             .bind(name)
             .bind(parent_id)
             .bind(created_at)
@@ -252,8 +295,8 @@ impl Filesystem for LocalFS {
             .as_secs() as i64;
 
         let res = sqlx::query("INSERT INTO File(name, parent,
-        is_deleted, created_at, modified_at, is_folder) VALUES (?, ?,
-        FALSE, ?, ?, FALSE)")
+        is_deleted, created_at, modified_at, is_folder, is_bookmarked)
+        VALUES (?, ?, FALSE, ?, ?, FALSE, FALSE)")
             .bind(name)
             .bind(parent_id)
             .bind(created_at)
@@ -321,17 +364,17 @@ mod tests {
             // Add files for testing.
             const TESTING_SCHEMA: &str = "
 INSERT INTO File VALUES
-  (0, \"test.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE),
-  (1, \"test-dltd\", NULL, NULL, TRUE, 0, 0, NULL, TRUE),
-  (2, \"my_folder\", NULL, NULL, FALSE, 0, 0, NULL, TRUE),
-  (3, \"move_me.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE),
-  (4, \"delete_me.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE),
-  (5, \"delete_me\", NULL, NULL, FALSE, 0, 0, NULL, TRUE),
-  (6, \"deleted_child.txt\", 5, NULL, FALSE, 0, 0, NULL, FALSE),
-  (7, \"test-list\", NULL, NULL, FALSE, 0, 0, NULL, TRUE),
-  (8, \"list-child.txt\", 7, NULL, FALSE, 0, 0, NULL, FALSE),
-  (9, \"test-list-deleted\", NULL, NULL, FALSE, 0, 0, NULL, TRUE),
-  (10, \"list-child.txt\", 9, NULL, FALSE, 0, 0, NULL, FALSE);
+  (0, \"test.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (1, \"test-dltd\", NULL, NULL, TRUE, 0, 0, NULL, TRUE, FALSE),
+  (2, \"my_folder\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (3, \"move_me.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (4, \"delete_me.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (5, \"delete_me\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (6, \"deleted_child.txt\", 5, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (7, \"test-list\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (8, \"list-child.txt\", 7, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (9, \"test-list-deleted\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (10, \"list-child.txt\", 9, NULL, FALSE, 0, 0, NULL, FALSE, FALSE);
 ";
 
             let db = database::Database::new(&database::Config {
@@ -386,7 +429,7 @@ INSERT INTO File VALUES
         let parent_files = fs.list_files(Some("2")).await.unwrap();
         assert!(parent_files.iter().any(|f| f.id == copied.id));
 
-        // Copy a folder.
+        // Copy a folder and its children.
         let copied_folder = fs.copy_file("7", Some("2"), Some("copied_folder")).await.unwrap();
         assert_eq!(copied_folder.name, "copied_folder");
         assert_eq!(copied_folder.parent, Some(2));
@@ -463,7 +506,7 @@ INSERT INTO File VALUES
         let file = fs.create_file(None, "created_file.txt")
             .await.unwrap();
 
-        assert!(file.name == "new_file.txt");
+        assert!(file.name == "created_file.txt");
         assert!(file.parent.is_none());
 
         // Do not allow creating files under deleted folders.
@@ -507,5 +550,13 @@ INSERT INTO File VALUES
 
     #[tokio::test]
     async fn test_read_from_file() {
+    }
+
+    #[tokio::test]
+    async fn test_create_bookmark() {
+    }
+
+    #[tokio::test]
+    async fn test_remove_bookmark() {
     }
 }

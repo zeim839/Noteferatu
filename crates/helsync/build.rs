@@ -6,7 +6,10 @@ const COMMANDS: &[&str] = &[
     "remove_file",
     "create_folder",
     "create_file",
-    "list_files"
+    "list_files",
+    "list_bookmarks",
+    "create_bookmark",
+    "remove_bookmark"
 ];
 
 fn main() {

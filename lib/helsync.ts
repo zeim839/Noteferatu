@@ -2,15 +2,16 @@ import { invoke } from "@tauri-apps/api/core"
 
 // A Helsync virtual file. Can be either a document or folder.
 export type File = {
-  id:         number,
-  name:       string,
-  parent?:    number,
-  remoteId?:  string,
-  isDeleted:  boolean,
-  createdAt:  number,
-  modifiedAt: number,
-  syncedAt?:  number,
-  isFolder:   boolean,
+  id:           number,
+  name:         string,
+  parent?:      number,
+  remoteId?:    string,
+  isDeleted:    boolean,
+  createdAt:    number,
+  modifiedAt:   number,
+  syncedAt?:    number,
+  isFolder:     boolean,
+  isBookmarked: boolean
 }
 
 export interface HelsyncError {
@@ -100,11 +101,30 @@ export async function listFiles(parentId?: string): Promise<Array<File>> {
 
 // Write to a file in the filesystem.
 export async function writeToFile(name: string, contents: Uint8Array, parentId?: string): Promise<File> {
-    return await invoke<File>("plugin:helsync|write_to_file", {
-        payload: {
-            parentId,
-            name,
-            contents: Array.from(contents),
-        }
-    })
+  return await invoke<File>("plugin:helsync|write_to_file", {
+    payload: {
+      parentId,
+      name,
+      contents: Array.from(contents),
+    }
+  })
+}
+
+// Fetch all bookmarked files.
+export async function listBookmarks(): Promise<Array<File>> {
+  return await invoke<Array<File>>("plugin:helsync|list_bookmarks", {})
+}
+
+// Bookmark a file.
+export async function createBookmark(file_id: string): Promise<void> {
+  return await invoke("plugin:helsync|create_bookmark", {
+    payload: { id: file_id }
+  })
+}
+
+// Remove a bookmark from a file..
+export async function removeBookmark(file_id: string): Promise<void> {
+  return await invoke("plugin:helsync|remove_bookmark", {
+    payload: { id: file_id }
+  })
 }
