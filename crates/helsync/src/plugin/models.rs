@@ -74,3 +74,24 @@ pub struct WriteToFileRequest {
 pub struct BookmarkRequest {
     pub id: String,
 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTagRequest {
+    pub name: String,
+    pub color: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateTagBindRequest {
+    pub file_id: String,
+    pub tag_name: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveTagBindRequest {
+    pub file_id: String,
+    pub tag_name: String,
+}

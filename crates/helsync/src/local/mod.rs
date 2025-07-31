@@ -7,3 +7,6 @@ pub use local::*;
 
 mod schema;
 pub use schema::*;
+
+mod tags;
+pub use tags::*;

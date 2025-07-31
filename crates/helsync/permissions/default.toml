@@ -10,5 +10,9 @@ permissions = [
     "allow-list-files",
     "allow-list-bookmarks",
     "allow-create-bookmark",
-    "allow-remove-bookmark"
+    "allow-remove-bookmark",
+    "allow-list-tags",
+    "allow-create-tag",
+    "allow-create-tag-bind",
+    "allow-remove-tag-bind"
 ]

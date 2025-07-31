@@ -2,16 +2,22 @@ import { invoke } from "@tauri-apps/api/core"
 
 // A Helsync virtual file. Can be either a document or folder.
 export type File = {
-  id:           number,
-  name:         string,
-  parent?:      number,
-  remoteId?:    string,
-  isDeleted:    boolean,
-  createdAt:    number,
-  modifiedAt:   number,
-  syncedAt?:    number,
-  isFolder:     boolean,
+  id:           number
+  name:         string
+  parent?:      number
+  remoteId?:    string
+  isDeleted:    boolean
+  createdAt:    number
+  modifiedAt:   number
+  syncedAt?:    number
+  isFolder:     boolean
   isBookmarked: boolean
+}
+
+export type Tag = {
+  name:      string
+  color:     string
+  createdAt: number
 }
 
 export interface HelsyncError {
@@ -25,6 +31,12 @@ export interface HelsyncError {
 // Extend File to include children
 export interface FileEntry extends File {
   children?: FileEntry[]
+}
+
+export type TagWithFiles = {
+  name: string
+  color: string
+  files: Array<FileEntry>
 }
 
 // Describes a change made to the filesystem. Sent as a tauri event.
@@ -126,5 +138,27 @@ export async function createBookmark(file_id: string): Promise<void> {
 export async function removeBookmark(file_id: string): Promise<void> {
   return await invoke("plugin:helsync|remove_bookmark", {
     payload: { id: file_id }
+  })
+}
+
+export async function listTags(): Promise<Array<TagWithFiles>> {
+  return await invoke<Array<TagWithFiles>>("plugin:helsync|list_tags", {})
+}
+
+export async function createTag(name: string, color: string): Promise<Tag> {
+  return await invoke<Tag>("plugin:helsync|create_tag", {
+    payload: { name, color },
+  })
+}
+
+export async function createTagBind(fileId: string, tagName: string): Promise<void> {
+  return await invoke("plugin:helsync|create_tag_bind", {
+    payload: { fileId, tagName },
+  })
+}
+
+export async function removeTagBind(fileId: string, tagName: string): Promise<void> {
+  return await invoke("plugin:helsync|remove_tag_bind", {
+    payload: { fileId, tagName }
   })
 }

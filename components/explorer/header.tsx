@@ -36,6 +36,7 @@ function ExplorerHeader() {
         defaultOpen={false}
         onOpenChange={(open) => setIsSelectDocOpen(open)}
         onValueChange={(value) => explorer.setView(value as ViewType)}
+        value={explorer.view()}
       >
         <SelectTrigger
           withIcon={false} size="sm"

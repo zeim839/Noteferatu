@@ -14,6 +14,10 @@ Default permissions for the plugin
 - `allow-list-bookmarks`
 - `allow-create-bookmark`
 - `allow-remove-bookmark`
+- `allow-list-tags`
+- `allow-create-tag`
+- `allow-create-tag-bind`
+- `allow-remove-tag-bind`
 
 ## Permission Table
 
@@ -183,6 +187,58 @@ Denies the create_folder command without any pre-configured scope.
 <tr>
 <td>
 
+`helsync:allow-create-tag`
+
+</td>
+<td>
+
+Enables the create_tag command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-create-tag`
+
+</td>
+<td>
+
+Denies the create_tag command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-create-tag-bind`
+
+</td>
+<td>
+
+Enables the create_tag_bind command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-create-tag-bind`
+
+</td>
+<td>
+
+Denies the create_tag_bind command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `helsync:allow-get-file`
 
 </td>
@@ -306,6 +362,32 @@ Enables the list_files command without any pre-configured scope.
 <td>
 
 Denies the list_files command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-list-tags`
+
+</td>
+<td>
+
+Enables the list_tags command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-list-tags`
+
+</td>
+<td>
+
+Denies the list_tags command without any pre-configured scope.
 
 </td>
 </tr>
@@ -462,6 +544,32 @@ Enables the remove_file command without any pre-configured scope.
 <td>
 
 Denies the remove_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-remove-tag-bind`
+
+</td>
+<td>
+
+Enables the remove_tag_bind command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-remove-tag-bind`
+
+</td>
+<td>
+
+Denies the remove_tag_bind command without any pre-configured scope.
 
 </td>
 </tr>

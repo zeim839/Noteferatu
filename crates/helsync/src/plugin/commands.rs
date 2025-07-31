@@ -1,4 +1,4 @@
-use crate::local::LocalFile;
+use crate::local::{Tag, TagWithFiles, LocalFile};
 use super::models::*;
 use super::Result;
 use super::HelsyncExt;
@@ -98,4 +98,38 @@ pub(crate) async fn remove_bookmark<R: Runtime>(
 ) -> Result<()> {
     app.emit("helsync-bookmark-change", "")?;
     app.helsync().remove_bookmark(payload).await
+}
+
+#[command]
+pub(crate) async fn list_tags<R: Runtime>(
+    app: AppHandle<R>
+) -> Result<Vec<TagWithFiles>> {
+    app.helsync().list_tags().await
+}
+
+#[command]
+pub(crate) async fn create_tag<R: Runtime>(
+    app: AppHandle<R>,
+    payload: CreateTagRequest,
+) -> Result<Tag> {
+    app.emit("helsync-tags-change", "")?;
+    app.helsync().create_tag(payload).await
+}
+
+#[command]
+pub(crate) async fn create_tag_bind<R: Runtime>(
+    app: AppHandle<R>,
+    payload: CreateTagBindRequest,
+) -> Result<()> {
+    app.emit("helsync-tags-change", "")?;
+    app.helsync().create_tag_bind(payload).await
+}
+
+#[command]
+pub(crate) async fn remove_tag_bind<R: Runtime>(
+    app: AppHandle<R>,
+    payload: RemoveTagBindRequest,
+) -> Result<()> {
+    app.emit("helsync-tags-change", "")?;
+    app.helsync().remove_tag_bind(payload).await
 }

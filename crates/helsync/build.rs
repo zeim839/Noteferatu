@@ -9,7 +9,11 @@ const COMMANDS: &[&str] = &[
     "list_files",
     "list_bookmarks",
     "create_bookmark",
-    "remove_bookmark"
+    "remove_bookmark",
+    "list_tags",
+    "create_tag",
+    "create_tag_bind",
+    "remove_tag_bind",
 ];
 
 fn main() {

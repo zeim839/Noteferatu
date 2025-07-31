@@ -1,4 +1,4 @@
-use crate::local::{LocalFS, LocalFile};
+use crate::local::{LocalFS, LocalFile, Tag, TagWithFiles};
 use crate::filesystem::Filesystem;
 use super::models::*;
 use super::error::Result;
@@ -86,5 +86,21 @@ impl<R: Runtime> Helsync<R> {
 
     pub async fn remove_bookmark(&self, payload: BookmarkRequest) -> Result<()> {
         Ok(self.local.remove_bookmark(&payload.id).await?)
+    }
+
+    pub async fn list_tags(&self) -> Result<Vec<TagWithFiles>> {
+        Ok(self.local.list_tags().await?)
+    }
+
+    pub async fn create_tag(&self, payload: CreateTagRequest) -> Result<Tag> {
+        Ok(self.local.create_tag(&payload.name, &payload.color).await?)
+    }
+
+    pub async fn create_tag_bind(&self, payload: CreateTagBindRequest) -> Result<()> {
+        Ok(self.local.create_tag_bind(&payload.file_id, &payload.tag_name).await?)
+    }
+
+    pub async fn remove_tag_bind(&self, payload: RemoveTagBindRequest) -> Result<()> {
+        Ok(self.local.remove_tag_bind(&payload.file_id, &payload.tag_name).await?)
     }
 }

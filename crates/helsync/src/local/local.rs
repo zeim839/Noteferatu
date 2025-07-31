@@ -1,4 +1,6 @@
 use super::file::LocalFile;
+use super::tags::{Tag, TagWithFiles};
+
 use crate::filesystem::Filesystem;
 use crate::onedrive::OneDrive;
 use crate::googledrive::GoogleDrive;
@@ -8,6 +10,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use sqlx::Acquire;
 use database::Database;
 use std::sync::Arc;
+use std::collections::HashMap;
 
 /// Local virtual filesystem.
 ///
@@ -95,6 +98,99 @@ impl LocalFS {
         if res.rows_affected() == 0 {
             return Err(sqlx::Error::RowNotFound.into());
         }
+
+        Ok(())
+    }
+
+    /// List all available tags, including those with no associated files.
+    pub async fn list_tags(&self) -> Result<Vec<TagWithFiles>> {
+        let mut conn = self.db.acquire().await?;
+        let all_tags: Vec<Tag> = sqlx::query_as("SELECT * FROM Tag")
+            .fetch_all(&mut *conn)
+            .await?;
+
+        let mut tags_map: HashMap<String, TagWithFiles> = all_tags
+            .into_iter()
+            .map(|tag| {
+                let tag_with_files = TagWithFiles {
+                    name: tag.name.clone(),
+                    color: tag.color,
+                    files: Vec::new(),
+                };
+                (tag.name, tag_with_files)
+            })
+            .collect();
+
+        #[derive(sqlx::FromRow, Debug)]
+        struct TagFileRow {
+            tag: String,
+            #[sqlx(flatten)]
+            file: LocalFile,
+        }
+
+        let rows: Vec<TagFileRow> = sqlx::query_as(r#"
+            SELECT TB.tag, F.*
+            FROM TagBind TB
+            JOIN File F ON TB.file = F.id
+            WHERE F.is_deleted = FALSE
+            "#,
+        )
+        .fetch_all(&mut *conn)
+        .await?;
+
+        for row in rows {
+            if let Some(tag_with_files) = tags_map.get_mut(&row.tag) {
+                tag_with_files.files.push(row.file);
+            }
+        }
+
+        let mut tags: Vec<TagWithFiles> = tags_map.into_values().collect();
+        tags.sort_by(|a, b| a.name.cmp(&b.name));
+        Ok(tags)
+    }
+
+    /// Create a new tag.
+    pub async fn create_tag(&self, name: &str, color: &str) -> Result<Tag> {
+        let mut conn = self.db.acquire().await?;
+        let created_at: i64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+
+        sqlx::query("INSERT INTO Tag VALUES (?, ?, ?)")
+            .bind(name)
+            .bind(color)
+            .bind(created_at)
+            .execute(&mut *conn)
+            .await?;
+
+        Ok(Tag{
+            name: name.to_string(),
+            color: color.to_string(),
+            created_at,
+        })
+    }
+
+    /// Attach a tag to a file.
+    pub async fn create_tag_bind(&self, file_id: &str, tag_name: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        sqlx::query("INSERT INTO TagBind VALUES (?, ?)")
+            .bind(tag_name)
+            .bind(file_id)
+            .execute(&mut *conn)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Remove a tag from a file.
+    pub async fn remove_tag_bind(&self, file_id: &str, tag_name: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        sqlx::query("DELETE FROM TagBind WHERE tag=? AND file=?")
+            .bind(tag_name)
+            .bind(file_id)
+            .execute(&mut *conn)
+            .await?;
 
         Ok(())
     }
@@ -350,53 +446,65 @@ mod tests {
     use super::*;
 
     use std::sync::Arc;
-    use tokio::sync::OnceCell;
-    static FS: OnceCell<Arc<LocalFS>> = OnceCell::const_new();
+
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static TEST_DB_COUNTER: AtomicU64 = AtomicU64::new(0);
 
     async fn get_local_fs() -> Arc<LocalFS> {
-        FS.get_or_init(|| async {
+        let test_id = TEST_DB_COUNTER.fetch_add(1, Ordering::SeqCst);
+        let db_name = format!("./hs-localfs-test-db-{}.sqlite", test_id);
+        let db_shm = format!("{}-shm", db_name);
+        let db_wal = format!("{}-wal", db_name);
 
-            // Delete any existing test databases.
-            let _ = std::fs::remove_file("./hs-localfs-test-db.sqlite");
-            let _ = std::fs::remove_file("./hs-localfs-test-db.sqlite-shm");
-            let _ = std::fs::remove_file("./hs-localfs-test-db.sqlite-wal");
+        // Delete any existing test databases for this specific test run.
+        let _ = std::fs::remove_file(&db_name);
+        let _ = std::fs::remove_file(&db_shm);
+        let _ = std::fs::remove_file(&db_wal);
 
-            // Add files for testing.
-            const TESTING_SCHEMA: &str = "
+        // Add files for testing.
+        const TESTING_SCHEMA: &str = r#"
 INSERT INTO File VALUES
-  (0, \"test.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
-  (1, \"test-dltd\", NULL, NULL, TRUE, 0, 0, NULL, TRUE, FALSE),
-  (2, \"my_folder\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
-  (3, \"move_me.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
-  (4, \"delete_me.txt\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
-  (5, \"delete_me\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
-  (6, \"deleted_child.txt\", 5, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
-  (7, \"test-list\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
-  (8, \"list-child.txt\", 7, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
-  (9, \"test-list-deleted\", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
-  (10, \"list-child.txt\", 9, NULL, FALSE, 0, 0, NULL, FALSE, FALSE);
-";
+  (0, "test.txt", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (1, "test-dltd", NULL, NULL, TRUE, 0, 0, NULL, TRUE, FALSE),
+  (2, "my_folder", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (3, "move_me.txt", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (4, "delete_me.txt", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (5, "delete_me", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (6, "deleted_child.txt", 5, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (7, "test-list", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (8, "list-child.txt", 7, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (9, "test-list-deleted", NULL, NULL, FALSE, 0, 0, NULL, TRUE, FALSE),
+  (10, "list-child.txt", 9, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
+  (11, "bookmarked.txt", NULL, NULL, FALSE, 0, 0, NULL, FALSE, TRUE);
 
-            let db = database::Database::new(&database::Config {
-                max_connections: 1,
-                local_path: "./hs-localfs-test-db.sqlite".to_string(),
-                migrations: vec![
-                    database::Migration {
-                        version: 0,
-                        sql: schema::SCHEMA_VERSION_0,
-                        kind: database::MigrationType::Up,
-                    },
-                    database::Migration {
-                        version: 1,
-                        sql: TESTING_SCHEMA,
-                        kind: database::MigrationType::Up,
-                    }
-                ],
-            }).await.unwrap();
+INSERT INTO Tag VALUES
+  ("empty-tag", "ffffff", 0),
+  ("tag1", "ff0000", 0),
+  ("tag2", "00ff00", 0);
 
-            Arc::new(LocalFS::new(db))
+INSERT INTO TagBind VALUES
+  ("tag1", 0),
+  ("tag1", 2),
+  ("tag2", 0);
+"#;
 
-        }).await.clone().clone()
+        let db = database::Database::new(&database::Config {
+            max_connections: 1,
+            local_path: db_name.to_string(),
+            migrations: vec![
+                database::Migration {
+                    version: 0,
+                    sql: schema::SCHEMA_VERSION_0,
+                    kind: database::MigrationType::Up,
+                },
+                database::Migration {
+                    version: 1,
+                    sql: TESTING_SCHEMA,
+                    kind: database::MigrationType::Up,
+                }
+            ]
+        }).await.unwrap();
+        Arc::new(LocalFS::new(db))
     }
 
     #[tokio::test]
@@ -417,8 +525,8 @@ INSERT INTO File VALUES
             .as_secs() as i64;
 
         // Copy a file.
-        let copied = fs.copy_file("0", Some("2"), Some("copied.txt")).await.unwrap();
-        assert_eq!(copied.name, "copied.txt");
+        let copied = fs.copy_file("0", Some("2"), Some(r#"copied.txt"#)).await.unwrap();
+        assert_eq!(copied.name, r#"copied.txt"#);
         assert_eq!(copied.parent, Some(2));
 
         // Ensure timestamp is set.
@@ -430,8 +538,8 @@ INSERT INTO File VALUES
         assert!(parent_files.iter().any(|f| f.id == copied.id));
 
         // Copy a folder and its children.
-        let copied_folder = fs.copy_file("7", Some("2"), Some("copied_folder")).await.unwrap();
-        assert_eq!(copied_folder.name, "copied_folder");
+        let copied_folder = fs.copy_file("7", Some("2"), Some(r#"copied_folder"#)).await.unwrap();
+        assert_eq!(copied_folder.name, r#"copied_folder"#);
         assert_eq!(copied_folder.parent, Some(2));
         assert!(copied_folder.is_folder);
         assert!(copied_folder.created_at >= ts);
@@ -439,7 +547,7 @@ INSERT INTO File VALUES
 
         let children = fs.list_files(Some(&copied_folder.id.to_string())).await.unwrap();
         assert_eq!(children.len(), 1);
-        assert_eq!(children[0].name, "list-child.txt");
+        assert_eq!(children[0].name, r#"list-child.txt"#);
 
         // Do not allow copying deleted files.
         assert!(fs.copy_file("1", None, None).await.is_err());
@@ -453,11 +561,11 @@ INSERT INTO File VALUES
             .unwrap_or_default()
             .as_secs() as i64;
 
-        let moved = fs.move_file("3", Some("2"), Some("renamed.txt"))
+        let moved = fs.move_file("3", Some("2"), Some(r#"renamed.txt"#))
             .await.unwrap();
 
         assert!(moved.parent.is_some_and(|p| p == 2));
-        assert!(moved.name == "renamed.txt");
+        assert!(moved.name == r#"renamed.txt"#);
 
         // Moving a file should update its `modified_at` field.
         assert!(moved.modified_at >= ts);
@@ -485,32 +593,32 @@ INSERT INTO File VALUES
     #[tokio::test]
     async fn test_create_folder() {
         let fs = get_local_fs().await;
-        let folder = fs.create_folder(None, "created-folder")
+        let folder = fs.create_folder(None, r#"created-folder"#)
             .await.unwrap();
 
-        assert!(folder.name == "created-folder");
+        assert!(folder.name == r#"created-folder"#);
         assert!(folder.parent.is_none());
 
         // Do not allow creating folders under deleted folders.
-        assert!(fs.create_folder(Some("1"), "invalid-folder")
+        assert!(fs.create_folder(Some("1"), r#"invalid-folder"#)
                 .await.is_err());
 
         // Do not allow creating folders under files.
-        assert!(fs.create_folder(Some("0"), "invalid-folder")
+        assert!(fs.create_folder(Some("0"), r#"invalid-folder"#)
                 .await.is_err());
     }
 
     #[tokio::test]
     async fn test_create_file() {
         let fs = get_local_fs().await;
-        let file = fs.create_file(None, "created_file.txt")
+        let file = fs.create_file(None, r#"created_file.txt"#)
             .await.unwrap();
 
-        assert!(file.name == "created_file.txt");
+        assert!(file.name == r#"created_file.txt"#);
         assert!(file.parent.is_none());
 
         // Do not allow creating files under deleted folders.
-        assert!(fs.create_file(Some("1"), "invalid_file.txt")
+        assert!(fs.create_file(Some("1"), r#"invalid_file.txt"#)
                 .await.is_err());
     }
 
@@ -554,9 +662,162 @@ INSERT INTO File VALUES
 
     #[tokio::test]
     async fn test_create_bookmark() {
+        let fs = get_local_fs().await;
+        let file = fs.create_file(None, "bookmark_test_create_file.txt").await.unwrap();
+
+        // Bookmark the file.
+        assert!(fs.create_bookmark(&file.id.to_string()).await.is_ok());
+
+        // Check if it's in the bookmarks list.
+        let bookmarks = fs.list_bookmarks().await.unwrap();
+        assert!(bookmarks.iter().any(|f| f.id == file.id));
+
+        // Trying to bookmark it again should fail.
+        assert!(fs.create_bookmark(&file.id.to_string()).await.is_err());
+
+        // Do not allow bookmarking a deleted file.
+        assert!(fs.create_bookmark("1").await.is_err());
+
+        // Do not allow bookmarking a non-existent file.
+        assert!(fs.create_bookmark("999").await.is_err());
     }
 
     #[tokio::test]
     async fn test_remove_bookmark() {
+        let fs = get_local_fs().await;
+        let file = fs.create_file(None, "bookmark_test_remove_file.txt").await.unwrap();
+        fs.create_bookmark(&file.id.to_string()).await.unwrap();
+
+        // Remove the bookmark.
+        assert!(fs.remove_bookmark(&file.id.to_string()).await.is_ok());
+
+        // Check it's gone from bookmarks.
+        let bookmarks = fs.list_bookmarks().await.unwrap();
+        assert!(!bookmarks.iter().any(|f| f.id == file.id));
+
+        // Trying to remove it again should fail.
+        assert!(fs.remove_bookmark(&file.id.to_string()).await.is_err());
+
+        // Do not allow removing a bookmark from a file that is not bookmarked.
+        assert!(fs.remove_bookmark("0").await.is_err());
+
+        // Do not allow removing a bookmark from a non-existent file.
+        assert!(fs.remove_bookmark("999").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_tags() {
+        let fs = get_local_fs().await;
+        let tags = fs.list_tags().await.unwrap();
+
+        assert_eq!(tags.len(), 3);
+
+        // list_tags should return tags sorted by name.
+        assert_eq!(tags[0].name, r#"empty-tag"#);
+        assert_eq!(tags[1].name, r#"tag1"#);
+        assert_eq!(tags[2].name, r#"tag2"#);
+
+        let empty_tag = &tags[0];
+        assert_eq!(empty_tag.color, "ffffff");
+        assert_eq!(empty_tag.files.len(), 0);
+
+        let tag1 = &tags[1];
+        assert_eq!(tag1.color, "ff0000");
+        assert_eq!(tag1.files.len(), 2);
+        assert!(tag1.files.iter().any(|f| f.id == 0));
+        assert!(tag1.files.iter().any(|f| f.id == 2));
+        let file0 = tag1.files.iter().find(|f| f.id == 0).unwrap();
+        assert_eq!(file0.name, r#"test.txt"#);
+
+        let tag2 = &tags[2];
+        assert_eq!(tag2.color, "00ff00");
+        assert_eq!(tag2.files.len(), 1);
+        assert!(tag2.files.iter().any(|f| f.id == 0));
+    }
+
+    #[tokio::test]
+    async fn test_create_tag() {
+        let fs = get_local_fs().await;
+        let tag_name = "a-new-tag-for-testing-creation";
+        let tag_color = "123456";
+
+        // Create a new tag.
+        let tag = fs.create_tag(tag_name, tag_color).await.unwrap();
+        assert_eq!(tag.name, tag_name);
+        assert_eq!(tag.color, tag_color);
+
+        // Verify it's in the list of all tags.
+        let tags = fs.list_tags().await.unwrap();
+        let found_tag = tags.iter().find(|t| t.name == tag_name).unwrap();
+        assert_eq!(found_tag.name, tag_name);
+        assert_eq!(found_tag.color, tag_color);
+
+        // Creating a tag that already exists should fail.
+        assert!(fs.create_tag(tag_name, "000000").await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_create_tag_bind() {
+        let fs = get_local_fs().await;
+        let tag_name = "tag-for-binding-test";
+        let file_name = "file-for-tag-binding.txt";
+
+        let file = fs.create_file(None, file_name).await.unwrap();
+        fs.create_tag(tag_name, "ff00ff").await.unwrap();
+
+        // Bind tag to file.
+        assert!(fs.create_tag_bind(&file.id.to_string(), tag_name).await.is_ok());
+
+        // Verify the bind.
+        let tags = fs.list_tags().await.unwrap();
+        let tag = tags.iter().find(|t| t.name == tag_name).unwrap();
+        assert_eq!(tag.files.len(), 1);
+        assert_eq!(tag.files[0].id, file.id);
+
+        // Do not allow binding non-existent tag.
+        assert!(fs.create_tag_bind(&file.id.to_string(), "no-such-tag").await.is_err());
+
+        // Do not allow binding to non-existent file.
+        assert!(fs.create_tag_bind("999", tag_name).await.is_err());
+
+        // Do not allow binding to a deleted file.
+        assert!(fs.create_tag_bind("1", tag_name).await.is_err());
+
+        // Do not allow duplicate bindings.
+        assert!(fs.create_tag_bind(&file.id.to_string(), tag_name).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_remove_tag_bind() {
+        let fs = get_local_fs().await;
+        let tag_name = "tag-for-removal-test";
+        let file1_name = "file1-for-tag-removal.txt";
+        let file2_name = "file2-for-tag-removal.txt";
+
+        fs.create_tag(tag_name, "ff00ff").await.unwrap();
+        let file1 = fs.create_file(None, file1_name).await.unwrap();
+        let file2 = fs.create_file(None, file2_name).await.unwrap();
+        fs.create_tag_bind(&file1.id.to_string(), tag_name).await.unwrap();
+        fs.create_tag_bind(&file2.id.to_string(), tag_name).await.unwrap();
+
+        // Remove one bind.
+        assert!(fs.remove_tag_bind(&file1.id.to_string(), tag_name).await.is_ok());
+
+        // Verify that the tag still exists and is bound to file2.
+        let tags = fs.list_tags().await.unwrap();
+        let tag = tags.iter().find(|t| t.name == tag_name).unwrap();
+        assert_eq!(tag.files.len(), 1);
+        assert_eq!(tag.files[0].id, file2.id);
+
+        // If all tag binds are removed from a tag, the tag should be
+        // deleted. This is handled by a database trigger.
+        assert!(fs.remove_tag_bind(&file2.id.to_string(), tag_name).await.is_ok());
+        let tags_after_delete = fs.list_tags().await.unwrap();
+        assert!(!tags_after_delete.iter().any(|t| t.name == tag_name));
+
+        // Removing a non-existent bind should succeed but do nothing.
+        assert!(fs.remove_tag_bind(&file1.id.to_string(), tag_name).await.is_ok());
+        assert!(fs.remove_tag_bind("0", "no-such-tag").await.is_ok());
+        assert!(fs.remove_tag_bind("999", "tag1").await.is_ok());
     }
 }

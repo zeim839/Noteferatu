@@ -93,4 +93,24 @@ BEGIN
     THEN RAISE(ABORT, 'A file with this name already exists in the directory')
   END;
 END;
+
+CREATE TRIGGER delete_tag_if_unbound
+AFTER DELETE ON TagBind
+FOR EACH ROW
+BEGIN
+  DELETE FROM Tag
+  WHERE name = OLD.tag AND NOT EXISTS (
+    SELECT 1 FROM TagBind WHERE tag = OLD.tag
+  );
+END;
+
+CREATE TRIGGER prevent_tag_bind_on_deleted_file
+BEFORE INSERT ON TagBind
+FOR EACH ROW
+BEGIN
+  SELECT CASE
+    WHEN (SELECT is_deleted FROM File WHERE id = NEW.file) = 1
+    THEN RAISE(ABORT, 'Cannot tag a deleted file')
+  END;
+END;
 ";

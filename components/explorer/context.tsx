@@ -4,9 +4,11 @@ import { listen } from '@tauri-apps/api/event'
 import {
   listFiles,
   listBookmarks,
+  listTags,
   File,
   FileChangeEvent,
   FileEntry,
+  TagWithFiles,
 } from "@/lib/helsync"
 
 export type SortFileKey = 'name' | 'createdAt' | 'modifiedAt'
@@ -21,6 +23,9 @@ export type ExplorerContextType = {
 
   // Control bookmarks.
   bookmarks: () => Array<FileEntry>
+
+  // Control tags.
+  tags: () => Array<TagWithFiles>
 
   // Control document sorting.
   sortFileKey: () => SortFileKey
@@ -40,6 +45,7 @@ export const ExplorerContext = React.createContext<ExplorerContextType | null>(n
 export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   const [documents, setDocuments] = React.useState<FileEntry[]>([])
   const [bookmarks, setBookmarks] = React.useState<FileEntry[]>([])
+  const [tags, setTags] = React.useState<TagWithFiles[]>([])
   const [sortFileKey, setSortFileKey] = React.useState<SortFileKey>('name')
   const [sortFileAsc, setSortFileAsc] = React.useState<boolean>(true)
   const [view, setView] = React.useState<ViewType>('documents')
@@ -64,7 +70,7 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
       const tree = await buildTree()
       setDocuments(tree)
     } catch (error) {
-      console.error("Failed to fetch file tree:", error)
+      console.log(error)
     }
   }
 
@@ -83,7 +89,30 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
       )
       setBookmarks(bookmarkedEntries)
     } catch (error) {
-      console.error("Failed to fetch bookmarks:", error)
+      console.log(error)
+    }
+  }
+
+  // Fetch tags from helsync and build their file trees.
+  const fetchTags = async () => {
+    try {
+      const allTags = await listTags()
+      const tagsWithPopulatedFiles = await Promise.all(
+        allTags.map(async (tag: TagWithFiles): Promise<TagWithFiles> => {
+          const populatedFiles = await Promise.all(
+            tag.files.map(async (file: FileEntry): Promise<FileEntry> => {
+              if (file.isFolder) {
+                file.children = await buildTree(file.id.toString())
+              }
+              return file
+            }),
+          )
+          return { ...tag, files: populatedFiles }
+        }),
+      )
+      setTags(tagsWithPopulatedFiles)
+    } catch (error) {
+      console.log(error)
     }
   }
 
@@ -91,17 +120,22 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     fetchFiles()
     fetchBookmarks()
+    fetchTags()
     const fsEventPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
-      fetchFiles()
       fetchBookmarks()
+      fetchFiles()
+      fetchTags()
     })
     const bookmarkEventPromise = listen("helsync-bookmark-change", () => {
-      fetchFiles()
       fetchBookmarks()
+    })
+    const tagsEventPromise = listen("helsync-tags-change", () => {
+      fetchTags()
     })
     return () => {
       fsEventPromise.then((unlisten) => unlisten())
       bookmarkEventPromise.then((unlisten) => unlisten())
+      tagsEventPromise.then((unlisten) => unlisten())
     }
   }, [])
 
@@ -110,6 +144,7 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
     documents: () => { return documents },
     setDocuments: (docs) => { setDocuments(docs) },
     bookmarks: () => { return bookmarks },
+    tags: () => { return tags },
     sortFileKey: () => { return sortFileKey },
     setSortFileKey: (key) => setSortFileKey(key),
     sortFileAsc: () => { return sortFileAsc },

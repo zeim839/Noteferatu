@@ -49,6 +49,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::list_bookmarks,
             commands::create_bookmark,
             commands::remove_bookmark,
+            commands::list_tags,
+            commands::create_tag,
+            commands::create_tag_bind,
+            commands::remove_tag_bind,
         ])
         .setup(|app, api| {
             let setup = async || {
