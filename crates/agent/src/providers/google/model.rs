@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 /// A Google AI model definition.
 ///
 /// API Reference: [Model](https://ai.google.dev/api/models#Model)
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Model {
 
@@ -55,9 +55,9 @@ pub struct Model {
     pub top_k: Option<f64>,
 }
 
-impl Into<crate::Model> for Model {
-    fn into(self) -> crate::Model {
-        crate::Model {
+impl Into<crate::core::Model> for Model {
+    fn into(self) -> crate::core::Model {
+        crate::core::Model {
             id: self.name[7..].to_string(),
             provider: "Google".to_string(),
             display_name: self.display_name,

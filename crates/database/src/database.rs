@@ -1,4 +1,5 @@
 use crate::config::*;
+use std::time::Duration;
 use std::path::Path;
 
 use sqlx::migrate::MigrateDatabase;
@@ -41,6 +42,7 @@ impl Database {
         let db = Self(
             sqlx::sqlite::SqlitePoolOptions::new()
                 .max_connections(config.max_connections)
+                .acquire_timeout(Duration::from_secs(30))
                 .connect(&format!("sqlite://{}", path))
                 .await?
         );
