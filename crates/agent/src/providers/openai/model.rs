@@ -19,9 +19,9 @@ pub struct Model {
     pub owned_by: Option<String>,
 }
 
-impl Into<crate::Model> for Model {
-    fn into(self) -> crate::Model {
-        crate::Model {
+impl Into<crate::core::Model> for Model {
+    fn into(self) -> crate::core::Model {
+        crate::core::Model {
             id: self.id.clone(),
             display_name: self.id.clone(),
             provider: "OpenAI".to_string(),

@@ -3,7 +3,8 @@
 //! # Examples
 //! ## List Models
 //! ```no_run
-//! use agent::openai::*;
+//! use agent::providers::openai::*;
+//! use agent::core::Client as _;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -11,15 +12,17 @@
 //!     let models = client.list_models().await.unwrap();
 //!     models.iter().for_each(|model| println!("{}", model.id));
 //! }
+//!
 //! ```
 //! ## Chat Completion
 //! ```no_run
-//! use agent::openai::*;
+//! use agent::providers::openai::*;
+//! use agent::core::Client as _;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let client = Client::new("my-api-key");
-//!     let req = ChatRequest::from_prompt(
+//!     let req = Request::from_prompt(
 //!         "gpt-4.1-mini", "Hello, ChatGPT!"
 //!     );
 //!
@@ -29,32 +32,35 @@
 //! ```
 //! ## Chat Completion (Stream)
 //! ```no_run
-//! use agent::openai::*;
+//! use agent::providers::openai::*;
+//! use agent::core::Client as _;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let client = Client::new("my-api-key");
-//!     let req = ChatRequest::from_prompt(
+//!     let req = Request::from_prompt(
 //!         "gpt-4.1-mini", "Hello, ChatGPT!"
 //!     );
 //!
-//!     let mut sse = client.stream_completion(req).await.unwrap();
-//!     while let Some(event) = sse.next::<ErrorAPI>().await {
-//!         match event {
-//!             Ok(response) => println!("{response:?}"),
-//!             Err(e) => panic!("stream error: {e}"),
-//!         }
-//!     }
+//!     client.stream_completion(req, |res| {
+//!         println!("{res:?}");
+//!     }).await.unwrap();
 //! }
-
-mod models;
-pub use models::*;
 
 mod client;
 pub use client::*;
 
+mod request;
+pub use request::*;
+
+mod response;
+pub use response::*;
+
+mod message;
+pub use message::*;
+
 mod error;
 pub use error::*;
 
-mod chat;
-pub use chat::*;
+mod model;
+pub use model::*;
