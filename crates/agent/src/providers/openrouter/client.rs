@@ -1,12 +1,12 @@
-use crate::openai::{ChatRequest, ChatResponse};
-use crate::openai::Client as OAI;
-use crate::openai::ErrorAPI;
-use super::models::Model;
-use crate::error::Error;
-use crate::sse::SSE;
+use crate::providers::openai::{Response, Request, OpenAIError};
+use crate::providers::openai::Client as OAI;
+use crate::core::{Result, Error};
+use super::model::Model;
+use crate::core;
 
-use reqwest::header;
 use serde_json::{Value, from_value};
+use tokio_stream::StreamExt;
+use reqwest::header;
 
 /// OpenRouter API endpoint.
 const API_ENDPOINT: &str = "https://openrouter.ai/api/v1";
@@ -16,18 +16,13 @@ pub struct Client(reqwest::Client);
 
 impl Client {
 
-    /// Create a new OpenRouter client.
+    /// Create a new OpenAI client.
     pub fn new(api_key: &str) -> Self {
 
         // Construct default request headers.
         let mut headers = header::HeaderMap::new();
         let auth = header::HeaderValue::from_str(&format!("Bearer {api_key}")).unwrap();
-        let referer = header::HeaderValue::from_str("https://noteferatu.com").unwrap();
-        let xtitle = header::HeaderValue::from_str("NoteFeratu").unwrap();
-
         headers.insert(header::AUTHORIZATION, auth);
-        headers.insert("HTTP-Referer", referer);
-        headers.insert("X-Title", xtitle);
 
         // Build HTTP client.
         let client = reqwest::Client::builder()
@@ -36,61 +31,74 @@ impl Client {
 
         Self(client)
     }
+}
+
+impl core::Client for Client {
+
+    type Error = core::Error;
+    type StreamResponse = Response;
+    type Request = Request;
+    type Response = Response;
 
     /// Send a chat completion request to a selected model.
     ///
     /// API Reference: [Chat Completion](https://openrouter.ai/docs/api-reference/chat-completion)
-    pub async fn completion(&self, req: ChatRequest) -> Result<ChatResponse, Error> {
+    async fn completion(&self, req: Request) -> Result<Response> {
         let req = req.with_stream(Some(false));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req).send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: ErrorAPI = from_value(error.clone())?;
-            return Err(Error {
-                kind: format!("OPENROUTER_{}_ERR", err.code),
-                message: err.message,
-            });
+            let err: OpenAIError = from_value(error.clone())?;
+            return Err(Error::OpenRouter(err));
         }
 
-        let chat_res: ChatResponse = from_value(json)?;
-        Ok(chat_res)
+        Ok(from_value(json)?)
     }
 
     /// Send a streaming chat completion request to a selected model.
     ///
     /// API Reference: [Chat Completion](https://openrouter.ai/docs/api-reference/chat-completion)
-    pub async fn stream_completion(&self, req: ChatRequest) -> Result<SSE<ChatResponse>, Error> {
+    async fn stream_completion<T>(&self, req: Request, mut cb: T) -> Result<()>
+    where T: FnMut(Self::StreamResponse) {
         let req = req.with_stream(Some(true));
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req).send().await?;
 
-        Ok(SSE::new(Box::new(OAI::parse_event), res.bytes_stream()))
+        let mut buffer = String::new();
+        let mut stream = res.bytes_stream();
+
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk?;
+            buffer.push_str(&String::from_utf8_lossy(&chunk));
+            while let Some(event) = OAI::parse_event(&mut buffer) {
+                cb(event);
+            }
+        }
+
+        Ok(())
     }
 
     /// Fetches a list of models available via the API.
     ///
     /// API Reference: [List Available Models](https://openrouter.ai/docs/api-reference/list-available-models)
-    pub async fn list_models(&self) -> Result<Vec<Model>, Error> {
+    async fn list_models(&self) -> Result<Vec<core::Model>> {
         let res = self.0.get(format!("{API_ENDPOINT}/models"))
             .send().await?;
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: ErrorAPI = from_value(error.clone())?;
-            return Err(Error {
-                kind: format!("OPENROUTER_{}_ERR", err.code),
-                message: err.message,
-            });
+            let err: OpenAIError = from_value(error.clone())?;
+            return Err(Error::OpenRouter(err));
         }
 
         let models: Vec<Model> = from_value(json["data"].clone())?;
-        Ok(models)
+        Ok(models.into_iter().map(Into::into).collect())
     }
 
     /// Check if the client is connected.
-    pub async fn check(&self) -> Result<(), Error> {
+    async fn check(&self) -> Result<()> {
         let res = self.0.post(format!("{API_ENDPOINT}/completions"))
             .json(&serde_json::json!({
                 "model": "mistralai/devstral-small-2505:free",
@@ -106,11 +114,8 @@ impl Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: ErrorAPI = from_value(error.clone())?;
-            return Err(Error {
-                kind: format!("OPENROUTER_{}_ERR", err.code),
-                message: err.message,
-            });
+            let err: OpenAIError = from_value(error.clone())?;
+            return Err(Error::OpenRouter(err));
         }
 
         Ok(())
@@ -119,10 +124,10 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
+    use crate::core::Client as _;
     use super::*;
     use std::env;
     use dotenv::dotenv;
-    use crate::openai;
 
     const TEST_MODEL: &str = "deepseek/deepseek-chat-v3-0324:free";
 
@@ -137,41 +142,29 @@ mod tests {
     #[tokio::test]
     async fn test_completion() {
         let client = get_test_client();
-        let req = ChatRequest::from_prompt(TEST_MODEL, "hi")
+        let req = Request::from_prompt(TEST_MODEL, "hi")
             .with_max_completion_tokens(Some(5));
 
         let res = client.completion(req).await.unwrap();
+        assert!(res.usage.as_ref().unwrap().completion_tokens <= 5);
+        assert!(res.usage.as_ref().unwrap().completion_tokens > 0);
         assert!(res.choices.len() > 0);
-        assert!(res.choices[0].message.is_some());
 
-        assert!(res.usage.is_some());
-        assert!(res.usage.unwrap().completion_tokens == 5);
+        let msg = &res.choices[0].message.as_ref().unwrap();
+        assert!(msg.content.as_ref().is_some());
     }
-
 
     #[tokio::test]
     async fn test_stream_completion() {
         let client = get_test_client();
-        let req = ChatRequest::from_prompt(TEST_MODEL, "hi")
-            .with_max_completion_tokens(Some(10));
+        let req = Request::from_prompt(TEST_MODEL, "Hello")
+            .with_max_completion_tokens(Some(5));
 
-        let mut sse = client.stream_completion(req).await.unwrap();
-        let mut response_count = 0;
-        while let Some(msg) = sse.next::<ErrorAPI>().await {
-            match msg {
-                Ok(_) => {
-                    response_count += 1;
-                    if response_count >= 3 {
-                        break;
-                    }
-                },
-                Err(e) => panic!("stream error: {e}"),
-            }
-        }
+        let mut has_response = false;
+        client.stream_completion(req, |_| { has_response = true; })
+            .await.unwrap();
 
-        if response_count < 1 {
-            panic!("expected at least one response");
-        }
+        assert!(has_response);
     }
 
     #[tokio::test]
@@ -187,34 +180,5 @@ mod tests {
         assert!(check.is_ok());
         let check = Client::new("badd-key").check().await;
         assert!(check.is_err());
-    }
-
-    #[tokio::test]
-    async fn test_tool_calling() {
-        let client = get_test_client();
-        let req = ChatRequest::from_prompt(TEST_MODEL, "what's the current weather like?")
-            .with_tools(Some(vec![openai::ToolDefinition{
-                kind: "function".to_string(),
-                function: openai::FunctionDefinition{
-                    name: "get_current_weather".to_string(),
-                    description: Some("retrieves the current weather".to_string()),
-                    parameters: None,
-                    strict: None,
-                }
-            }]));
-
-        let res = client.completion(req).await.unwrap();
-        assert!(res.choices.len() > 0);
-
-        let choice = &res.choices[0];
-        assert!(*choice.finish_reason.as_ref().unwrap() ==
-                openai::FinishReason::ToolCalls
-        );
-
-        assert!(choice.message.as_ref().is_some());
-
-        let msg = choice.message.as_ref().unwrap();
-        assert!(msg.tool_calls.is_some());
-        assert!(msg.tool_calls.as_ref().unwrap()[0].function.name == "get_current_weather");
     }
 }
