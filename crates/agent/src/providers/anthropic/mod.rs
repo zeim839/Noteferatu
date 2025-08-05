@@ -3,7 +3,8 @@
 //! # Examples
 //! ## List Available Models
 //! ```no_run
-//! use agent::anthropic::*;
+//! use agent::providers::anthropic::*;
+//! use agent::core::Client as _;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -14,52 +15,60 @@
 //! ```
 //! ## Message Completion
 //! ```no_run
-//! use agent::anthropic::*;
+//! use agent::providers::anthropic::*;
+//! use agent::core::Client as _;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let client = Client::new("my-api-key");
 //!
 //!     // Create a request from a single user prompt.
-//!     let req = MessageRequest::from_prompt(
+//!     let req = Request::from_prompt(
 //!         "claude-3-haiku-20240307",
 //!         "Hello, Claude!",
 //!     );
 //!
 //!     let res = client.completion(req).await.unwrap();
-//!     let content = &res.content[0];
-//!     println!("{}", content.text.as_ref().unwrap());
+//!     println!("{res:?}");
 //! }
 //! ```
 //! ## Message Completion (Streaming)
 //! ```no_run
-//! use agent::anthropic::*;
-//! use agent::openai::ErrorAPI;
+//! use agent::providers::anthropic::*;
+//! use agent::core::Client as _;
 //!
 //! #[tokio::main]
 //! async fn main() {
 //!     let client = Client::new("my-api-key");
-//!     let req = MessageRequest::from_prompt(
+//!     let req = Request::from_prompt(
 //!         "claude-3-haiku-20240307",
 //!         "Hello, Claude!",
 //!     );
 //!
 //!     // Prints stream events.
-//!     let mut stream = client.stream_completion(req).await.unwrap();
-//!     while let Some(result) = stream.next::<ErrorAPI>().await {
-//!         match result {
-//!             Ok(res) => println!("{res:?}"),
-//!             Err(e) => panic!("stream error: {e}"),
-//!         }
-//!     }
+//!     client.stream_completion(req, |res| {
+//!         println!("{res:?}");
+//!     }).await.unwrap();
 //! }
 //! ```
 
 mod client;
 pub use client::*;
 
-mod models;
-pub use models::*;
+mod error;
+pub use error::*;
 
-mod messages;
-pub use messages::*;
+mod request;
+pub use request::*;
+
+mod stream;
+pub use stream::*;
+
+mod response;
+pub use response::*;
+
+mod message;
+pub use message::*;
+
+mod model;
+pub use model::*;

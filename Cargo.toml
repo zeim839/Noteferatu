@@ -5,7 +5,7 @@ members = [
         "crates/helsync",
         "crates/macwindow",
         "crates/database",
-        "src-tauri"
+        "src-tauri",
 ]
 
 [profile.release]

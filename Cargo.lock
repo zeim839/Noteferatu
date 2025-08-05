@@ -38,10 +38,12 @@ name = "agent"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "database",
  "dotenv",
  "reqwest",
  "serde",
  "serde_json",
+ "sqlx",
  "tauri",
  "tauri-plugin",
  "thiserror 2.0.12",
