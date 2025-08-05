@@ -20,9 +20,9 @@ pub struct Model {
     pub context_length: Option<u64>,
 }
 
-impl Into<crate::Model> for Model {
-    fn into(self) -> crate::Model {
-        crate::Model {
+impl Into<crate::core::Model> for Model {
+    fn into(self) -> crate::core::Model {
+        crate::core::Model {
             id: self.name.clone(),
             display_name: self.name.clone(),
             provider: "Ollama".to_string(),
