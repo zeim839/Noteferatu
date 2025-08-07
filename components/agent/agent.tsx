@@ -17,9 +17,9 @@ import {
 import {
   ChevronDownIcon,
   ChevronRightIcon,
-  ChevronsUpDownIcon,
   SlidersHorizontalIcon,
   SendHorizontalIcon,
+  CrosshairIcon,
   PlusIcon,
 } from "lucide-react"
 
@@ -28,7 +28,7 @@ import {
 const tokenStr = (tokens: number) => {
   return tokens < 1000
     ? tokens.toString()
-    : (tokens / 1000).toFixed(tokens % 1000 == 0 ? 0 : 1).toString() + "k"
+    : (tokens / 1000).toFixed(tokens % 1000 == 0 ? 0 : 1).toString() + "K"
 }
 
 // Agent is the parent element of the chat sidebar.
@@ -135,49 +135,47 @@ function Agent() {
           />
         </div>
         <div className="flex flex-row items-center justify-between">
-          <Combobox
-            open={isModelSelectorOpen}
-            onOpenChange={setIsModelSelectorOpen}
-          >
-            <Combobox.Trigger>
-              <Button
-                variant="outline"
-                className="p-2 text-xs rounded-sm h-6 px-1 flex items-center justify-between"
-              >
-                {
-                  (agentContext.selectedModel()) ?
-                    agentContext.selectedModel()?.displayName :
-                    "No Model Selected"
-                }
-                <ChevronsUpDownIcon strokeWidth={1.6} />
-              </Button>
-            </Combobox.Trigger>
-            <Combobox.EmptyBody className="p-4">
-              <div className="flex flex-col items-center gap-2.5">
-                <p className="text-sm text-center">
-                  No models available. Please configure a LLM provider.
-                </p>
-                <Button size="sm" onClick={onToggleSettings}>
-                  Open Agent Settings
+          { /*
+             */}
+          <div className="flex gap-1">
+            <Combobox
+              open={isModelSelectorOpen}
+              onOpenChange={setIsModelSelectorOpen}
+            >
+              <Combobox.Trigger>
+                <Button variant="outline" size="icon" tooltip="Select Model">
+                  <CrosshairIcon strokeWidth={1.6} />
                 </Button>
-              </div>
-            </Combobox.EmptyBody>
-            { modelGroups() }
-          </Combobox>
-          <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="h-6 px-1 flex items-center">
-                  <p className="text-xs max-h-[15px]">
-                    {tokenStr(agentContext.tokensUsed())}/
-                    {tokenStr(agentContext.totalTokens())}
+              </Combobox.Trigger>
+              <Combobox.EmptyBody className="p-4">
+                <div className="flex flex-col items-center gap-2.5">
+                  <p className="text-sm text-center">
+                    No models available. Please configure a LLM provider.
                   </p>
+                  <Button size="sm" onClick={onToggleSettings}>
+                  Open Agent Settings
+                  </Button>
                 </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Estimated Token Count</p>
-              </TooltipContent>
-            </Tooltip>
+              </Combobox.EmptyBody>
+              { modelGroups() }
+            </Combobox>
+            {
+              (agentContext.tokensUsed() > 0) ?
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="h-6 px-1 flex items-center">
+                      <p className="text-xs max-h-[15px]">
+                        {tokenStr(agentContext.tokensUsed())}
+                      </p>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Context Usage</p>
+                  </TooltipContent>
+                </Tooltip> : null
+            }
+          </div>
+          <div className="flex items-center gap-1">
             <Button variant="outline" size="icon" tooltip="Send Message">
               <SendHorizontalIcon strokeWidth={1.6} />
             </Button>

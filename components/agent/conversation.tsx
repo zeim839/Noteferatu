@@ -1,14 +1,7 @@
 import * as React from "react"
 import { Button } from "@/components/core/button"
-import {Edit2Icon, Trash2Icon, CheckIcon, XIcon} from "lucide-react"
-
-// A conversation is a series of user, system, tool and response
-// messages between a user and LLM.
-export type Conversation = {
-  id: string
-  name: string
-  createdAt: number
-}
+import { Conversation, removeConversation, renameConversation } from "@/lib/agent"
+import { Edit2Icon, Trash2Icon, CheckIcon, XIcon } from "lucide-react"
 
 // Convert a timestamp into a "[X] [units] ago" string, where "[units]"
 // is the largest time denomination (seconds, minutes, hours, days,
@@ -35,6 +28,15 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
   const [isHovered, setIsHovered] = React.useState<boolean>(false)
   const [isBeingDeleted, setIsBeingDeleted] = React.useState<boolean>(false)
   const [isBeingRenamed, setIsBeingRenamed] = React.useState<boolean>(false)
+  const [newName, setNewName] = React.useState(name)
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  React.useEffect(() => {
+    if (isBeingRenamed) {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }
+  }, [isBeingRenamed])
 
   const onMouseEnter = () => {
     setIsHovered(true)
@@ -43,92 +45,129 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
   const onMouseLeave = () => {
     setIsHovered(false)
     setIsBeingDeleted(false)
-    setIsBeingRenamed(false)
   }
 
-  const onDelete = () => {
-    // TODO
+  const handleDelete = () => {
+    removeConversation(id)
     setIsBeingDeleted(false)
   }
 
-  const onRename = () => {
-    // TODO
+  const handleRename = () => {
+    if (newName.trim() && newName.trim() !== name) {
+      renameConversation(id, newName.trim())
+    }
     setIsBeingRenamed(false)
   }
+
+  const handleCancelRename = () => {
+    setNewName(name)
+    setIsBeingRenamed(false)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleRename()
+    } else if (e.key === 'Escape') {
+      handleCancelRename()
+    }
+  }
+
+  const showActions = isHovered || isBeingDeleted || isBeingRenamed
 
   return (
     <div
       key={id}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="flex flex-row justify-between w-full p-1.5 px-2 rounded-md hover:bg-[#DCE0E8] min-w-[250px]"
+      className="flex flex-row justify-between items-center w-full p-1.5 px-2 rounded-md hover:bg-[#DCE0E8] min-w-[250px]"
     >
-      <p className="text-sm text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
-        {name}
-      </p>
-      <p
-        data-is-hovered={isHovered}
-        className="text-xs min-w-15 text-right data-[is-hovered=true]:hidden"
-      >
-        {timeAgo(createdAt)}
-      </p>
-      <div
-        className="hidden data-[is-hovered=true]:flex gap-2 min-w-15 justify-end"
-        data-is-hovered={isHovered}
-      >
-        { (!isBeingDeleted && !isBeingRenamed) ?
-          <Button
-            onClick={() => setIsBeingRenamed(true)}
-            variant="ghost"
-            size="icon"
-            className="p-0 m-0 size-4"
-          >
-            <Edit2Icon strokeWidth={1} className="max-h-3 max-w-3"/>
-          </Button> : null
-        }
-        {
-          (!isBeingDeleted && !isBeingRenamed) ?
-            <Button
-              onClick={() => setIsBeingDeleted(true)}
-              variant="ghost"
-              size="icon"
-              className="p-0 m-0 size-4"
-            >
-              <Trash2Icon strokeWidth={1} className="max-h-3 max-w-3" />
-          </Button> : null
-        }
-        {
-          (isBeingDeleted && !isBeingRenamed) ?
-            <Button
-              onClick={onDelete}
-              variant="destructive"
-              size="icon"
-              className="p-0 m-0 size-4"
-            >
-              <Trash2Icon strokeWidth={2} className="max-h-3 max-w-3" />
-          </Button> : null
-        }
-        {
-          (!isBeingDeleted && isBeingRenamed) ?
+      <div className="flex-grow overflow-hidden mr-2">
+        {isBeingRenamed ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onBlur={handleRename}
+            onKeyDown={handleKeyDown}
+            className="text-sm bg-transparent outline-none w-full p-0 m-0"
+          />
+        ) : (
+          <p className="text-sm text-nowrap text-ellipsis overflow-hidden">
+            {name}
+          </p>
+        )}
+      </div>
+
+      <div className="flex-shrink-0">
+        <p
+          data-is-visible={!showActions}
+          className="text-xs min-w-15 text-right data-[is-visible=false]:hidden"
+        >
+          {timeAgo(createdAt)}
+        </p>
+        <div
+          className="hidden data-[is-visible=true]:flex gap-2 min-w-15 justify-end"
+          data-is-visible={showActions}
+        >
+          {(!isBeingDeleted && !isBeingRenamed) ? (
             <>
               <Button
-                onClick={onRename}
+                onClick={() => setIsBeingRenamed(true)}
+                variant="ghost"
+                size="icon"
+                className="p-0 m-0 size-4"
+                tooltip="Rename"
+              >
+                <Edit2Icon strokeWidth={1} className="max-h-3 max-w-3"/>
+              </Button>
+              <Button
+                onClick={() => setIsBeingDeleted(true)}
+                variant="ghost"
+                size="icon"
+                className="p-0 m-0 size-4"
+                tooltip="Delete"
+              >
+                <Trash2Icon strokeWidth={1} className="max-h-3 max-w-3" />
+              </Button>
+            </>
+          ) : null}
+
+          {(isBeingDeleted && !isBeingRenamed) ? (
+            <Button
+              onClick={handleDelete}
+              variant="destructive"
+              size="icon"
+              className="p-0 m-0 size-4 border-transparent shadow-none bg-none hover:bg-transparent hover:text-red-600 hover:border-none"
+              tooltip="Confirm"
+            >
+              <Trash2Icon strokeWidth={2} className="max-h-3 max-w-3" />
+            </Button>
+          ) : null}
+
+          {isBeingRenamed ? (
+            <>
+              <Button
+                onClick={handleRename}
                 variant="confirmation"
                 size="icon"
                 className="p-0 m-0 size-4"
+                tooltip="Confirm"
               >
                 <CheckIcon strokeWidth={2.5} className="max-h-3 max-w-3" />
               </Button>
               <Button
-                onClick={() => setIsBeingRenamed(false)}
+                onClick={handleCancelRename}
                 variant="destructive"
                 size="icon"
-                className="p-0 m-0 size-4"
+                className="p-0 m-0 size-4 border-transparent shadow-none bg-none hover:bg-transparent hover:text-red-600 hover:border-none"
+                tooltip="Cancel"
               >
                 <XIcon strokeWidth={2.5} className="max-h-3 max-w-3" />
               </Button>
-            </> : null
-        }
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   )
@@ -147,9 +186,9 @@ const Body = ({ body }: { body: Conversation[] }) => {
   return (
     <div className="mt-1">
       {
-        body.map((item, index) =>
+        body.map((item) =>
           <Entry
-            key={index}
+            key={item.id}
             id={item.id}
             name={item.name}
             createdAt={item.createdAt}

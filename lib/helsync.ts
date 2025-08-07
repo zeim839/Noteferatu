@@ -75,7 +75,7 @@ export async function moveFile(sourceId: string, parentId?: string, name?: strin
 }
 
 // Delete the file with the given `id`.
-export async function removeFile(id: string): Promise<null> {
+export async function removeFile(id: string): Promise<void> {
   return await invoke("plugin:helsync|remove_file", {
     payload: { id }
   })

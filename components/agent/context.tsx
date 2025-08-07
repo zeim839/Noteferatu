@@ -1,6 +1,6 @@
 import * as React from "react"
-import { Conversation } from "./conversation"
-import { Model } from "@/lib/agent"
+import { Model, Conversation, listConversations } from "@/lib/agent"
+import { listen } from '@tauri-apps/api/event'
 
 // Defines a common context for agent subcomponents.
 export type AgentContextType = {
@@ -50,15 +50,20 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [isSettingsOpen, setSettingsOpen] = React.useState<boolean>(false)
   const [models, setModels] = React.useState<Record<string, Array<Model>>>({})
   const [selectedModel, setSelectedModel] = React.useState<Model | null>(null)
-  const [convHistory, setConvHistory] = React.useState<Conversation[]>([
-    {
-      id: "0",
-      name: "Software Engineering Assistance Request (need help)",
-      createdAt: 1752250136,
-    },
-    { id: "1", name: "Software Engineering Help", createdAt: 1752240136 },
-    { id: "2", name: "Another Example Conversation", createdAt: 1752230136 },
-  ])
+  const [convHistory, setConvHistory] = React.useState<Conversation[]>([])
+
+  React.useEffect(() => {
+    const fetchConversations = () => {
+      listConversations().then((conversations) => {
+        setConvHistory(conversations)
+      })
+    }
+    const convEventPromise = listen("agent-conversations-change",
+      () => { fetchConversations() }
+    )
+    fetchConversations()
+    return () => {convEventPromise.then((unlisten) => unlisten())}
+  }, [])
 
   const context: AgentContextType = {
     isConvsOpen: () => { return isConvsOpen },
