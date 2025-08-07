@@ -36,6 +36,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         .invoke_handler(tauri::generate_handler![
             commands::try_connect,
             commands::list_models,
+            commands::list_conversations,
+            commands::create_conversation,
+            commands::rename_conversation,
+            commands::remove_conversation,
         ])
         .setup(|app, api| {
             let setup = async || {
@@ -45,11 +49,22 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
                 let db = Database::new(&Config {
                     max_connections: 5,
                     local_path: String::from(path.to_str().unwrap()),
-                    migrations: vec![Migration {
-                        version: 0,
-                        sql: SCHEMA_VERSION_0,
-                        kind: MigrationType::Up,
-                    }],
+                    migrations: vec![
+                        Migration {
+                            version: 0,
+                            sql: SCHEMA_VERSION_0,
+                            kind: MigrationType::Up,
+                        },
+                        Migration {
+                            version: 1,
+                            sql: "
+INSERT INTO Conversation(id, name, created_at) VALUES
+  (0, \"My conversation\", 0),
+  (1, \"My Other Conversation\", 0);
+",
+                            kind: MigrationType::Up,
+                        }
+                    ],
                 }).await.unwrap();
 
                 #[cfg(mobile)]

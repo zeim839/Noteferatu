@@ -295,6 +295,30 @@
       "type": "string",
       "oneOf": [
         {
+          "description": "Enables the create_conversation command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-create-conversation",
+          "markdownDescription": "Enables the create_conversation command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the create_conversation command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-create-conversation",
+          "markdownDescription": "Denies the create_conversation command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the list_conversations command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-list-conversations",
+          "markdownDescription": "Enables the list_conversations command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_conversations command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-list-conversations",
+          "markdownDescription": "Denies the list_conversations command without any pre-configured scope."
+        },
+        {
           "description": "Enables the list_models command without any pre-configured scope.",
           "type": "string",
           "const": "allow-list-models",
@@ -305,6 +329,30 @@
           "type": "string",
           "const": "deny-list-models",
           "markdownDescription": "Denies the list_models command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the remove_conversation command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-remove-conversation",
+          "markdownDescription": "Enables the remove_conversation command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_conversation command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-remove-conversation",
+          "markdownDescription": "Denies the remove_conversation command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the rename_conversation command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-rename-conversation",
+          "markdownDescription": "Enables the rename_conversation command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the rename_conversation command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-rename-conversation",
+          "markdownDescription": "Denies the rename_conversation command without any pre-configured scope."
         },
         {
           "description": "Enables the try_connect command without any pre-configured scope.",
@@ -319,10 +367,10 @@
           "markdownDescription": "Denies the try_connect command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`\n- `allow-list-conversations`\n- `allow-create-conversation`\n- `allow-rename-conversation`\n- `allow-remove-conversation`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`\n- `allow-list-conversations`\n- `allow-create-conversation`\n- `allow-rename-conversation`\n- `allow-remove-conversation`"
         }
       ]
     }

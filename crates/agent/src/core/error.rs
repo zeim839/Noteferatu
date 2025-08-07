@@ -59,6 +59,10 @@ pub enum Error {
     #[cfg(mobile)]
     #[error(transparent)]
     PluginInvoke(#[from] tauri::plugin::mobile::PluginInvokeError),
+
+    #[cfg(feature = "plugin")]
+    #[error("{0}")]
+    Plugin(String),
 }
 
 impl From<reqwest::Error> for Error {
@@ -76,5 +80,11 @@ impl From<serde_json::Error> for Error {
 impl From<sqlx::Error> for Error {
     fn from(error: sqlx::Error) -> Self {
         Self::Sql(error.to_string())
+    }
+}
+
+impl From<tauri::Error> for Error {
+    fn from(error: tauri::Error) -> Self {
+        Self::Plugin(error.to_string())
     }
 }

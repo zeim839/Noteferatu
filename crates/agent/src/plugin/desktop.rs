@@ -52,23 +52,18 @@ impl<R: Runtime> Agent<R> {
         Ok(manager.list_conversations().await?)
     }
 
-    pub async fn create_conversation(&self) -> Result<()> {
-        unimplemented!();
+    pub async fn create_conversation(&self, payload: CreateConversationRequest) -> Result<Conversation> {
+        let manager = self.manager.lock().await;
+        Ok(manager.create_conversation(&payload.name).await?)
     }
 
-    pub async fn rename_conversation(&self) -> Result<()> {
-        unimplemented!();
+    pub async fn rename_conversation(&self, payload: RenameConversationRequest) -> Result<()> {
+        let manager = self.manager.lock().await;
+        Ok(manager.rename_conversation(payload.id, &payload.new_name).await?)
     }
 
-    pub async fn delete_conversation(&self) -> Result<()> {
-        unimplemented!();
-    }
-
-    pub async fn fetch_conversation_messages(&self) -> Result<()> {
-        unimplemented!();
-    }
-
-    pub async fn send_message(&self) -> Result<()> {
-        unimplemented!();
+    pub async fn remove_conversation(&self, payload: RemoveConversationRequest) -> Result<()> {
+        let manager = self.manager.lock().await;
+        Ok(manager.remove_conversation(payload.id).await?)
     }
 }

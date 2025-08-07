@@ -6,6 +6,10 @@ Default permissions for the plugin
 
 - `allow-try-connect`
 - `allow-list-models`
+- `allow-list-conversations`
+- `allow-create-conversation`
+- `allow-rename-conversation`
+- `allow-remove-conversation`
 
 ## Permission Table
 
@@ -15,6 +19,58 @@ Default permissions for the plugin
 <th>Description</th>
 </tr>
 
+
+<tr>
+<td>
+
+`agent:allow-create-conversation`
+
+</td>
+<td>
+
+Enables the create_conversation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-create-conversation`
+
+</td>
+<td>
+
+Denies the create_conversation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-list-conversations`
+
+</td>
+<td>
+
+Enables the list_conversations command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-list-conversations`
+
+</td>
+<td>
+
+Denies the list_conversations command without any pre-configured scope.
+
+</td>
+</tr>
 
 <tr>
 <td>
@@ -38,6 +94,58 @@ Enables the list_models command without any pre-configured scope.
 <td>
 
 Denies the list_models command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-remove-conversation`
+
+</td>
+<td>
+
+Enables the remove_conversation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-remove-conversation`
+
+</td>
+<td>
+
+Denies the remove_conversation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-rename-conversation`
+
+</td>
+<td>
+
+Enables the rename_conversation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-rename-conversation`
+
+</td>
+<td>
+
+Denies the rename_conversation command without any pre-configured scope.
 
 </td>
 </tr>
