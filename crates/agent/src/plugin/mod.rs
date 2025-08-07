@@ -1,12 +1,13 @@
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
 
-pub use models::*;
-pub use error::{Error, Result};
+use database::{Database, Config, Migration, MigrationType};
+use crate::agent::SCHEMA_VERSION_0;
+use std::sync::Arc;
 
 mod commands;
-mod error;
 mod models;
+pub use models::*;
 
 #[cfg(desktop)]
 mod desktop;
@@ -37,11 +38,35 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::list_models,
         ])
         .setup(|app, api| {
-            #[cfg(mobile)]
-            let agent = mobile::init(app, api)?;
-            #[cfg(desktop)]
-            let agent = desktop::init(app, api)?;
-            app.manage(agent);
+            let setup = async || {
+                let path = app.path().app_data_dir().unwrap()
+                    .join("temp.sqlite");
+
+                let db = Database::new(&Config {
+                    max_connections: 5,
+                    local_path: String::from(path.to_str().unwrap()),
+                    migrations: vec![Migration {
+                        version: 0,
+                        sql: SCHEMA_VERSION_0,
+                        kind: MigrationType::Up,
+                    }],
+                }).await.unwrap();
+
+                #[cfg(mobile)]
+                let agent = mobile::init(app, api, db).unwrap();
+
+                #[cfg(desktop)]
+                let agent = desktop::init(app, api, Arc::new(db)).unwrap();
+
+                app.manage(agent);
+            };
+
+            if tokio::runtime::Handle::try_current().is_ok() {
+                tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(setup()));
+            } else {
+                tauri::async_runtime::block_on(setup());
+            }
+
             Ok(())
         })
         .build()

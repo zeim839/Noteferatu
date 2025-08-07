@@ -1,49 +1,74 @@
+use crate::core::{Error, Result, Model};
+use crate::agent::{Conversation, Manager};
+use super::models::*;
+
+use database::Database;
 use serde::de::DeserializeOwned;
 use tauri::plugin::PluginApi;
 use tauri::{AppHandle, Runtime};
-
-use super::models::*;
-use super::Result;
 use tokio::sync::Mutex;
+use std::sync::Arc;
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
+    db: Arc<Database>,
 ) -> Result<Agent<R>> {
     Ok(Agent {
         _app: app.clone(),
-        client: Mutex::new(crate::Agent::new()),
+        manager: Arc::new(Mutex::new(Manager::new(db))),
     })
 }
 
 /// Access to the agent APIs.
 pub struct Agent<R: Runtime> {
     _app: AppHandle<R>,
-    client: Mutex<crate::Agent>,
+    manager: Arc<Mutex<Manager>>,
 }
 
 impl<R: Runtime> Agent<R> {
+
     pub async fn try_connect(&self, payload: TryConnectRequest) -> Result<()> {
-        let mut client = self.client.lock().await;
+        let mut manager = self.manager.lock().await;
         match payload.provider.to_lowercase().as_str() {
-            "anthropic" => client.register_anthropic(&payload.api_key).await?,
-            "google" => client.register_google(&payload.api_key).await?,
-            "ollama" => client.register_ollama(&payload.api_key).await
-                .map_err(|_| crate::Error{
-                    // Use custom error message.
-                    kind: "OLLAMA_ERR".to_string(),
-                    message: "invalid connection URL".to_string(),
-                })?,
-            "openai" => client.register_openai(&payload.api_key).await?,
-            "openrouter" => client.register_openrouter(&payload.api_key).await?,
+            "anthropic" => manager.connect_anthropic(&payload.api_key).await?,
+            "google" => manager.connect_google(&payload.api_key).await?,
+            "ollama" => manager.connect_ollama(&payload.api_key).await
+                .map_err(|_| Error::Ollama("invalid connection URL".to_string()))?,
+            "openai" => manager.connect_openai(&payload.api_key).await?,
+            "openrouter" => manager.connect_openrouter(&payload.api_key).await?,
             _ => panic!("unknown provider"),
         }
         Ok(())
     }
 
-    pub async fn list_models(&self, payload: ListModelsRequest) -> Result<Vec<crate::Model>> {
-        let client = self.client.lock().await;
-        let models = client.list_models(payload.provider.as_deref()).await?;
-        Ok(models)
+    pub async fn list_models(&self) -> Result<Vec<Model>> {
+        let manager = self.manager.lock().await;
+        Ok(manager.list_models().await?)
+    }
+
+    pub async fn list_conversations(&self) -> Result<Vec<Conversation>> {
+        let manager = self.manager.lock().await;
+        Ok(manager.list_conversations().await?)
+    }
+
+    pub async fn create_conversation(&self) -> Result<()> {
+        unimplemented!();
+    }
+
+    pub async fn rename_conversation(&self) -> Result<()> {
+        unimplemented!();
+    }
+
+    pub async fn delete_conversation(&self) -> Result<()> {
+        unimplemented!();
+    }
+
+    pub async fn fetch_conversation_messages(&self) -> Result<()> {
+        unimplemented!();
+    }
+
+    pub async fn send_message(&self) -> Result<()> {
+        unimplemented!();
     }
 }
