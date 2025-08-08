@@ -147,7 +147,7 @@ export function Entry({
               if (e.key === "Escape") cancelRename()
             }}
             onBlur={cancelRename}
-            className="px-1 rounded-sm text-sm h-[22px] w-full"
+            className="px-1 bg-transparent outline-none rounded-sm text-sm h-[22px] w-full"
           />
         ) : (
           <p className="max-h-[17px] text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
