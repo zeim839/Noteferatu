@@ -9,15 +9,15 @@ links = "agent"
 
 [dependencies]
 tauri = { version = "2.2.4", optional = true }
-thiserror = { version = "2", optional = true }
 sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"], optional = true }
 database = { path = "../database", optional = true }
+thiserror = "2"
+bytes = { version = "1.10.1" }
+reqwest = { version = "0.12.22", features = ["json", "stream"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0.140", features = ["preserve_order"] }
 tokio = { version = "1.45.1", features = ["full"] }
 tokio-stream = "0.1.17"
-reqwest = { version = "0.12.22", features = ["json", "stream"] }
-bytes = "1.10.1"
 
 [build-dependencies]
 tauri-plugin = { version = "2.0.3", features = ["build"], optional = true }
@@ -26,6 +26,11 @@ tauri-plugin = { version = "2.0.3", features = ["build"], optional = true }
 dotenv = "0.15.0"
 
 [features]
-default = ["plugin"]
-plugin = ["dep:tauri", "dep:thiserror", "dep:tauri-plugin", "conversation"]
-conversation = ["dep:sqlx", "dep:database"]
+plugin = ["dep:tauri", "dep:tauri-plugin", "agent"]
+agent = ["dep:sqlx", "dep:database", "providers"]
+providers = ["anthropic", "google", "ollama", "openai", "openrouter"]
+anthropic = []
+google = []
+ollama = ["openai"]
+openai = []
+openrouter = []
