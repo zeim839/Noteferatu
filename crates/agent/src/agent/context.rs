@@ -103,7 +103,7 @@ impl Context {
             completed_messages.push(last_msg);
         }
 
-        for message in completed_messages {
+        for message in completed_messages.clone() {
             sqlx::query("INSERT INTO Message(conv_id, object) VALUES (?, ?)")
                 .bind(self.conv.id)
                 .bind(json!(message).to_string())
@@ -114,7 +114,11 @@ impl Context {
         }
 
         tx.commit().await?;
-        Ok(Response::default())
+
+        // TODO: INCLUDE ACCUMULATED USAGE INFORMATION.
+        let mut res = Response::default();
+        res.messages = completed_messages;
+        Ok(res)
     }
 
     /// Retrieve all messages in the

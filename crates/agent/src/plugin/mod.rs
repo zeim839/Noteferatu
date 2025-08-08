@@ -1,3 +1,5 @@
+//! [Tauri](tauri) plugin.
+
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
 
@@ -15,9 +17,9 @@ mod desktop;
 mod mobile;
 
 #[cfg(desktop)]
-use desktop::Agent;
+pub use desktop::Agent;
 #[cfg(mobile)]
-use mobile::Agent;
+pub use mobile::Agent;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the agent APIs.
 pub trait AgentExt<R: Runtime> {
@@ -40,6 +42,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::create_conversation,
             commands::rename_conversation,
             commands::remove_conversation,
+            commands::send_message,
+            commands::send_stream_message,
         ])
         .setup(|app, api| {
             let setup = async || {

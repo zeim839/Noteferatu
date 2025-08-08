@@ -7,6 +7,14 @@ import { Combobox } from "@/components/core/combobox"
 import * as Conversation from "./conversation"
 import { AgentSettings } from "./settings"
 import { useAgentContext } from "./context"
+import { Message } from "./message"
+import { Channel } from "@tauri-apps/api/core"
+
+import {
+  Message as MessageData,
+  sendStreamMessage,
+  StreamEvent
+} from "@/lib/agent"
 
 import {
   Tooltip,
@@ -35,6 +43,70 @@ const tokenStr = (tokens: number) => {
 function Agent() {
   const [isModelSelectorOpen, setIsModelSelectorOpen] = React.useState<boolean>(false)
   const agentContext = useAgentContext()
+  const [inputValue, setInputValue] = React.useState("")
+  const [messages, setMessages] = React.useState<Array<MessageData>>([])
+  const [latestRes, setLatestRes] = React.useState<MessageData | null>(null)
+  const [isStreaming, setIsStreaming] = React.useState<boolean>(false)
+  const [loadingText, setLoadingText] = React.useState<string>(".")
+
+  React.useEffect(() => {
+    if (isStreaming && !latestRes) {
+      const intervalId = setInterval(() => {
+        setLoadingText(prev => (prev.length >= 3 ? "." : prev + "."));
+      }, 300);
+      return () => clearInterval(intervalId);
+    } else {
+      setLoadingText(".");
+    }
+  }, [isStreaming, latestRes]);
+
+  const messagesEndRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages, latestRes, isStreaming])
+
+  const handleSendMessage = () => {
+    if (inputValue.trim()) {
+      // Add the last response to the message history before sending a new one.
+      const allMessages = latestRes ? [...messages, latestRes] : messages
+      const newUserMessage = { role: "user", content: inputValue.trim() } as MessageData
+      const newMessagesForApi = [...allMessages, newUserMessage]
+
+      setMessages(newMessagesForApi)
+      setLatestRes(null)
+      setInputValue("")
+      setIsStreaming(true)
+
+      const model = agentContext.selectedModel()
+      const onEvent = new Channel<StreamEvent>()
+      onEvent.onmessage = (event) => {
+        if (event.event === 'content' && event.data?.messages[0]?.content) {
+            const chunk = event.data.messages[0].content as string
+            setLatestRes(prev => ({
+                role: 'assistant',
+                content: (prev?.content ?? "") + chunk
+            }))
+        }
+      }
+
+      sendStreamMessage(0, {
+        model: `${model?.provider}:${model?.id}`,
+        messages: newMessagesForApi,
+        tools: [],
+      }, onEvent)
+        .then((res) => {
+          setLatestRes(res.messages[0])
+        })
+        .catch((err) => {
+          console.log(err)
+          setLatestRes({ role: "assistant", content: "An error occurred."})
+        })
+        .finally(() => {
+          setIsStreaming(false)
+        })
+    }
+  }
 
   const onToggleConvs = () => {
     if (!agentContext.isConvsOpen()) {
@@ -77,8 +149,8 @@ function Agent() {
   }
 
   return (
-    <div className="w-full min-w-[250px] h-full flex flex-col justify-between">
-      <Sidebar.Header className="flex flex-row justify-between items-center px-1 w-full">
+    <div className="w-full min-w-[250px] h-full flex flex-col">
+      <Sidebar.Header className="flex flex-row justify-between items-center px-1 w-full min-h-[29px]">
         <Button
           tooltip="Choose Conversation"
           tooltipSide="bottom"
@@ -110,7 +182,7 @@ function Agent() {
         </div>
       </Sidebar.Header>
 
-      {/* Conversation history */}
+      {/* Conversation history (panel) */}
       <div
         className="absolute top-[30px] w-full h-0 bg-[#E5E9EF] hidden data-[is-expanded=true]:block data-[is-expanded=true]:h-[calc(100vh-35px-30px)] z-1"
         data-is-expanded={agentContext.isConvsOpen()}
@@ -118,7 +190,7 @@ function Agent() {
         <Conversation.Body body={agentContext.convHistory()} />
       </div>
 
-      {/* Agent Settings */}
+      {/* Agent Settings (panel) */}
       <div
         className="absolute top-[30px] w-full h-0 bg-[#E5E9EF] hidden data-[is-expanded=true]:block data-[is-expanded=true]:h-[calc(100vh-35px-30px)] z-1"
         data-is-expanded={agentContext.isSettingsOpen()}
@@ -126,25 +198,41 @@ function Agent() {
         <AgentSettings />
       </div>
 
+      {/* Message History */}
+      <div className="flex-1 w-full overflow-y-auto max-h-[calc(100vh-35px-30px-150px)]">
+        {messages.map((msg, index) => <Message key={index} data={msg}/>)}
+        {isStreaming && !latestRes && (
+          <Message data={{ role: "assistant", content: loadingText }} />
+        )}
+        {latestRes && <Message data={latestRes} />}
+        <div ref={messagesEndRef} />
+      </div>
+
       {/* Message Input Field */}
       <div className="w-full h-[150px] bg-[#EDF0F4] outline outline-[#AEB3C0] p-2 flex flex-col justify-between">
         <div className="flex-1 relative">
           <textarea
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             placeholder="Ask anything..."
             className="w-full h-full min-h-[60px] p-2 text-sm resize-none bg-none focus:outline-none"
           />
         </div>
         <div className="flex flex-row items-center justify-between">
-          { /*
-             */}
           <div className="flex gap-1">
             <Combobox
               open={isModelSelectorOpen}
               onOpenChange={setIsModelSelectorOpen}
             >
               <Combobox.Trigger>
-                <Button variant="outline" size="icon" tooltip="Select Model">
+                <Button
+                  variant="outline"
+                  className="group/model-selector flex items-center gap-1.5 px-2 h-6 rounded-sm"
+                >
                   <CrosshairIcon strokeWidth={1.6} />
+                  <span className={`text-xs whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-300 ${isModelSelectorOpen ? 'max-w-[150px]' : 'max-w-0 group-hover/model-selector:max-w-[150px]'}`}>
+                    {agentContext.selectedModel()?.displayName || "No Model Selected"}
+                  </span>
                 </Button>
               </Combobox.Trigger>
               <Combobox.EmptyBody className="p-4">
@@ -176,7 +264,13 @@ function Agent() {
             }
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="outline" size="icon" tooltip="Send Message">
+            <Button
+              variant="outline"
+              size="icon"
+              tooltip="Send Message"
+              disabled={agentContext.selectedModel() === null || !inputValue.trim()}
+              onClick={handleSendMessage}
+            >
               <SendHorizontalIcon strokeWidth={1.6} />
             </Button>
           </div>

@@ -1,27 +1,11 @@
 use serde::{Deserialize, Serialize};
+use crate::core::Response;
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TryConnectRequest {
-    pub provider: String,
-    pub api_key: String,
-}
-
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreateConversationRequest {
-    pub name: String,
-}
-
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RenameConversationRequest {
-   pub id: i64,
-   pub new_name: String,
-}
-
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RemoveConversationRequest {
-    pub id: i64,
+/// A Tauri IPC event for streaming chat completions.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "event", content = "data")]
+pub enum StreamEvent {
+    Started,
+    Content(Response),
+    Finished,
 }

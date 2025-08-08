@@ -66,7 +66,7 @@ function AgentSettings() {
         try {
           await tryConnect(provider, newApiKey)
           setStatuses((prev) => ({ ...prev, [provider]: "connected" }))
-          listModels().then((models) => setModels(provider, models))
+          listModels(provider).then((models) => setModels(provider, models))
         } catch (error: unknown) {
           setStatuses((prev) => ({ ...prev, [provider]: "error" }))
           setModels(provider, [])

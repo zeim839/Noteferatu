@@ -6,6 +6,8 @@ const COMMANDS: &[&str] = &[
     "create_conversation",
     "rename_conversation",
     "remove_conversation",
+    "send_message",
+    "send_stream_message",
 ];
 
 fn main() {

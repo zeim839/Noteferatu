@@ -1,8 +1,10 @@
+use serde::{Serialize, Deserialize};
+
 use super::message::*;
 use super::tools::*;
 
 /// A generic LLM chat completion request.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Request {
 
     /// Model ID used to generate the response.

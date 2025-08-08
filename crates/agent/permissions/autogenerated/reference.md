@@ -10,6 +10,8 @@ Default permissions for the plugin
 - `allow-create-conversation`
 - `allow-rename-conversation`
 - `allow-remove-conversation`
+- `allow-send-message`
+- `allow-send-stream-message`
 
 ## Permission Table
 
@@ -146,6 +148,58 @@ Enables the rename_conversation command without any pre-configured scope.
 <td>
 
 Denies the rename_conversation command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-send-message`
+
+</td>
+<td>
+
+Enables the send_message command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-send-message`
+
+</td>
+<td>
+
+Denies the send_message command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-send-stream-message`
+
+</td>
+<td>
+
+Enables the send_stream_message command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-send-stream-message`
+
+</td>
+<td>
+
+Denies the send_stream_message command without any pre-configured scope.
 
 </td>
 </tr>

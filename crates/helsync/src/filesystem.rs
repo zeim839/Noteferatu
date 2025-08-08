@@ -54,7 +54,7 @@ pub trait Filesystem {
     /// Specifying a `source_id` fetches changes only from given
     /// source. `token` is an optional token for omitting processed
     /// changes.
-    fn track_changes(&self, parent_id: Option<&str>, token: Option<&str>) ->
+    fn track_changes(&self, token: Option<&str>) ->
     impl Future<Output = Result<(Vec<Self::Delta>, String)>>;
 
     /// Write to a file in the filesystem.
@@ -79,6 +79,9 @@ pub trait Delta {
     /// "Modified" may mean a modification to its metadata (e.g. move
     /// to a new parent) or its content.
     fn is_modified(&self) -> bool;
+
+    /// The UNIX timestamp of when the file was last modified.
+    fn modified_at(&self) -> i64;
 }
 
 /// File metadata.
