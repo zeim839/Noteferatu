@@ -16,7 +16,7 @@ use std::mem;
 pub struct Context {
     db: Arc<Database>,
     agent: Arc<RwLock<Agent>>,
-    history: Vec<Message>,
+    history: RwLock<Vec<Message>>,
     conv: Conversation,
 }
 
@@ -24,11 +24,12 @@ impl Context {
 
     /// Create a new [Context] instance.
     pub(crate) fn new(db: Arc<Database>, agent: Arc<RwLock<Agent>>, conv: Conversation) -> Self {
-        Self { db, agent, history: Vec::new(), conv }
+        Self { db, agent, history: RwLock::new(Vec::new()), conv }
     }
 
     /// Send a non-streaming message to the conversation thread.
-    pub async fn send_message(&mut self, req: Request) -> Result<Response> {
+    pub async fn send_message(&self, req: Request) -> Result<Response> {
+        let mut history = self.history.write().await;
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
         for message in req.messages.clone() {
@@ -38,10 +39,10 @@ impl Context {
                 .execute(&mut *tx)
                 .await?;
 
-            self.history.push(message);
+            history.push(message);
         }
 
-        let req = Request { messages: self.history.clone(), ..req };
+        let req = Request { messages: history.clone(), ..req };
         let res = self.agent.read().await.completion(req).await?;
         for message in res.messages.clone() {
             sqlx::query("INSERT INTO Message(conv_id, object) VALUES (?, ?)")
@@ -50,7 +51,7 @@ impl Context {
                 .execute(&mut *tx)
                 .await?;
 
-            self.history.push(message);
+            history.push(message);
         }
 
         tx.commit().await?;
@@ -58,8 +59,9 @@ impl Context {
     }
 
     /// Send a streaming message to the conversation thread.
-    pub async fn send_stream_message<F>(&mut self, req: Request, mut cb: F) -> Result<Response>
+    pub async fn send_stream_message<F>(&self, req: Request, mut cb: F) -> Result<Response>
     where F: FnMut(Response) {
+        let mut history = self.history.write().await;
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
         for message in req.messages.clone() {
@@ -69,21 +71,26 @@ impl Context {
                 .execute(&mut *tx)
                 .await?;
 
-            self.history.push(message);
+            history.push(message);
         }
 
-        let req = Request { messages: self.history.clone(), ..req };
+        let req = Request { messages: history.clone(), ..req };
         let mut completed_messages: Vec<Message> = Vec::new();
         let mut accumulated_message: Option<Message> = None;
-
         self.agent.read().await.stream_completion(req, |event| {
             cb(event.clone());
             for msg in event.messages {
+
                 let new_msg_starts = if let Some(acc_msg) = &accumulated_message {
                     if mem::discriminant(&acc_msg.content) == mem::discriminant(&msg.content) {
                         !matches!(&acc_msg.content, MessageContent::Text(_))
-                    } else { true }
-                } else { true };
+                    } else {
+                        true
+                    }
+                } else {
+                    true
+                };
+
                 if new_msg_starts {
                     if let Some(complete_msg) = accumulated_message.take() {
                         completed_messages.push(complete_msg);
@@ -110,14 +117,13 @@ impl Context {
                 .execute(&mut *tx)
                 .await?;
 
-            self.history.push(message);
+            history.push(message);
         }
 
         tx.commit().await?;
-
-        // TODO: INCLUDE ACCUMULATED USAGE INFORMATION.
         let mut res = Response::default();
         res.messages = completed_messages;
+
         Ok(res)
     }
 
@@ -145,7 +151,7 @@ mod tests {
     #[tokio::test]
     async fn test_send_message() {
         let manager = get_manager().await;
-        let mut ctx = manager.get_conversation(0).await.unwrap();
+        let ctx = manager.get_conversation(0).await.unwrap();
         let req = Request {
             model: "openrouter:deepseek/deepseek-r1-0528:free".to_string(),
             messages: vec![Message {
@@ -171,7 +177,7 @@ mod tests {
     async fn test_send_stream_message() {
         let manager = get_manager().await;
         let conv = manager.create_conversation("new-conversation").await.unwrap();
-        let mut ctx = manager.get_conversation(conv.id).await.unwrap();
+        let ctx = manager.get_conversation(conv.id).await.unwrap();
         let req = Request {
             model: "openrouter:deepseek/deepseek-r1-0528:free".to_string(),
             messages: vec![Message {

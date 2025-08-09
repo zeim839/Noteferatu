@@ -20,6 +20,12 @@ pub struct Conversation {
     pub created_at: i64,
 }
 
+
+/// Used to deserialize the Message
+/// [schema](super::schema::SCHEMA_VERSION_0). The actual
+/// [Message](crate::core::Message] is a document and therefore kept
+/// as a JSON string.
+#[allow(dead_code)]
 #[derive(FromRow)]
 pub(crate) struct MessageEntry {
     pub id: i64,

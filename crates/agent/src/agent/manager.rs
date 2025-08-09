@@ -5,11 +5,10 @@ use super::agent::Agent;
 use crate::core::Client as _;
 
 use std::time::{SystemTime, UNIX_EPOCH};
-use std::sync::Arc;
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Mutex};
+use std::collections::HashMap;
 use database::Database;
-
-// TODO: ALLOW ONLY ONE CONVERSATION CONTEXT AT A TIME.
+use std::sync::Arc;
 
 /// Manages conversation threads.
 ///
@@ -19,13 +18,18 @@ use database::Database;
 pub struct Manager {
     db: Arc<Database>,
     agent: Arc<RwLock<Agent>>,
+    cache: Mutex<HashMap<i64, Arc<Context>>>,
 }
 
 impl Manager {
 
     /// Creates a new [Manager] from an existing [database] instance.
     pub fn new(db: Arc<Database>) -> Self {
-        Self { db, agent: Arc::new(RwLock::new(Agent::new())) }
+        Self {
+            agent: Arc::new(RwLock::new(Agent::new())),
+            cache: Mutex::new(HashMap::new()),
+            db,
+        }
     }
 
     /// List all models available to the manager.
@@ -101,42 +105,51 @@ impl Manager {
     ///
     /// Use a [Context](super::Context) to generate chat completions
     /// and automatically write responses to the [database].
-    pub async fn get_conversation(&self, id: i64) -> Result<Context> {
+    pub async fn get_conversation(&self, id: i64) -> Result<Arc<Context>> {
+        let mut cache = self.cache.lock().await;
+        if let Some(ctx) = cache.get(&id) {
+            return Ok(ctx.clone());
+        }
+
         let mut conn = self.db.acquire().await?;
         let conv: Conversation = sqlx::query_as("SELECT * FROM Conversation WHERE id=?")
             .bind(id)
             .fetch_one(&mut *conn)
             .await?;
 
-        Ok(Context::new(self.db.clone(), self.agent.clone(), conv))
+        let ctx = Context::new(self.db.clone(), self.agent.clone(), conv);
+        let ctx = Arc::new(ctx);
+        cache.insert(id, ctx.clone());
+
+        Ok(ctx.clone())
     }
 
     /// Connect an [Anthropic](crate::providers::anthropic) client.
-    pub async fn connect_anthropic(&mut self, api_key: &str) -> Result<()> {
+    pub async fn connect_anthropic(&self, api_key: &str) -> Result<()> {
         let mut agent = self.agent.write().await;
         agent.connect_anthropic(api_key).await
     }
 
     /// Connect a [Google](crate::providers::google) client.
-    pub async fn connect_google(&mut self, api_key: &str) -> Result<()> {
+    pub async fn connect_google(&self, api_key: &str) -> Result<()> {
         let mut agent = self.agent.write().await;
         agent.connect_google(api_key).await
     }
 
     /// Connect an [Ollama](crate::providers::ollama) client.
-    pub async fn connect_ollama(&mut self, api_key: &str) -> Result<()> {
+    pub async fn connect_ollama(&self, api_key: &str) -> Result<()> {
         let mut agent = self.agent.write().await;
         agent.connect_ollama(api_key).await
     }
 
     /// Connect an [OpenAI](crate::providers::openai) client.
-    pub async fn connect_openai(&mut self, api_key: &str) -> Result<()> {
+    pub async fn connect_openai(&self, api_key: &str) -> Result<()> {
         let mut agent = self.agent.write().await;
         agent.connect_openai(api_key).await
     }
 
     /// Connect an [OpenRouter](crate::providers::openrouter) client.
-    pub async fn connect_openrouter(&mut self, api_key: &str) -> Result<()> {
+    pub async fn connect_openrouter(&self, api_key: &str) -> Result<()> {
         let mut agent = self.agent.write().await;
         agent.connect_openrouter(api_key).await
     }
@@ -192,7 +205,7 @@ INSERT INTO Conversation VALUES
                 ],
             }).await.unwrap();
 
-            let mut mgr = Manager::new(Arc::new(db));
+            let mgr = Manager::new(Arc::new(db));
             if let Ok(key) = env::var("ANTHROPIC_API_KEY") {
                 if !key.is_empty() {
                     mgr.connect_anthropic(&key).await.unwrap();

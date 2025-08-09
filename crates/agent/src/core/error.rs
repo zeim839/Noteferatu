@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 #[cfg(feature = "anthropic")]
 use crate::providers::anthropic::AnthropicError;
@@ -14,11 +14,12 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Agent error implementation.
 #[derive(thiserror::Error, Debug, Serialize)]
+#[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "type", content = "data")]
 pub enum Error {
 
     /// An HTTP client error.
-    #[error("web client: {0}")]
-    Client(String),
+    #[error("{0}")]
+    Client(#[from] ClientError),
 
     /// Anthropic API error.
     #[cfg(feature = "anthropic")]
@@ -78,9 +79,87 @@ pub enum Error {
     Plugin(String),
 }
 
+/// Serializable [reqwest] error type.
+#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+#[serde(rename_all = "camelCase")]
+pub struct ClientError {
+
+    /// HTTP status for when the error is from an HTTP error response.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<u16>,
+
+    /// Error message.
+    pub message: String,
+
+    /// A possible URL related to this error.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url: Option<String>,
+}
+
+impl std::fmt::Display for ClientError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", serde_json::to_string(self).unwrap())
+    }
+}
+
 impl From<reqwest::Error> for Error {
     fn from(error: reqwest::Error) -> Self {
-        Self::Client(error.to_string())
+        if error.is_redirect() {
+            Self::Client(ClientError{
+                status: None,
+                message: "redirect policy error".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else if error.is_status() {
+            Self::Client(ClientError{
+                status: error.status().map(|status| status.as_u16()),
+                message: "received error status response".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else if error.is_timeout() {
+            Self::Client(ClientError{
+                status: None,
+                message: "request timed out".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else if error.is_request() {
+            Self::Client(ClientError{
+                status: None,
+                message: "bad request".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else if error.is_connect() {
+            Self::Client(ClientError{
+                status: None,
+                message: "connection error".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else if error.is_body() {
+            Self::Client(ClientError{
+                status: None,
+                message: "invalid request or response body".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else if error.is_decode() {
+            Self::Client(ClientError{
+                status: None,
+                message: "could not decode response body".to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
+        else {
+            Self::Client(ClientError{
+                status: None,
+                message: error.to_string(),
+                url: error.url().map(|url| url.as_str().to_string()),
+            })
+        }
     }
 }
 

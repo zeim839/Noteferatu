@@ -1,4 +1,8 @@
 //! [Tauri](tauri) plugin.
+//!
+//! The [plugin](crate::plugin) module implements a [tauri] plugin
+//! that exposes the Agent crate functionality to Desktop and Mobile
+//! apps.
 
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
