@@ -36,7 +36,8 @@ impl Manager {
     /// List all stored [Conversation](super::Conversation)s.
     pub async fn list_conversations(&self) -> Result<Vec<Conversation>> {
         let mut conn = self.db.acquire().await?;
-        let convs: Vec<Conversation> = sqlx::query_as("SELECT * FROM Conversation")
+        let convs: Vec<Conversation> = sqlx::query_as("SELECT * FROM
+    Conversation ORDER BY created_at DESC")
             .fetch_all(&mut *conn)
             .await?;
 

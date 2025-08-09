@@ -8,5 +8,6 @@ permissions = [
     "allow-rename-conversation",
     "allow-remove-conversation",
     "allow-send-message",
-    "allow-send-stream-message"
+    "allow-send-stream-message",
+    "allow-list-messages"
 ]

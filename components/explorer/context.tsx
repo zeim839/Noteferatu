@@ -128,9 +128,10 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
     })
     const bookmarkEventPromise = listen("helsync-bookmark-change", () => {
       fetchBookmarks()
+      fetchTags()
     })
     const tagsEventPromise = listen("helsync-tags-change", () => {
-      fetchTags()
+      fetchFiles()
     })
     return () => {
       fsEventPromise.then((unlisten) => unlisten())

@@ -44,6 +44,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::remove_conversation,
             commands::send_message,
             commands::send_stream_message,
+            commands::list_messages,
         ])
         .setup(|app, api| {
             let setup = async || {

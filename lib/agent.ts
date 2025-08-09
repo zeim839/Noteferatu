@@ -51,6 +51,70 @@ export type Message = {
   content: MessageContent
 }
 
+// Error response types.
+export type ErrorType = 'client' | 'anthropic' | 'google' | 'ollama' |
+ 'openai' | 'openrouter' | 'json' | 'invalidModelId' |
+ 'providerNotConfigured' | 'sql' | 'io' | 'pluginInvoke' | 'plugin'
+
+// Enumeration of possible error contents.
+export type ErrorDataType = string | AnthropicError |
+GoogleError | OpenAIError | ClientError
+
+// Google AI error response.
+export type GoogleError = {
+
+  // Error code (same as HTTP status).
+  code: number
+
+  // Message describing the error.
+  message: string
+
+  // Error status.
+  status: string
+}
+
+// OpenAI error response.
+export type OpenAIError = {
+
+  // Message describing the error.
+  message: string
+
+  // The type of error.
+  type: string
+
+  // Error code.
+  code?: string
+}
+
+// Anthropic error response.
+export type AnthropicError = {
+
+  // Message describing the error.
+  message: string
+
+  // The type of error.
+  type: string
+}
+
+// HTTP client error.
+export type ClientError = {
+
+  // HTTP status for when the error is from an HTTP error response.
+  status?: number
+
+  // Error message.
+  message: string
+
+  // A possible URL related to this error.
+  url?: string
+}
+
+// Error response.
+export type Error = {
+  type: ErrorType
+  data: ErrorDataType
+}
+
 // Role of a message sender.
 export type Role = "system" | "user" | "assistant" | "tool"
 
@@ -140,5 +204,12 @@ export async function sendStreamMessage(
 ): Promise<Response> {
   return await invoke<Response>("plugin:agent|send_stream_message", {
     conversationId, request, channel
+  })
+}
+
+// Fetches the message history for the specified conversation.
+export async function listMessages(conversationId: number): Promise<Array<Message>> {
+  return await invoke<Array<Message>>("plugin:agent|list_messages", {
+    conversationId
   })
 }

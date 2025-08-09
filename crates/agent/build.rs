@@ -8,6 +8,7 @@ const COMMANDS: &[&str] = &[
     "remove_conversation",
     "send_message",
     "send_stream_message",
+    "list_messages",
 ];
 
 fn main() {

@@ -12,6 +12,7 @@ Default permissions for the plugin
 - `allow-remove-conversation`
 - `allow-send-message`
 - `allow-send-stream-message`
+- `allow-list-messages`
 
 ## Permission Table
 
@@ -70,6 +71,32 @@ Enables the list_conversations command without any pre-configured scope.
 <td>
 
 Denies the list_conversations command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-list-messages`
+
+</td>
+<td>
+
+Enables the list_messages command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-list-messages`
+
+</td>
+<td>
+
+Denies the list_messages command without any pre-configured scope.
 
 </td>
 </tr>

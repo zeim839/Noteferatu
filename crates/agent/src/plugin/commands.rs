@@ -1,7 +1,7 @@
 use tauri::{AppHandle, command, Runtime, Emitter};
 use tauri::ipc::Channel;
 
-use crate::core::{Result, Model, Request, Response};
+use crate::core::{Result, Model, Request, Response, Message};
 use crate::agent::Conversation;
 use super::models::*;
 use super::AgentExt;
@@ -75,4 +75,12 @@ pub(crate) async fn send_stream_message<R: Runtime>(
     channel: Channel<StreamEvent>,
 ) -> Result<Response> {
     app.agent().send_stream_message(conversation_id, request, channel).await
+}
+
+#[command]
+pub(crate) async fn list_messages<R: Runtime>(
+    app: AppHandle<R>,
+    conversation_id: i64,
+) -> Result<Vec<Message>> {
+    app.agent().list_messages(conversation_id).await
 }

@@ -1,6 +1,7 @@
 import * as React from "react"
-import { Button } from "@/components/core/button"
 import { Conversation, removeConversation, renameConversation } from "@/lib/agent"
+import { useAgentContext } from "./context"
+import { Button } from "@/components/core/button"
 import { Edit2Icon, Trash2Icon, CheckIcon, XIcon } from "lucide-react"
 
 // Convert a timestamp into a "[X] [units] ago" string, where "[units]"
@@ -30,6 +31,7 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
   const [isBeingRenamed, setIsBeingRenamed] = React.useState<boolean>(false)
   const [newName, setNewName] = React.useState(name)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const { selectedConv, setSelectedConv, toggleConvs } = useAgentContext()
 
   React.useEffect(() => {
     if (isBeingRenamed) {
@@ -38,38 +40,68 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
     }
   }, [isBeingRenamed])
 
+  // Hover over a conversation entry.
   const onMouseEnter = () => {
     setIsHovered(true)
   }
 
+  // Unhover over the conversation entry.
   const onMouseLeave = () => {
     setIsHovered(false)
     setIsBeingDeleted(false)
   }
 
-  const handleDelete = () => {
+  // Delete a conversation and its message history.
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
     removeConversation(id)
+    if (selectedConv()?.id === id) {
+      setSelectedConv(null)
+    }
     setIsBeingDeleted(false)
   }
 
-  const handleRename = () => {
+  const commitRename = () => {
     if (newName.trim() && newName.trim() !== name) {
       renameConversation(id, newName.trim())
     }
     setIsBeingRenamed(false)
   }
 
-  const handleCancelRename = () => {
+  const revertRename = () => {
     setNewName(name)
     setIsBeingRenamed(false)
   }
 
+  const handleRenameClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    commitRename()
+  }
+
+  const handleCancelRenameClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    revertRename()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleRename()
+      commitRename()
     } else if (e.key === 'Escape') {
-      handleCancelRename()
+      revertRename()
     }
+  }
+
+  // Prevents the input field from losing focus (and triggering onBlur)
+  // when the user clicks a button.
+  const handleMouseDownOnButton = (e: React.MouseEvent) => {
+    e.preventDefault()
+  }
+
+  // Clicking on a conversation entry sets the selected conversation.
+  const handleSelect = () => {
+    if (isBeingRenamed) return
+    setSelectedConv({ id, name, createdAt })
+    toggleConvs()
   }
 
   const showActions = isHovered || isBeingDeleted || isBeingRenamed
@@ -79,7 +111,8 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
       key={id}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className="flex flex-row justify-between items-center w-full p-1.5 px-2 rounded-md hover:bg-[#DCE0E8] min-w-[250px]"
+      onClick={handleSelect}
+      className="flex flex-row justify-between items-center w-full p-1.5 px-2 rounded-md hover:bg-[#DCE0E8] min-w-[250px] cursor-pointer"
     >
       <div className="flex-grow overflow-hidden mr-2">
         {isBeingRenamed ? (
@@ -88,9 +121,10 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onBlur={handleRename}
+            onBlur={commitRename}
             onKeyDown={handleKeyDown}
-            className="text-sm bg-transparent outline-none w-full p-0 m-0"
+            onClick={(e) => e.stopPropagation()} // Prevent selection when clicking input
+            className="text-sm bg-transparent outline-none w-full p-0 m-0 cursor-text"
           />
         ) : (
           <p className="text-sm text-nowrap text-ellipsis overflow-hidden">
@@ -113,7 +147,7 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
           {(!isBeingDeleted && !isBeingRenamed) ? (
             <>
               <Button
-                onClick={() => setIsBeingRenamed(true)}
+                onClick={(e) => { e.stopPropagation(); setIsBeingRenamed(true); }}
                 variant="ghost"
                 size="icon"
                 className="p-0 m-0 size-4"
@@ -122,7 +156,7 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
                 <Edit2Icon strokeWidth={1} className="max-h-3 max-w-3"/>
               </Button>
               <Button
-                onClick={() => setIsBeingDeleted(true)}
+                onClick={(e) => { e.stopPropagation(); setIsBeingDeleted(true); }}
                 variant="ghost"
                 size="icon"
                 className="p-0 m-0 size-4"
@@ -139,7 +173,7 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
               variant="destructive"
               size="icon"
               className="p-0 m-0 size-4 border-transparent shadow-none bg-none hover:bg-transparent hover:text-red-600 hover:border-none"
-              tooltip="Confirm"
+              tooltip="Confirm Delete"
             >
               <Trash2Icon strokeWidth={2} className="max-h-3 max-w-3" />
             </Button>
@@ -148,7 +182,8 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
           {isBeingRenamed ? (
             <>
               <Button
-                onClick={handleRename}
+                onMouseDown={handleMouseDownOnButton}
+                onClick={handleRenameClick}
                 variant="confirmation"
                 size="icon"
                 className="p-0 m-0 size-4"
@@ -157,7 +192,8 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
                 <CheckIcon strokeWidth={2.5} className="max-h-3 max-w-3" />
               </Button>
               <Button
-                onClick={handleCancelRename}
+                onMouseDown={handleMouseDownOnButton}
+                onClick={handleCancelRenameClick}
                 variant="destructive"
                 size="icon"
                 className="p-0 m-0 size-4 border-transparent shadow-none bg-none hover:bg-transparent hover:text-red-600 hover:border-none"

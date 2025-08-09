@@ -1,6 +1,13 @@
 import * as React from "react"
-import { Model, Conversation, listConversations } from "@/lib/agent"
 import { listen } from '@tauri-apps/api/event'
+
+import {
+  Model,
+  Conversation,
+  Message,
+  listConversations,
+  listMessages
+} from "@/lib/agent"
 
 // Defines a common context for agent subcomponents.
 export type AgentContextType = {
@@ -26,10 +33,6 @@ export type AgentContextType = {
   setSettingsOpen: (open: boolean) => void
   toggleSettings: () => void
 
-  // Control the conversation history.
-  convHistory: () => Array<Conversation>
-  setConvHistory: (convs: Array<Conversation>) => void
-
   // Control the LLM models available to the user.
   models: () => Record<string, Array<Model>>
   setModels: (provider: string, models: Array<Model>) => void
@@ -37,6 +40,18 @@ export type AgentContextType = {
   // Control the selected model.
   selectedModel: () => Model | null
   setSelectedModel: (model: Model | null) => void
+
+  // Control the conversation history.
+  convHistory: () => Array<Conversation>
+  setConvHistory: (convs: Array<Conversation>) => void
+
+  // Control the currently selected conversation.
+  selectedConv: () => Conversation | null
+  setSelectedConv: (conv: Conversation | null) => void
+
+  // Conversation messages.
+  messages: () => Array<Message>
+  setMessages: (messages: Array<Message>) => void
 }
 
 // Implements AgentContextType.
@@ -51,7 +66,10 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [models, setModels] = React.useState<Record<string, Array<Model>>>({})
   const [selectedModel, setSelectedModel] = React.useState<Model | null>(null)
   const [convHistory, setConvHistory] = React.useState<Conversation[]>([])
+  const [selectedConv, setSelectedConv] = React.useState<Conversation | null>(null)
+  const [messages, setMessages] = React.useState<Array<Message>>([])
 
+  // Fetch conversation history.
   React.useEffect(() => {
     const fetchConversations = () => {
       listConversations().then((conversations) => {
@@ -64,6 +82,17 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
     fetchConversations()
     return () => {convEventPromise.then((unlisten) => unlisten())}
   }, [])
+
+  // Fetch messages history for the currently-selected conversation.
+  React.useEffect(() => {
+    if (selectedConv === null) {
+      setMessages([])
+      return
+    }
+    listMessages(selectedConv.id).then(msgs => {
+      setMessages(msgs)
+    })
+  }, [selectedConv])
 
   const context: AgentContextType = {
     isConvsOpen: () => { return isConvsOpen },
@@ -90,9 +119,6 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
       }
     },
 
-    convHistory: () => { return convHistory },
-    setConvHistory: (convs) => setConvHistory(convs),
-
     models: () => { return models },
     setModels: (provider, models) => {
       if (models.length == 0) {
@@ -107,7 +133,16 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
     },
 
     selectedModel: () => { return selectedModel },
-    setSelectedModel: (model) => setSelectedModel(model)
+    setSelectedModel: (model) => setSelectedModel(model),
+
+    convHistory: () => { return convHistory },
+    setConvHistory: (convs) => setConvHistory(convs),
+
+    selectedConv: () => { return selectedConv },
+    setSelectedConv: (conv) => setSelectedConv(conv),
+
+    messages: () => { return messages },
+    setMessages: (msgs) => setMessages(msgs)
   }
 
   return (

@@ -319,6 +319,18 @@
           "markdownDescription": "Denies the list_conversations command without any pre-configured scope."
         },
         {
+          "description": "Enables the list_messages command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-list-messages",
+          "markdownDescription": "Enables the list_messages command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the list_messages command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-list-messages",
+          "markdownDescription": "Denies the list_messages command without any pre-configured scope."
+        },
+        {
           "description": "Enables the list_models command without any pre-configured scope.",
           "type": "string",
           "const": "allow-list-models",
@@ -391,10 +403,10 @@
           "markdownDescription": "Denies the try_connect command without any pre-configured scope."
         },
         {
-          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`\n- `allow-list-conversations`\n- `allow-create-conversation`\n- `allow-rename-conversation`\n- `allow-remove-conversation`\n- `allow-send-message`\n- `allow-send-stream-message`",
+          "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`\n- `allow-list-conversations`\n- `allow-create-conversation`\n- `allow-rename-conversation`\n- `allow-remove-conversation`\n- `allow-send-message`\n- `allow-send-stream-message`\n- `allow-list-messages`",
           "type": "string",
           "const": "default",
-          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`\n- `allow-list-conversations`\n- `allow-create-conversation`\n- `allow-rename-conversation`\n- `allow-remove-conversation`\n- `allow-send-message`\n- `allow-send-stream-message`"
+          "markdownDescription": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-try-connect`\n- `allow-list-models`\n- `allow-list-conversations`\n- `allow-create-conversation`\n- `allow-rename-conversation`\n- `allow-remove-conversation`\n- `allow-send-message`\n- `allow-send-stream-message`\n- `allow-list-messages`"
         }
       ]
     }
