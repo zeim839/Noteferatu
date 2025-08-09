@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 /// OpenAI API error response.
 #[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
+#[serde(rename_all = "camelCase")]
 pub struct OpenAIError {
 
     /// Message describing the error.

@@ -8,6 +8,7 @@ use crate::core;
 
 use serde_json::{Value, from_value};
 use tokio_stream::StreamExt;
+use std::time::Duration;
 use reqwest::header;
 
 /// OpenAI API endpoint.
@@ -28,6 +29,8 @@ impl Client {
 
         // Build HTTP client.
         let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(5))
+            .timeout(Duration::from_secs(10))
             .default_headers(headers)
             .build().unwrap();
 

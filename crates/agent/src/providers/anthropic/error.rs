@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 /// Anthropic API error response.
 #[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
+#[serde(rename_all = "camelCase")]
 pub struct AnthropicError {
 
     /// Message describing the error.

@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 /// Google API error response.
 #[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
+#[serde(rename_all = "camelCase")]
 pub struct GoogleError {
 
     /// Error code (same as HTTP status).

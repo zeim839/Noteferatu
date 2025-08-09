@@ -6,6 +6,7 @@ use crate::core::{Result, Error};
 use crate::core;
 
 use tokio_stream::StreamExt;
+use std::time::Duration;
 use serde_json::{Value, from_value};
 
 /// An Ollama API client.
@@ -18,10 +19,14 @@ impl Client {
 
     /// Create a new Ollama API client.
     pub fn new(endpoint: &str) -> Self {
-        Self {
-            client: reqwest::Client::new(),
-            endpoint: format!("{endpoint}/api"),
-        }
+        let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(5))
+            // Higher timeout: models may take a while to load.
+            .timeout(Duration::from_secs(120))
+            .build().unwrap();
+
+        let endpoint = format!("{endpoint}/api");
+        Self { client, endpoint }
     }
 
     /// Parses an Ollama SSE event.
