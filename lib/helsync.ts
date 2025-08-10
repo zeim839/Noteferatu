@@ -14,6 +14,7 @@ export type File = {
   isBookmarked: boolean
 }
 
+// A tag organizes file entries under a common category (name).
 export type Tag = {
   name:      string
   color:     string
@@ -33,23 +34,16 @@ export interface FileEntry extends File {
   children?: FileEntry[]
 }
 
+// A tag with all of its member files.
 export type TagWithFiles = {
   name: string
   color: string
   files: Array<FileEntry>
 }
 
-// Describes a change made to the filesystem. Sent as a tauri event.
-export type FileChangeEvent = {
-  event: "copy" | "move" | "remove" | "createFolder"
-  data: object,
-}
-
 // Fetches metadata for the file with `id`.
 export async function getFile(id: string): Promise<File> {
-  return await invoke<File>("plugin:helsync|get_file", {
-    payload: { id },
-  })
+  return await invoke<File>("plugin:helsync|get_file", {id})
 }
 
 // Copy a file.
@@ -59,7 +53,7 @@ export async function getFile(id: string): Promise<File> {
 // `name` is specified, the file is renamed.
 export async function copyFile(sourceId: string, parentId?: string, name?: string): Promise<File> {
   return await invoke<File>("plugin:helsync|copy_file", {
-    payload: { sourceId, parentId, name }
+    sourceId, parentId, name
   })
 }
 
@@ -70,15 +64,13 @@ export async function copyFile(sourceId: string, parentId?: string, name?: strin
 // `name` is specified, the file is renamed.
 export async function moveFile(sourceId: string, parentId?: string, name?: string): Promise<File> {
   return await invoke<File>("plugin:helsync|move_file", {
-    payload: { sourceId, parentId, name }
+    sourceId, parentId, name
   })
 }
 
 // Delete the file with the given `id`.
 export async function removeFile(id: string): Promise<void> {
-  return await invoke("plugin:helsync|remove_file", {
-    payload: { id }
-  })
+  return await invoke("plugin:helsync|remove_file", {id})
 }
 
 // Create a new directory.
@@ -87,7 +79,7 @@ export async function removeFile(id: string): Promise<void> {
 // filesystem root.
 export async function createFolder(name: string, parentId?: string): Promise<File> {
   return await invoke<File>("plugin:helsync|create_folder", {
-    payload: { parentId, name }
+    parentId, name
   })
 }
 
@@ -97,7 +89,7 @@ export async function createFolder(name: string, parentId?: string): Promise<Fil
 // filesystem root.
 export async function createFile(name: string, parentId?: string): Promise<File> {
   return await invoke<File>("plugin:helsync|create_file", {
-    payload: { parentId, name }
+    parentId, name
   })
 }
 
@@ -107,58 +99,64 @@ export async function createFile(name: string, parentId?: string): Promise<File>
 // the filesystem root.
 export async function listFiles(parentId?: string): Promise<Array<File>> {
   return await invoke<Array<File>>("plugin:helsync|list_files", {
-    payload: { parentId }
+    parentId
   })
 }
 
 // Write to a file in the filesystem.
 export async function writeToFile(name: string, contents: Uint8Array, parentId?: string): Promise<File> {
   return await invoke<File>("plugin:helsync|write_to_file", {
-    payload: {
-      parentId,
-      name,
-      contents: Array.from(contents),
-    }
+    parentId, name, contents: Array.from(contents),
   })
 }
 
 // Fetch all bookmarked files.
 export async function listBookmarks(): Promise<Array<File>> {
-  return await invoke<Array<File>>("plugin:helsync|list_bookmarks", {})
+  return await invoke<Array<File>>("plugin:helsync|list_bookmarks")
 }
 
 // Bookmark a file.
 export async function createBookmark(file_id: string): Promise<void> {
-  return await invoke("plugin:helsync|create_bookmark", {
-    payload: { id: file_id }
-  })
+  return await invoke("plugin:helsync|create_bookmark", {id: file_id})
 }
 
 // Remove a bookmark from a file..
 export async function removeBookmark(file_id: string): Promise<void> {
-  return await invoke("plugin:helsync|remove_bookmark", {
-    payload: { id: file_id }
-  })
+  return await invoke("plugin:helsync|remove_bookmark", {id: file_id})
 }
 
+// List all available tags, including those with no associated files.
 export async function listTags(): Promise<Array<TagWithFiles>> {
   return await invoke<Array<TagWithFiles>>("plugin:helsync|list_tags", {})
 }
 
+// Create a new tag.
 export async function createTag(name: string, color: string): Promise<Tag> {
-  return await invoke<Tag>("plugin:helsync|create_tag", {
-    payload: { name, color },
+  return await invoke<Tag>("plugin:helsync|create_tag", {name, color})
+}
+
+// Remove a tag and all its tag binds.
+export async function removeTag(name: string): Promise<void> {
+  return await invoke("plugin:helsync|remove_tag", {name})
+}
+
+// Change a tag's color.
+export async function changeTagColor(name: string, color: string): Promise<void> {
+  return await invoke("plugin:helsync|change_tag_color", {
+    name, color
   })
 }
 
+// Attach a tag to a file.
 export async function createTagBind(fileId: string, tagName: string): Promise<void> {
   return await invoke("plugin:helsync|create_tag_bind", {
-    payload: { fileId, tagName },
+    fileId, tagName
   })
 }
 
+// Remove a tag from a file.
 export async function removeTagBind(fileId: string, tagName: string): Promise<void> {
   return await invoke("plugin:helsync|remove_tag_bind", {
-    payload: { fileId, tagName }
+    fileId, tagName
   })
 }

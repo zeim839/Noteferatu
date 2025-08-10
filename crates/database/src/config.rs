@@ -13,14 +13,14 @@ pub enum MigrationType {
 /// object will try to apply any migration whose version is greater
 /// than its current version (i.e. the value returned by
 /// [Database::version](crate::Database::version)).
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Migration {
 
     /// The schema version after applying the migration.
     pub version: i64,
 
     /// The SQL statement to execute.
-    pub sql: &'static str,
+    pub sql: String,
 
     /// Whether this migration upgrades or downgrades the current
     /// schema version.

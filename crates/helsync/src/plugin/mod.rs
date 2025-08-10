@@ -3,10 +3,11 @@
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
 
+use database::Database;
+use std::sync::Arc;
+
 mod commands;
 mod error;
-mod models;
-mod schema;
 
 #[cfg(desktop)]
 mod desktop;
@@ -18,9 +19,7 @@ mod mobile;
 #[cfg(mobile)]
 use mobile::Helsync;
 
-pub use models::*;
 pub use error::{Error, Result};
-use database::{Database, Config};
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and
 /// [`tauri::Window`] to access the helsync APIs.
@@ -35,7 +34,7 @@ impl<R: Runtime, T: Manager<R>> HelsyncExt<R> for T {
 }
 
 /// Initializes the plugin.
-pub fn init<R: Runtime>() -> TauriPlugin<R> {
+pub fn init<R: Runtime>(db: Arc<Database>) -> TauriPlugin<R> {
     Builder::new("helsync")
         .invoke_handler(tauri::generate_handler![
             commands::get_file,
@@ -51,51 +50,17 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::remove_bookmark,
             commands::list_tags,
             commands::create_tag,
+            commands::remove_tag,
+            commands::change_tag_color,
             commands::create_tag_bind,
             commands::remove_tag_bind,
         ])
         .setup(|app, api| {
-            let setup = async || {
-                let path = app.path().app_data_dir().unwrap()
-                    .join("db.sqlite");
-
-                let db = Database::new(&Config {
-                    max_connections: 5,
-                    local_path: String::from(path.to_str().unwrap()),
-                    migrations: vec![
-                        schema::MIGRATION_V0,
-                        database::Migration{
-                            version: 1,
-                            sql: "
-INSERT INTO File(id, name, parent, is_deleted, created_at, modified_at,
-is_folder, is_bookmarked) VALUES
-  (0, \"Introduction\", NULL, FALSE, 0, 0, FALSE, FALSE),
-  (1, \"NoteFeratu Tutorial\", NULL, FALSE, 0, 0, FALSE, FALSE),
-  (2, \"Roman Empire\", NULL, FALSE, 0, 0, FALSE, FALSE),
-  (3, \"First Order Theory\", NULL, FALSE, 0, 0, FALSE, FALSE),
-  (4, \"Coursework\", NULL, FALSE, 0, 0, TRUE, FALSE),
-  (5, \"Normal Forms\", 4, FALSE, 0, 0, FALSE, FALSE),
-  (6, \"Foreign Policy\", 4, FALSE, 0, 0, FALSE, FALSE);
-",
-                            kind: database::MigrationType::Up,
-                        }],
-                }).await.unwrap();
-
-                #[cfg(mobile)]
-                let helsync = mobile::init(app, api).unwrap();
-
-                #[cfg(desktop)]
-                let helsync = desktop::init(app, api, db).unwrap();
-
-                app.manage(helsync);
-            };
-
-            if tokio::runtime::Handle::try_current().is_ok() {
-                tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(setup()));
-            } else {
-                tauri::async_runtime::block_on(setup());
-            }
-
+            #[cfg(mobile)]
+            let helsync = mobile::init(app, api).unwrap();
+            #[cfg(desktop)]
+            let helsync = desktop::init(app, api, db).unwrap();
+            app.manage(helsync);
             Ok(())
         })
         .build()

@@ -94,7 +94,7 @@ impl Database {
 
             // Apply migration.
             let mut conn = self.acquire().await?;
-            sqlx::query(migration.sql).execute(&mut *conn).await?;
+            sqlx::query(&migration.sql).execute(&mut *conn).await?;
 
             // Report success.
             sqlx::query("INSERT INTO _migrations VALUES (?,?)")

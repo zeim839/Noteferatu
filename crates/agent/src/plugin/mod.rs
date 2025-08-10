@@ -7,8 +7,7 @@
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
 
-use database::{Database, Config, Migration, MigrationType};
-use crate::agent::SCHEMA_VERSION_0;
+use database::Database;
 use std::sync::Arc;
 
 mod commands;
@@ -37,7 +36,7 @@ impl <R: Runtime, T: Manager<R>> AgentExt<R> for T {
 }
 
 /// Initializes the plugin.
-pub fn init<R: Runtime>() -> TauriPlugin<R> {
+pub fn init<R: Runtime>(db: Arc<Database>) -> TauriPlugin<R> {
     Builder::new("agent")
         .invoke_handler(tauri::generate_handler![
             commands::try_connect,
@@ -52,46 +51,11 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::stop_messages,
         ])
         .setup(|app, api| {
-            let setup = async || {
-                let path = app.path().app_data_dir().unwrap()
-                    .join("temp.sqlite");
-
-                let db = Database::new(&Config {
-                    max_connections: 5,
-                    local_path: String::from(path.to_str().unwrap()),
-                    migrations: vec![
-                        Migration {
-                            version: 0,
-                            sql: SCHEMA_VERSION_0,
-                            kind: MigrationType::Up,
-                        },
-                        Migration {
-                            version: 1,
-                            sql: "
-INSERT INTO Conversation(id, name, created_at) VALUES
-  (0, \"My conversation\", 0),
-  (1, \"My Other Conversation\", 0);
-",
-                            kind: MigrationType::Up,
-                        }
-                    ],
-                }).await.unwrap();
-
-                #[cfg(mobile)]
-                let agent = mobile::init(app, api, db).unwrap();
-
-                #[cfg(desktop)]
-                let agent = desktop::init(app, api, Arc::new(db)).unwrap();
-
-                app.manage(agent);
-            };
-
-            if tokio::runtime::Handle::try_current().is_ok() {
-                tokio::task::block_in_place(|| tokio::runtime::Handle::current().block_on(setup()));
-            } else {
-                tauri::async_runtime::block_on(setup());
-            }
-
+            #[cfg(mobile)]
+            let agent = mobile::init(app, api, db).unwrap();
+            #[cfg(desktop)]
+            let agent = desktop::init(app, api, db).unwrap();
+            app.manage(agent);
             Ok(())
         })
         .build()

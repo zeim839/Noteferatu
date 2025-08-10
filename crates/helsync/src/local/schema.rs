@@ -94,16 +94,6 @@ BEGIN
   END;
 END;
 
-CREATE TRIGGER delete_tag_if_unbound
-AFTER DELETE ON TagBind
-FOR EACH ROW
-BEGIN
-  DELETE FROM Tag
-  WHERE name = OLD.tag AND NOT EXISTS (
-    SELECT 1 FROM TagBind WHERE tag = OLD.tag
-  );
-END;
-
 CREATE TRIGGER prevent_tag_bind_on_deleted_file
 BEFORE INSERT ON TagBind
 FOR EACH ROW

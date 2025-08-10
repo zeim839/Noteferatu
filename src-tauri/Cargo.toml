@@ -25,3 +25,6 @@ tauri-plugin-opener = "2"
 macwindow = { path = "../crates/macwindow" }
 agent = { path = "../crates/agent", features = ["plugin"] }
 helsync = { path = "../crates/helsync", features = ["plugin"] }
+tokio = { version = "1.47.1", features = ["full"] }
+dirs = "6.0.0"
+database = { path = "../crates/database" }

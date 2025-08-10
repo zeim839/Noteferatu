@@ -6,7 +6,6 @@ import {
   listBookmarks,
   listTags,
   File,
-  FileChangeEvent,
   FileEntry,
   TagWithFiles,
 } from "@/lib/helsync"
@@ -121,17 +120,16 @@ export function ExplorerProvider({ children }: { children: React.ReactNode }) {
     fetchFiles()
     fetchBookmarks()
     fetchTags()
-    const fsEventPromise = listen<FileChangeEvent>("helsync-fs-change", () => {
+    const fsEventPromise = listen("helsync-fs-change", () => {
       fetchBookmarks()
       fetchFiles()
       fetchTags()
     })
     const bookmarkEventPromise = listen("helsync-bookmark-change", () => {
       fetchBookmarks()
-      fetchTags()
     })
     const tagsEventPromise = listen("helsync-tags-change", () => {
-      fetchFiles()
+      fetchTags()
     })
     return () => {
       fsEventPromise.then((unlisten) => unlisten())

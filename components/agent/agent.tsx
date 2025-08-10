@@ -225,7 +225,7 @@ function Agent() {
       </div>
 
       {/* Message Input Field */}
-      <div className="w-full h-[150px] bg-[#EDF0F4] outline outline-[#AEB3C0] p-2 flex flex-col justify-between">
+      <div className="w-full h-[150px] bg-[#EDF0F4] border-t border-[#AEB3C0] p-2 flex flex-col justify-between">
         <div className="flex-1 relative">
           <textarea
             value={inputValue}

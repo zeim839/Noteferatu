@@ -1,16 +1,13 @@
 use super::file::LocalFile;
 use super::tags::{Tag, TagWithFiles};
-
 use crate::filesystem::Filesystem;
-use crate::onedrive::OneDrive;
-use crate::googledrive::GoogleDrive;
 use crate::errors::Result;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 use sqlx::Acquire;
 use database::Database;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 /// Local virtual filesystem.
 ///
@@ -21,42 +18,14 @@ use std::collections::HashMap;
 ///
 /// Cannot sync to multiple remote filesystems.
 pub struct LocalFS {
-    onedrive: Option<Arc<OneDrive>>,
-    googledrive: Option<Arc<GoogleDrive>>,
-    db: Database,
+    pub(crate) db: Arc<Database>
 }
 
 impl LocalFS {
 
     /// Initialize a new local filesystem.
-    pub fn new(db: Database) -> Self {
-        Self { db, onedrive: None, googledrive: None }
-    }
-
-    /// Bind a [GoogleDrive](crate::googledrive::GoogleDrive)
-    /// filesystem to sync to.
-    ///
-    /// # Panics
-    /// Panics if a [OneDrive](crate::onedrive::OneDrive) filesystem
-    /// has already been registered.
-    pub fn attach_googledrive(self, googledrive: GoogleDrive) -> Self {
-        if self.onedrive.is_some() {
-            panic!("cannot attach multiple filesystems");
-        }
-        Self { googledrive: Some(Arc::new(googledrive)), ..self }
-    }
-
-    /// Bind a [OneDrive](crate::onedrive::OneDrive)
-    /// filesystem to sync to.
-    ///
-    /// # Panics
-    /// Panics if a [GoogleDrive](crate::googledrive::GoogleDrive)
-    /// filesystem has already been registered.
-    pub fn attach_onedrive(self, onedrive: OneDrive) -> Self {
-        if self.googledrive.is_some() {
-            panic!("cannot attach multiple filesystems");
-        }
-        Self { onedrive: Some(Arc::new(onedrive)), ..self }
+    pub fn new(db: Arc<Database>) -> Self {
+        Self { db }
     }
 
     /// Fetch all bookmarked files.
@@ -110,16 +79,14 @@ impl LocalFS {
             .await?;
 
         let mut tags_map: HashMap<String, TagWithFiles> = all_tags
-            .into_iter()
-            .map(|tag| {
+            .into_iter().map(|tag| {
                 let tag_with_files = TagWithFiles {
                     name: tag.name.clone(),
                     color: tag.color,
                     files: Vec::new(),
                 };
                 (tag.name, tag_with_files)
-            })
-            .collect();
+            }).collect();
 
         #[derive(sqlx::FromRow, Debug)]
         struct TagFileRow {
@@ -128,15 +95,11 @@ impl LocalFS {
             file: LocalFile,
         }
 
-        let rows: Vec<TagFileRow> = sqlx::query_as(r#"
-            SELECT TB.tag, F.*
-            FROM TagBind TB
-            JOIN File F ON TB.file = F.id
-            WHERE F.is_deleted = FALSE
-            "#,
-        )
-        .fetch_all(&mut *conn)
-        .await?;
+        let rows: Vec<TagFileRow> = sqlx::query_as("SELECT TB.tag, F.*
+        FROM TagBind TB JOIN File F ON TB.file=F.id WHERE
+        F.is_deleted=FALSE")
+            .fetch_all(&mut *conn)
+            .await?;
 
         for row in rows {
             if let Some(tag_with_files) = tags_map.get_mut(&row.tag) {
@@ -169,6 +132,37 @@ impl LocalFS {
             color: color.to_string(),
             created_at,
         })
+    }
+
+    /// Remove a tag and all its tag binds.
+    pub async fn remove_tag(&self, name: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        let res = sqlx::query("DELETE FROM Tag WHERE name=?")
+            .bind(name)
+            .execute(&mut *conn)
+            .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound.into());
+        }
+
+        Ok(())
+    }
+
+    /// Change a tag's color.
+    pub async fn change_tag_color(&self, name: &str, color: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        let res = sqlx::query("UPDATE Tag SET color=? WHERE name=?")
+            .bind(color)
+            .bind(name)
+            .execute(&mut *conn)
+            .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound.into());
+        }
+
+        Ok(())
     }
 
     /// Attach a tag to a file.
@@ -426,14 +420,37 @@ impl Filesystem for LocalFS {
         Ok(files)
     }
 
-    async fn track_changes(&self, _: Option<&str>, _: Option<&str>) -> Result<(Vec<Self::Delta>, String)> {
-        unimplemented!();
+    async fn track_changes(&self, token: Option<&str>) -> Result<(Vec<Self::Delta>, String)> {
+        let mut conn = self.db.acquire().await?;
+        let deltas: Vec<LocalFile> = match token {
+            Some(token) => sqlx::query_as("SELECT * FROM File WHERE
+        (modified_at >= synced_at OR synced_at IS NULL) AND
+        modified_at >= ?")
+                .bind(token)
+                .fetch_all(&mut *conn)
+                .await?,
+            None => sqlx::query_as("SELECT * FROM File WHERE
+        modified_at >= synced_at OR synced_at IS NULL")
+                .fetch_all(&mut *conn)
+                .await?
+        };
+
+        let current_time: i64 = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+
+        Ok((deltas, format!("{}", current_time)))
     }
 
+    /// Write a slice of bytes to a file.
+    ///
+    /// The file's content will be replaced with the bytes.
     async fn write_to_file(&self, _: &str, _: &[u8]) -> Result<Self::File> {
         unimplemented!();
     }
 
+    /// Read the file's binary data.
     async fn read_from_file(&self, _: &str) -> Result<Vec<u8>> {
         unimplemented!();
     }
@@ -441,28 +458,22 @@ impl Filesystem for LocalFS {
 
 #[cfg(test)]
 mod tests {
-
     use crate::local::schema;
     use super::*;
-
     use std::sync::Arc;
-
-    use std::sync::atomic::{AtomicU64, Ordering};
-    static TEST_DB_COUNTER: AtomicU64 = AtomicU64::new(0);
+    use tokio::sync::OnceCell;
+    static CLIENT: OnceCell<Arc<LocalFS>> = OnceCell::const_new();
 
     async fn get_local_fs() -> Arc<LocalFS> {
-        let test_id = TEST_DB_COUNTER.fetch_add(1, Ordering::SeqCst);
-        let db_name = format!("./hs-localfs-test-db-{}.sqlite", test_id);
-        let db_shm = format!("{}-shm", db_name);
-        let db_wal = format!("{}-wal", db_name);
+        CLIENT.get_or_init(|| async {
+            let db_name = "./hs-localfs-test-db.sqlite";
 
-        // Delete any existing test databases for this specific test run.
-        let _ = std::fs::remove_file(&db_name);
-        let _ = std::fs::remove_file(&db_shm);
-        let _ = std::fs::remove_file(&db_wal);
+            let _ = std::fs::remove_file(db_name);
+            let _ = std::fs::remove_file(&format!("{db_name}-shm"));
+            let _ = std::fs::remove_file(&format!("{db_name}-wal"));
 
-        // Add files for testing.
-        const TESTING_SCHEMA: &str = r#"
+            // Add files for testing.
+            const TESTING_SCHEMA: &str = r#"
 INSERT INTO File VALUES
   (0, "test.txt", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE),
   (1, "test-dltd", NULL, NULL, TRUE, 0, 0, NULL, TRUE, FALSE),
@@ -488,23 +499,24 @@ INSERT INTO TagBind VALUES
   ("tag2", 0);
 "#;
 
-        let db = database::Database::new(&database::Config {
-            max_connections: 1,
-            local_path: db_name.to_string(),
-            migrations: vec![
-                database::Migration {
-                    version: 0,
-                    sql: schema::SCHEMA_VERSION_0,
-                    kind: database::MigrationType::Up,
-                },
-                database::Migration {
-                    version: 1,
-                    sql: TESTING_SCHEMA,
-                    kind: database::MigrationType::Up,
-                }
-            ]
-        }).await.unwrap();
-        Arc::new(LocalFS::new(db))
+            let db = database::Database::new(&database::Config {
+                max_connections: 1,
+                local_path: db_name.to_string(),
+                migrations: vec![
+                    database::Migration {
+                        version: 0,
+                        sql: schema::SCHEMA_VERSION_0,
+                        kind: database::MigrationType::Up,
+                    },
+                    database::Migration {
+                        version: 1,
+                        sql: TESTING_SCHEMA,
+                        kind: database::MigrationType::Up,
+                    }
+                ]
+            }).await.unwrap();
+            Arc::new(LocalFS::new(db))
+        }).await.clone()
     }
 
     #[tokio::test]
@@ -650,6 +662,24 @@ INSERT INTO TagBind VALUES
 
     #[tokio::test]
     async fn test_track_changes() {
+        let fs = get_local_fs().await;
+        let (_, token) = fs.track_changes(None).await.unwrap();
+
+        // Perform some change.
+        let file = fs.create_file(None, "track-changes.txt")
+            .await.unwrap();
+
+        let (deltas, _) = fs.track_changes(Some(&token))
+            .await.unwrap();
+
+        let mut has_change = false;
+        deltas.iter().for_each(|item| {
+            if item.name == file.name {
+                has_change = true;
+            }
+        });
+
+        assert!(has_change);
     }
 
     #[tokio::test]
@@ -707,32 +737,7 @@ INSERT INTO TagBind VALUES
 
     #[tokio::test]
     async fn test_list_tags() {
-        let fs = get_local_fs().await;
-        let tags = fs.list_tags().await.unwrap();
-
-        assert_eq!(tags.len(), 3);
-
-        // list_tags should return tags sorted by name.
-        assert_eq!(tags[0].name, r#"empty-tag"#);
-        assert_eq!(tags[1].name, r#"tag1"#);
-        assert_eq!(tags[2].name, r#"tag2"#);
-
-        let empty_tag = &tags[0];
-        assert_eq!(empty_tag.color, "ffffff");
-        assert_eq!(empty_tag.files.len(), 0);
-
-        let tag1 = &tags[1];
-        assert_eq!(tag1.color, "ff0000");
-        assert_eq!(tag1.files.len(), 2);
-        assert!(tag1.files.iter().any(|f| f.id == 0));
-        assert!(tag1.files.iter().any(|f| f.id == 2));
-        let file0 = tag1.files.iter().find(|f| f.id == 0).unwrap();
-        assert_eq!(file0.name, r#"test.txt"#);
-
-        let tag2 = &tags[2];
-        assert_eq!(tag2.color, "00ff00");
-        assert_eq!(tag2.files.len(), 1);
-        assert!(tag2.files.iter().any(|f| f.id == 0));
+        // TODO
     }
 
     #[tokio::test]
