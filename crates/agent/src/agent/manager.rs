@@ -194,12 +194,12 @@ INSERT INTO Conversation VALUES
                 migrations: vec![
                     Migration {
                         version: 0,
-                        sql: SCHEMA_VERSION_0,
+                        sql: SCHEMA_VERSION_0.to_string(),
                         kind: MigrationType::Up,
                     },
                     Migration {
                         version: 1,
-                        sql: TESTING_SCHEMA,
+                        sql: TESTING_SCHEMA.to_string(),
                         kind: MigrationType::Up,
                     },
                 ],

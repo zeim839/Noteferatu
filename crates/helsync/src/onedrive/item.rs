@@ -6,7 +6,7 @@ use serde_json::Value;
 /// The driveItem resource represents a file, folder, or other item
 /// stored in a drive. All file system objects in OneDrive and
 /// SharePoint are returned as driveItem resources.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveItem {
 
@@ -44,7 +44,7 @@ pub struct DriveItem {
 
 /// The DeletedMetadata resource indicates that the item has been
 /// deleted.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DeletedMetadata {
 
     /// Represents the state of the deleted item.
@@ -53,7 +53,7 @@ pub struct DeletedMetadata {
 
 /// The FileMetadata resource groups file-related data items into a
 /// single structure.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileMetadata {
 
@@ -66,7 +66,7 @@ pub struct FileMetadata {
 /// The Folder resource groups folder-related data on an item into a
 /// single structure. [DriveItems](DriveItem) with a non-null folder
 /// facet are containers for other [DriveItems](DriveItem).
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderMetadata {
 
@@ -77,7 +77,7 @@ pub struct FolderMetadata {
 
 /// The ItemReference resource provides information necessary to
 /// address a DriveItem via the API.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemReference {
     /// Identifier of the drive instance that contains the
@@ -147,5 +147,9 @@ impl Delta for DriveItem {
 
     fn is_modified(&self) -> bool {
         !self.is_removed()
+    }
+
+    fn modified_at(&self) -> i64 {
+        File::modified_at(self)
     }
 }

@@ -45,7 +45,7 @@ impl File for LocalFile {
 
 impl Delta for LocalFile {
     fn id(&self) -> String {
-        self.id.to_string()
+        self.remote_id.clone().unwrap_or(self.id.to_string())
     }
 
     fn is_removed(&self) -> bool {
@@ -57,5 +57,9 @@ impl Delta for LocalFile {
             return !self.is_deleted && synced_at > self.modified_at;
         }
         return false;
+    }
+
+    fn modified_at(&self) -> i64 {
+        self.modified_at
     }
 }

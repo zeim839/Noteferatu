@@ -16,7 +16,7 @@
 //!         oauth2::Token::from_refresh_token("example", &app_config)
 //!         .await.unwrap();
 //!
-//!     let client = onedrive::OneDrive::new(&token, &app_config);
+//!     let client = onedrive::OneDrive::new(None, &token, &app_config);
 //!
 //!     // Passing None selects the root directory. Alternatively,
 //!     // pass a parent id: e.g. Some("parent-id").
@@ -41,7 +41,7 @@
 //!         oauth2::Token::from_refresh_token("example", &app_config)
 //!         .await.unwrap();
 //!
-//!     let client = onedrive::OneDrive::new(&token, &app_config);
+//!     let client = onedrive::OneDrive::new(None, &token, &app_config);
 //!
 //!     // First, create a new file to get an ID.
 //!     let file = client.create_file(None, "file.txt")
@@ -69,7 +69,7 @@
 //!         oauth2::Token::from_refresh_token("example", &app_config)
 //!         .await.unwrap();
 //!
-//!     let client = onedrive::OneDrive::new(&token, &app_config);
+//!     let client = onedrive::OneDrive::new(None, &token, &app_config);
 //!
 //!     // Read a file with the given file id.
 //!     let data = client.read_from_file("some-file-id").await.unwrap();
@@ -96,10 +96,10 @@
 //!         oauth2::Token::from_refresh_token("example", &app_config)
 //!         .await.unwrap();
 //!
-//!     let client = onedrive::OneDrive::new(&token, &app_config);
+//!     let client = onedrive::OneDrive::new(None, &token, &app_config);
 //!
 //!     // Use token "latest" to fast forward to latest changes.
-//!     let (_, delta) = client.track_changes(None, Some("latest"))
+//!     let (_, delta) = client.track_changes(Some("latest"))
 //!         .await.unwrap();
 //!
 //!     // Perform some change (e.g. create and write to a file).
@@ -109,7 +109,7 @@
 //!     client.write_to_file(&file.id, buf).await.unwrap();
 //!
 //!     // Fetch changes using latest delta token.
-//!     let (changes, _) = client.track_changes(None, Some(delta.as_str()))
+//!     let (changes, _) = client.track_changes(Some(delta.as_str()))
 //!         .await.unwrap();
 //!
 //!     // Search for the newly uploaded file in the changes.

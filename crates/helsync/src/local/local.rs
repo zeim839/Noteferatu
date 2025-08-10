@@ -505,17 +505,17 @@ INSERT INTO TagBind VALUES
                 migrations: vec![
                     database::Migration {
                         version: 0,
-                        sql: schema::SCHEMA_VERSION_0,
+                        sql: schema::SCHEMA_VERSION_0.to_string(),
                         kind: database::MigrationType::Up,
                     },
                     database::Migration {
                         version: 1,
-                        sql: TESTING_SCHEMA,
+                        sql: TESTING_SCHEMA.to_string(),
                         kind: database::MigrationType::Up,
                     }
                 ]
             }).await.unwrap();
-            Arc::new(LocalFS::new(db))
+            Arc::new(LocalFS::new(Arc::new(db)))
         }).await.clone()
     }
 

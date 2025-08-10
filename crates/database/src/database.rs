@@ -138,12 +138,12 @@ mod tests {
             migrations: vec![
                 Migration {
                     version: 0,
-                    sql: "CREATE TABLE IF NOT EXISTS TestTable (id INTEGER PRIMARY KEY);",
+                    sql: "CREATE TABLE IF NOT EXISTS TestTable (id INTEGER PRIMARY KEY);".to_string(),
                     kind: MigrationType::Up,
                 },
                 Migration {
                     version: 1,
-                    sql: "INSERT INTO TestTable VALUES (0);",
+                    sql: "INSERT INTO TestTable VALUES (0);".to_string(),
                     kind: MigrationType::Up,
                 },
             ],

@@ -13,6 +13,7 @@ pub mod googledrive;
 pub mod oauth2;
 pub mod onedrive;
 pub mod local;
+pub mod sync;
 
 #[cfg(feature = "plugin")]
 pub mod plugin;

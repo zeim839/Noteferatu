@@ -18,15 +18,17 @@ pub const API_ENDPOINT: &str = "https://graph.microsoft.com/v1.0/me/drive";
 pub struct OneDrive {
     client: Client,
     req: Arc<reqwest::Client>,
+    root: String,
 }
 
 impl OneDrive {
 
     /// Instantiate new OneDrive client.
-    pub fn new(token: &Token, config: &Config) -> Self {
+    pub fn new(root: Option<&str>, token: &Token, config: &Config) -> Self {
         Self {
             client: Client::new(token, config),
             req: Arc::new(reqwest::Client::new()),
+            root: root.unwrap_or("helsync").to_string(),
         }
     }
 
@@ -129,14 +131,18 @@ impl Filesystem for OneDrive {
     /// API Reference: [Copy a DriveItem](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_copy?view=odsp-graph-online)
     async fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<DriveItem> {
         let url = format!("{}/items/{}/copy", API_ENDPOINT, source_id);
-        let mut body = serde_json::json!({});
-        if let Some(parent_id) = parent_id {
-            body = serde_json::json!({
+        let mut body = match parent_id {
+            Some(parent) => serde_json::json!({
                 "parentReference": {
-                    "id": parent_id,
+                    "id": parent,
                 }
-            });
-        }
+            }),
+            None => serde_json::json!({
+                "parentReference": {
+                    "path": self.root,
+                }
+            })
+        };
 
         if let Some(name) = name {
             body["name"] = serde_json::Value::String(name.to_string());
@@ -191,19 +197,18 @@ impl Filesystem for OneDrive {
     /// API Reference: [Move](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_move?view=odsp-graph-online)
     async fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<DriveItem> {
         let url = format!("{}/items/{}", API_ENDPOINT, source_id);
-        let mut body = serde_json::json!({
-            "parentReference": {
-                "path": "/drive/root",
-            }
-        });
-
-        if let Some(parent_id) = parent_id {
-            body = serde_json::json!({
+        let mut body = match parent_id {
+            Some(parent) => serde_json::json!({
                 "parentReference": {
-                    "id": parent_id,
+                    "id": parent,
                 }
-            });
-        }
+            }),
+            None => serde_json::json!({
+                "parentReference": {
+                    "path": self.root,
+                }
+            })
+        };
 
         if let Some(new_name) = name {
             body["name"] = serde_json::Value::String(new_name.to_string());
@@ -249,7 +254,7 @@ impl Filesystem for OneDrive {
     async fn create_folder(&self, parent_id: Option<&str>, name: &str) -> Result<DriveItem> {
         let url = match parent_id {
             Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
-            None => format!("{}/root/children", API_ENDPOINT),
+            None => format!("{}/root:/{}:/children", API_ENDPOINT, self.root),
         };
 
         let items = serde_json::json!({
@@ -262,7 +267,8 @@ impl Filesystem for OneDrive {
             .header(AUTHORIZATION, self.client.bearer().await?)
             .json(&items);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req)
+            .await?.error_for_status()?;
 
         let json: Value = res.json().await?;
         let item: DriveItem = from_value(json)?;
@@ -272,14 +278,14 @@ impl Filesystem for OneDrive {
 
     /// Create a new file.
     ///
-    /// Uses the same route as [create_folder] but specifies file
+    /// Uses the same route as [Self::create_folder] but specifies file
     /// metadata instead.
     ///
     /// API Reference: [Create folder](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_post_children?view=odsp-graph-online)
     async fn create_file(&self, parent_id: Option<&str>, name: &str) -> Result<Self::File> {
         let url = match parent_id {
             Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
-            None => format!("{}/root/children", API_ENDPOINT),
+            None => format!("{}/root:/{}:/children", API_ENDPOINT, self.root),
         };
 
         let items = serde_json::json!({
@@ -292,7 +298,8 @@ impl Filesystem for OneDrive {
             .header(AUTHORIZATION, self.client.bearer().await?)
             .json(&items);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
+        let res = self.client.execute_with_retry(req)
+            .await?.error_for_status()?;
 
         let json: Value = res.json().await?;
         let item: DriveItem = from_value(json)?;
@@ -313,7 +320,7 @@ impl Filesystem for OneDrive {
     async fn list_files(&self, id: Option<&str>) -> Result<Vec<DriveItem>> {
         let url = match id {
             Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
-            None => format!("{}/root/children", API_ENDPOINT),
+            None => format!("{}/root:/{}:/children", API_ENDPOINT, self.root),
         };
 
         let req = self.req.clone().get(&url)
@@ -335,13 +342,10 @@ impl Filesystem for OneDrive {
     /// to the latest changes.
     ///
     /// API Reference: [Sync Changes](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_delta?view=odsp-graph-online)
-    async fn track_changes(&self, id: Option<&str>, delta: Option<&str>) -> Result<(Vec<DriveItem>, String)> {
+    async fn track_changes(&self, delta: Option<&str>) -> Result<(Vec<DriveItem>, String)> {
         // Paginated endpoint: initial request.
         let mut changes: Vec<DriveItem> = Vec::new();
-        let url = match id {
-            Some(p) => format!("{}/items/{}/delta", API_ENDPOINT, p),
-            None => format!("{}/root/delta", API_ENDPOINT),
-        };
+        let url = format!("{}/root:/{}:/delta", API_ENDPOINT, self.root);
 
         // Applying a delta omits changes that have already been viewed.
         let url = match delta {
@@ -404,7 +408,6 @@ impl Filesystem for OneDrive {
     async fn read_from_file(&self, id: &str) -> Result<Vec<u8>> {
         let url = format!("{}/items/{}/content", API_ENDPOINT, id);
         let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
-
         let res = self.client.execute_with_retry(req).await?
             .error_for_status()?;
 
@@ -415,12 +418,10 @@ impl Filesystem for OneDrive {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use crate::oauth2;
     use dotenv::dotenv;
     use std::env;
-
     use std::sync::Arc;
     use tokio::sync::OnceCell;
     static TOKEN: OnceCell<Arc<oauth2::Token>> = OnceCell::const_new();
@@ -437,13 +438,12 @@ mod tests {
             .expect("missing ONEDRIVE_REFRESH_TOKEN env variable");
 
         let app_config = oauth2::Config::onedrive(&client_id, &redirect_uri);
-
         let token = TOKEN.get_or_init(|| async {
             let token = oauth2::Token::from_refresh_token(&refresh_token, &app_config).await.unwrap();
             Arc::new(token)
         }).await.clone();
 
-        OneDrive::new(&token, &app_config)
+        OneDrive::new(Some("helsync-test"), &token, &app_config)
     }
 
     #[tokio::test]
@@ -522,14 +522,14 @@ mod tests {
     #[tokio::test]
     async fn test_track_changes() {
         let client = get_test_client().await;
-        let (_, token) = client.track_changes(None, Some("latest"))
+        let (_, token) = client.track_changes(Some("latest"))
             .await.unwrap();
 
         // Make a change.
         let file = client.create_file(None, "helsync-track-changes.txt")
             .await.unwrap();
 
-        let (changes, _) = client.track_changes(None, Some(&token)).await.unwrap();
+        let (changes, _) = client.track_changes(Some(&token)).await.unwrap();
         let find = changes.iter().find(|f| f.id == file.id);
         assert!(find.is_some());
 

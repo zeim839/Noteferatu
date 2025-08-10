@@ -5,7 +5,7 @@ use chrono::DateTime;
 /// The metadata for a file.
 ///
 /// Reference: [Files Resource](https://developers.google.com/workspace/drive/api/reference/rest/v3/files)
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveFile {
 

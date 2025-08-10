@@ -1,11 +1,11 @@
-use crate::filesystem::Delta;
+use crate::filesystem::{File, Delta};
 use super::file::DriveFile;
 use serde::{Deserialize, Serialize};
 
 /// A change to a file or shared drive.
 ///
 /// Reference: [Change Resource](https://developers.google.com/workspace/drive/api/reference/rest/v3/changes)
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveChange {
 
@@ -42,5 +42,18 @@ impl Delta for DriveChange {
 
     fn is_modified(&self) -> bool {
         self.file.is_some()
+    }
+
+    fn modified_at(&self) -> i64 {
+        if let Some(file) = &self.file {
+            if let Some(_) = file.modified_time {
+                return file.modified_at();
+            }
+            if let Some(_) = file.created_time {
+                return file.created_at();
+            }
+            return 0;
+        }
+        return 0;
     }
 }
