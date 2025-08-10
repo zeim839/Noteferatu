@@ -10,6 +10,8 @@ import {
   BookmarkIcon,
   FilesIcon,
   GroupIcon,
+  ArrowDownAZIcon,
+  ListOrderedIcon
 } from "lucide-react"
 
 import {
@@ -17,7 +19,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/core/select"
 
 import {
@@ -73,28 +74,30 @@ function ExplorerHeader() {
               <ArrowDownWideNarrowIcon strokeWidth={1.6} />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-[130px] p-2 flex flex-col gap-2">
+          <PopoverContent className="w-30 p-0 flex flex-col">
             <Select
-              defaultValue={explorer.sortFileKey() as string}
+              value={explorer.sortFileKey() as string}
               onValueChange={(value) => explorer.setSortFileKey(value as SortFileKey)}
             >
-              <SelectTrigger className="w-full text-xs" size="sm">
-                <SelectValue placeholder="Sort By"/>
+              <SelectTrigger className="w-full text-xs shadow-none border-none py-0.5 px-2" size="sm">
+                <ArrowDownAZIcon className="size-3" />
+                <span>Sort by</span>
               </SelectTrigger>
-              <SelectContent className="bg-[#EDF0F4]">
+              <SelectContent className="bg-[#EDF0F4]" side="right">
                 <SelectItem value="name">File Name</SelectItem>
                 <SelectItem value="createdAt">Date Created</SelectItem>
                 <SelectItem value="modifiedAt">Date Modified</SelectItem>
               </SelectContent>
             </Select>
             <Select
-              defaultValue={explorer.sortFileAsc() ? "asc" : "des"}
+              value={explorer.sortFileAsc() ? "asc" : "des"}
               onValueChange={(value) => explorer.setSortFileAsc(value === "asc")}
             >
-              <SelectTrigger className="w-full text-xs" size="sm">
-                <SelectValue placeholder="Order"/>
+              <SelectTrigger className="w-full text-xs shadow-none border-none py-0.5 px-2" size="sm">
+                <ListOrderedIcon className="size-3" />
+                <span>Order by</span>
               </SelectTrigger>
-              <SelectContent className="bg-[#EDF0F4]">
+              <SelectContent className="bg-[#EDF0F4]" side="right">
                 <SelectItem value="asc">Ascending</SelectItem>
                 <SelectItem value="des">Descending</SelectItem>
               </SelectContent>
