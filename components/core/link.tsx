@@ -12,7 +12,7 @@ function Link({ href, children, className }: LinkProps) {
     <a
       onClick={() => openUrl(href)}
       className={cn(
-        "inline-flex items-center w-fit gap-1 text-[#007AFF] hover:text-[#23B0FF]",
+        "inline-flex items-center w-fit gap-1 text-[#007AFF] hover:underline",
         className,
       )}
     >

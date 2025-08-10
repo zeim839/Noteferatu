@@ -8,8 +8,8 @@ interface MessageProps extends React.ComponentProps<"div"> {
 function Message({ data }: MessageProps) {
   if (data.role === "user") {
     return (
-      <div className="flex justify-end my-6 mx-2 text-sm">
-        <div className="p-2 border border-[#ABB0BE] bg-[#E5E9EF] rounded-sm shadow-sm select-text cursor-text">
+      <div className="flex my-6 mx-2 text-sm">
+        <div className="p-2 w-full border border-[#AEB3C0] bg-[#EDF0F4] rounded-sm shadow-xs select-text cursor-text">
           <p className="whitespace-pre-wrap">{data.content}</p>
         </div>
       </div>

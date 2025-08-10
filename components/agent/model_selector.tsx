@@ -16,7 +16,7 @@ function ModelSelector() {
     ctx.toggleSettings()
   }
 
-  // Populates the LLM model selector with models, grouped by
+  // Populates the model selector with models, grouped by
   // their providers.
   const modelGroups = () => {
     const models = ctx.models
@@ -52,10 +52,13 @@ function ModelSelector() {
       <Combobox.Trigger>
         <Button
           variant="outline"
-          className="group/model-selector flex items-center gap-1.5 px-2 h-6 rounded-sm"
+          tooltip="Select Model"
+          className="flex h-6 w-min px-1 max-w-30 items-center rounded-sm bg-[#D4D8E1] shadow-xs hover:bg-[#ABB0BE]"
         >
-          <CrosshairIcon strokeWidth={1.6} />
-          <span className={`text-xs whitespace-nowrap overflow-hidden text-ellipsis transition-all duration-300 ${ctx.isModelSelectorOpen ? 'max-w-[150px]' : 'max-w-0 group-hover/model-selector:max-w-[150px]'}`}>
+          <CrosshairIcon strokeWidth={1.6} className="flex-shrink-0" />
+          <span
+            className="overflow-hidden text-ellipsis whitespace-nowrap text-xs"
+          >
             {ctx.selectedModel?.displayName || "No Model Selected"}
           </span>
         </Button>

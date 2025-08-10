@@ -10,6 +10,7 @@ import { Message } from "./message"
 import { Channel } from "@tauri-apps/api/core"
 import { MessageLoadingIndicator } from "./indicator"
 import { ModelSelector } from "./model_selector"
+import { TokenInfo } from "./token"
 
 import {
   Message as MessageData,
@@ -28,14 +29,6 @@ import {
   PlusIcon,
   SquareIcon,
 } from "lucide-react"
-
-// Converts a token count into a string. If less than 1000, then
-// `tokens` is returned, otherwise truncate and add a 'k' prefix.
-const tokenStr = (tokens: number) => {
-  return tokens < 1000
-    ? tokens.toString()
-    : (tokens / 1000).toFixed(tokens % 1000 == 0 ? 0 : 1).toString() + "K"
-}
 
 // Agent is the parent element of the chat sidebar.
 function Agent() {
@@ -131,6 +124,8 @@ function Agent() {
     if (inputValue.trim() && conversation === null) {
       createConversation("New Conversation")
         .then((conversation) => {
+          // (STUPID) HACK: sets a delay of 100ms, allowing the new
+          // conversation to be created and the component state to update.
           ctx.setSelectedConv(conversation)
           setTimeout(() => {sendMessage(conversation.id)}, 100)
         })
@@ -154,7 +149,7 @@ function Agent() {
   }
 
   return (
-    <div className="w-full min-w-[250px] h-full flex flex-col">
+    <div className="w-full min-w-70 h-full flex flex-col">
       <Sidebar.Header className="flex flex-row justify-between items-center px-1 w-full min-h-[29px] z-1">
         <Button
           tooltip="Choose Conversation"
@@ -183,8 +178,18 @@ function Agent() {
             size="icon"
             tooltip="New Conversation"
             onClick={() => {
+              // Stop streaming before changing.
+              if (ctx.selectedConv !== null) {
+                stopMessages(ctx.selectedConv.id).then(() => {
+                  ctx.setSelectedConv(null)
+                  ctx.setConvsOpen(false)
+                  setLatestRes(null)
+                })
+                return
+              }
               ctx.setSelectedConv(null)
               ctx.setConvsOpen(false)
+              setLatestRes(null)
             }}
           >
             <PlusIcon strokeWidth={1.6} />
@@ -241,7 +246,10 @@ function Agent() {
           />
         </div>
         <div className="flex flex-row items-center justify-between">
-          <ModelSelector />
+          <div className="flex flex-row items-center gap-1">
+            <ModelSelector />
+            <TokenInfo />
+          </div>
           <div className="flex items-center gap-1">
             {
               (!isStreaming) ?
@@ -249,7 +257,7 @@ function Agent() {
                   variant="outline"
                   size="icon"
                   tooltip="Send Message"
-                  disabled={ctx.selectedModel === null || !inputValue.trim()}
+                  className="bg-[#D4D8E1] hover:bg-[#ABB0BE] shadow-xs rounded-sm"
                   onClick={handleSendMessage}
                 >
                   <SendHorizontalIcon strokeWidth={1.6} />
@@ -258,7 +266,7 @@ function Agent() {
                   variant="outline"
                   size="icon"
                   tooltip="Stop Message"
-                  className="text-red-600"
+                  className="bg-red-300 text-red-500 hover:bg-red-300 animate-pulse"
                   onClick={() => {
                     const conversation = ctx.selectedConv
                     if (conversation !== null) {
@@ -266,7 +274,7 @@ function Agent() {
                     }
                   }}
                 >
-                  <SquareIcon strokeWidth={1.6} />
+                  <SquareIcon fill="currentColor" strokeWidth={1.6} />
                 </Button>
             }
           </div>
