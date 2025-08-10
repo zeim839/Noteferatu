@@ -84,3 +84,11 @@ pub(crate) async fn list_messages<R: Runtime>(
 ) -> Result<Vec<Message>> {
     app.agent().list_messages(conversation_id).await
 }
+
+#[command]
+pub(crate) async fn stop_messages<R: Runtime>(
+    app: AppHandle<R>,
+    conversation_id: i64,
+) -> Result<()> {
+    app.agent().stop_messages(conversation_id).await
+}

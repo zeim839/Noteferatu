@@ -13,6 +13,7 @@ Default permissions for the plugin
 - `allow-send-message`
 - `allow-send-stream-message`
 - `allow-list-messages`
+- `allow-stop-messages`
 
 ## Permission Table
 
@@ -227,6 +228,32 @@ Enables the send_stream_message command without any pre-configured scope.
 <td>
 
 Denies the send_stream_message command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-stop-messages`
+
+</td>
+<td>
+
+Enables the stop_messages command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-stop-messages`
+
+</td>
+<td>
+
+Denies the stop_messages command without any pre-configured scope.
 
 </td>
 </tr>

@@ -49,6 +49,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::send_message,
             commands::send_stream_message,
             commands::list_messages,
+            commands::stop_messages,
         ])
         .setup(|app, api| {
             let setup = async || {

@@ -55,7 +55,7 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     removeConversation(id)
-    if (selectedConv()?.id === id) {
+    if (selectedConv?.id === id) {
       setSelectedConv(null)
     }
     setIsBeingDeleted(false)

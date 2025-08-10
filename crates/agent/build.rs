@@ -9,6 +9,7 @@ const COMMANDS: &[&str] = &[
     "send_message",
     "send_stream_message",
     "list_messages",
+    "stop_messages",
 ];
 
 fn main() {

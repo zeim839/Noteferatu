@@ -115,4 +115,12 @@ impl<R: Runtime> Agent<R> {
 
         Ok(messages)
     }
+
+    /// Stop all chat completion requests.
+    pub async fn stop_messages(&self, conversation_id: i64) -> Result<()> {
+        self.manager.get_conversation(conversation_id).await?
+            .stop_messages().await;
+
+        Ok(())
+    }
 }

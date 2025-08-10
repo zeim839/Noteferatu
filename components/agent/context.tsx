@@ -14,44 +14,48 @@ export type AgentContextType = {
 
   // Control the conversation history subpanel. The conversation and
   // settings sidepanels should never be open simultaneously.
-  isConvsOpen: () => boolean
+  isConvsOpen: boolean
   setConvsOpen: (open: boolean) => void
   toggleConvs: () => void,
 
   // Control the number of tokens used by the current conversation.
-  tokensUsed: () => number
+  tokensUsed: number
   setTokensUsed: (usage: number) => void
 
   // Control the number of tokens that fit into the current model's
   // context window
-  totalTokens: () => number
+  totalTokens: number
   setTotalTokens: (total: number) => void
 
   // Whether the settings subpanel is open. The conversation and settings
   // sidepanels should never be open simultaneously
-  isSettingsOpen: () => boolean
+  isSettingsOpen: boolean
   setSettingsOpen: (open: boolean) => void
   toggleSettings: () => void
 
   // Control the LLM models available to the user.
-  models: () => Record<string, Array<Model>>
+  models: Record<string, Array<Model>>
   setModels: (provider: string, models: Array<Model>) => void
 
   // Control the selected model.
-  selectedModel: () => Model | null
+  selectedModel: Model | null
   setSelectedModel: (model: Model | null) => void
 
   // Control the conversation history.
-  convHistory: () => Array<Conversation>
+  convHistory: Array<Conversation>
   setConvHistory: (convs: Array<Conversation>) => void
 
   // Control the currently selected conversation.
-  selectedConv: () => Conversation | null
+  selectedConv: Conversation | null
   setSelectedConv: (conv: Conversation | null) => void
 
   // Conversation messages.
-  messages: () => Array<Message>
+  messages: Array<Message>
   setMessages: (messages: Array<Message>) => void
+
+  // Control whether the model selector popover is open.
+  isModelSelectorOpen: boolean
+  setIsModelSelectorOpen: (open: boolean) => void
 }
 
 // Implements AgentContextType.
@@ -68,6 +72,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [convHistory, setConvHistory] = React.useState<Conversation[]>([])
   const [selectedConv, setSelectedConv] = React.useState<Conversation | null>(null)
   const [messages, setMessages] = React.useState<Array<Message>>([])
+  const [isModelSelectorOpen, setIsModelSelectorOpen] = React.useState<boolean>(false)
 
   // Fetch conversation history.
   React.useEffect(() => {
@@ -95,7 +100,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   }, [selectedConv])
 
   const context: AgentContextType = {
-    isConvsOpen: () => { return isConvsOpen },
+    isConvsOpen,
     setConvsOpen: (open) => setConvsOpen(open),
     toggleConvs: () => {
       setConvsOpen(!isConvsOpen)
@@ -104,13 +109,13 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
       }
     },
 
-    tokensUsed: () => { return tokensUsed },
+    tokensUsed,
     setTokensUsed: (usage) => setTokensUsed(usage),
 
-    totalTokens: () => { return totalTokens },
+    totalTokens,
     setTotalTokens: (total) => setTotalTokens(total),
 
-    isSettingsOpen: () => { return isSettingsOpen },
+    isSettingsOpen,
     setSettingsOpen: (open) => setSettingsOpen(open),
     toggleSettings: () => {
       setSettingsOpen(!isSettingsOpen)
@@ -119,7 +124,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
       }
     },
 
-    models: () => { return models },
+    models,
     setModels: (provider, models) => {
       if (models.length == 0) {
         setModels((prev) => {
@@ -132,17 +137,20 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
       setModels((prev) => ({ ...prev, [provider]: models}))
     },
 
-    selectedModel: () => { return selectedModel },
+    selectedModel,
     setSelectedModel: (model) => setSelectedModel(model),
 
-    convHistory: () => { return convHistory },
+    convHistory,
     setConvHistory: (convs) => setConvHistory(convs),
 
-    selectedConv: () => { return selectedConv },
+    selectedConv,
     setSelectedConv: (conv) => setSelectedConv(conv),
 
-    messages: () => { return messages },
-    setMessages: (msgs) => setMessages(msgs)
+    messages,
+    setMessages: (msgs) => setMessages(msgs),
+
+    isModelSelectorOpen,
+    setIsModelSelectorOpen: (open: boolean) => setIsModelSelectorOpen(open),
   }
 
   return (

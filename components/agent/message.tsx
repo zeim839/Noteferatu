@@ -19,7 +19,7 @@ function Message({ data }: MessageProps) {
   if (data.role === "assistant") {
     return (
       <div className="flex justify-start my-4 mx-2 text-sm">
-        <div className="whitespace-pre-wrap cursor-text select-text">{ data.content }</div>
+        <div className="whitespace-pre-wrap cursor-text select-text">{data.content}</div>
       </div>
     )
   }

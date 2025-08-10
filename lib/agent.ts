@@ -213,3 +213,10 @@ export async function listMessages(conversationId: number): Promise<Array<Messag
     conversationId
   })
 }
+
+// Stop all chat completion requests for a conversation.
+export async function stopMessages(conversationId: number): Promise<void> {
+  return await invoke("plugin:agent|stop_messages", {
+    conversationId
+  })
+}

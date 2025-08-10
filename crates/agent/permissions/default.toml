@@ -9,5 +9,6 @@ permissions = [
     "allow-remove-conversation",
     "allow-send-message",
     "allow-send-stream-message",
-    "allow-list-messages"
+    "allow-list-messages",
+    "allow-stop-messages"
 ]
