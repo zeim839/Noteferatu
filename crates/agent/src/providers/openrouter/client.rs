@@ -1,6 +1,7 @@
-use crate::providers::openai::{Response, Request, OpenAIError};
+use crate::providers::openai::{Response, OpenAIError};
 use crate::providers::openai::Client as OAI;
 use crate::core::{Result, Error};
+use super::request::Request;
 use super::model::Model;
 use crate::core;
 
@@ -28,7 +29,7 @@ impl Client {
         // Build HTTP client.
         let client = reqwest::Client::builder()
             .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(10))
+            .timeout(Duration::from_secs(30))
             .default_headers(headers)
             .build().unwrap();
 
@@ -146,7 +147,7 @@ mod tests {
     async fn test_completion() {
         let client = get_test_client();
         let req = Request::from_prompt(TEST_MODEL, "hi")
-            .with_max_completion_tokens(Some(5));
+            .with_max_tokens(Some(5));
 
         let res = client.completion(req).await.unwrap();
         assert!(res.usage.as_ref().unwrap().completion_tokens <= 5);
@@ -161,7 +162,7 @@ mod tests {
     async fn test_stream_completion() {
         let client = get_test_client();
         let req = Request::from_prompt(TEST_MODEL, "Hello")
-            .with_max_completion_tokens(Some(5));
+            .with_max_tokens(Some(5));
 
         let mut has_response = false;
         client.stream_completion(req, |_| { has_response = true; })

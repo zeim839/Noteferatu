@@ -18,7 +18,6 @@
 //! ### Non-Streaming
 //! ```no_run
 //! use agent::providers::openrouter::*;
-//! use agent::providers::openai::Request;
 //! use agent::core::Client as _;
 //!
 //! #[tokio::main]
@@ -34,7 +33,6 @@
 //! ### Streaming
 //! ```no_run
 //! use agent::providers::openrouter::*;
-//! use agent::providers::openai::Request;
 //! use agent::core::Client as _;
 //!
 //! #[tokio::main]
@@ -53,3 +51,6 @@ pub use client::*;
 
 mod model;
 pub use model::*;
+
+mod request;
+pub use request::*;

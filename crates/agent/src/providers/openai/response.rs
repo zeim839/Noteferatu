@@ -1,9 +1,10 @@
 use serde::{Serialize, Deserialize};
-use crate::core::{Usage, self};
 use super::message::*;
+use crate::core;
 
 /// Response to a chat completion [Request](super::Request).
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct Response {
 
     /// A list of chat completion choices.
@@ -28,19 +29,22 @@ impl Into<core::Response> for Response {
         let mut messages = Vec::new();
 
         for choice in self.choices {
-            // A choice will have either a `message` (for non-streaming) or a `delta` (for streaming).
+            // A choice will have either a `message` (for
+            // non-streaming) or a `delta` (for streaming).
             let message = choice.message.or(choice.delta);
 
             if let Some(msg) = message {
                 let role = msg.role.unwrap_or(core::Role::Assistant);
 
-                // A message from the assistant can contain both text and tool calls.
-                // The text content might be in `content`.
+                // A message from the assistant can contain both text
+                // and tool calls. The text content might be in
+                // `content`.
                 if let Some(content) = msg.content {
                     match content {
                         Content::Text(text) => {
-                            // In streaming, an empty text content can be sent.
-                            // We only create a message if there is text.
+                            // In streaming, an empty text content can
+                            // be sent. We only create a message if
+                            // there is text.
                             if !text.is_empty() {
                                 messages.push(core::Message {
                                     role: role.clone(),
@@ -48,7 +52,8 @@ impl Into<core::Response> for Response {
                                 });
                             }
                         }
-                        // The core::Message doesn't support multimodal content yet.
+                        // The core::Message doesn't support
+                        // multimodal content yet.
                         Content::Content(_) => {}
                     }
                 }
@@ -59,11 +64,14 @@ impl Into<core::Response> for Response {
                         messages.push(core::Message {
                             role: role.clone(),
                             content: core::MessageContent::ToolCall(core::ToolCall {
-                                // In streaming, the id can be None initially, but we need an id.
+                                // In streaming, the id can be None
+                                // initially, but we need an id.
                                 id: tool_call.id.unwrap_or_default(),
                                 name: tool_call.function.name,
-                                // Arguments can be a partial JSON string during streaming.
-                                // It's up to the consumer to handle this.
+
+                                // Arguments can be a partial JSON
+                                // string during streaming. It's up to
+                                // the consumer to handle this.
                                 arguments: tool_call.function.arguments,
                             }),
                         });
@@ -74,11 +82,12 @@ impl Into<core::Response> for Response {
 
         core::Response {
             messages,
-            usage: self.usage.unwrap_or_default(),
+            usage: self.usage.unwrap_or_default().into(),
         }
     }
 }
 
+/// A list of chat completion choices.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Choice {
 
@@ -118,4 +127,34 @@ pub enum FinishReason {
 
     /// `function_call` (deprecated) if the model called a function.
     FunctionCall,
+}
+
+/// Usage statistics for the completion.
+///
+/// Same as [crate::core::Usage] except all fields are deserialized to
+/// `snake_case`.
+///
+/// API Reference: [Chat Completion Object](https://platform.openai.com/docs/api-reference/chat/object)
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct Usage {
+
+    /// Number of tokens in the prompt.
+    pub prompt_tokens: i64,
+
+    /// Number of tokens in the generated completion.
+    pub completion_tokens: i64,
+
+    /// Total number of tokens used in the request (prompt + completion).
+    pub total_tokens: i64,
+}
+
+impl Into<core::Usage> for Usage {
+    fn into(self) -> core::Usage {
+        core::Usage {
+            prompt_tokens: self.prompt_tokens,
+            completion_tokens: self.completion_tokens,
+            total_tokens: self.total_tokens,
+        }
+    }
 }

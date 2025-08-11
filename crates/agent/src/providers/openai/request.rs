@@ -19,7 +19,7 @@ pub struct Request {
     /// An upper bound for the number of tokens that can be generated
     /// for a completion, including visible output tokens and
     /// reasoning tokens.
-    #[serde(skip_serializing_if = "Option::is_none", alias = "max_tokens")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub max_completion_tokens: Option<i64>,
 
     /// If set to true, the model response data will be streamed to
@@ -27,16 +27,27 @@ pub struct Request {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream: Option<bool>,
 
-    /// A list of tools the model may call. Currently, only functions
-    /// are supported as a tool. Use this to provide a list of
-    /// functions the model may generate JSON inputs for. A max of 128
-    /// functions are supported.
+    /// A list of tools the model may call.
+    ///
+    /// Currently, only functions are supported as a tool. Use this to
+    /// provide a list of functions the model may generate JSON inputs
+    /// for. A max of 128 functions are supported.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub tools: Option<Vec<ToolDefinition>>,
 
     /// Whether a model's response may include multiple tool calls.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parallel_tool_calls: Option<bool>,
+}
+
+/// Reasoning effort setting.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ReasoningEffort {
+    Low,
+    #[default]
+    Medium,
+    High,
 }
 
 impl Request {
@@ -152,9 +163,7 @@ impl From<core::Request> for Request {
             }
         }
 
-        let tools = if value.tools.is_empty() {
-            None
-        } else {
+        let tools = if value.tools.len() > 0 {
             Some(value.tools.into_iter().map(|t| ToolDefinition {
                 kind: "function".to_string(),
                 function: FunctionDefinition {
@@ -164,7 +173,7 @@ impl From<core::Request> for Request {
                     strict: None,
                 },
             }).collect())
-        };
+        } else { None };
 
         Self {
             model: value.model,

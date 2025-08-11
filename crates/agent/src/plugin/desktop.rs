@@ -59,6 +59,21 @@ impl<R: Runtime> Agent<R> {
             models = models.into_iter()
                 .filter(|item| item.provider == provider)
                 .collect();
+
+            // Remove non-text models from certain providers.
+            if provider.to_lowercase() == "anthropic" {
+                models = models.into_iter()
+                    .filter(|item| item.id.starts_with("claude"))
+                    .collect();
+            }
+
+            if provider.to_lowercase() == "google" {
+                models = models.into_iter()
+                    .filter(|item| item.id.starts_with("gemini") ||
+                            item.id.starts_with("gemma"))
+                    .collect();
+            }
+
         }
         Ok(models)
     }

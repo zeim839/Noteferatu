@@ -106,6 +106,7 @@ impl Context {
         let agent_req = Request { messages: agent_req_messages, ..req.clone() };
         let mut completed_messages: Vec<Message> = Vec::new();
         let mut accumulated_message: Option<Message> = None;
+        let mut usage = Usage::default();
         let agent = self.agent.read().await;
 
         // Wait for either the kill signal or the chat completion to
@@ -114,7 +115,20 @@ impl Context {
         tokio::select! {
             _ = agent.stream_completion(agent_req, |event| {
                 cb(event.clone());
+
+                // Accumulate usage information.
+                if event.usage.prompt_tokens > 0 {
+                    usage.prompt_tokens = event.usage.prompt_tokens;
+                }
+                usage.completion_tokens += event.usage.completion_tokens;
+                usage.total_tokens = usage.prompt_tokens + usage.completion_tokens;
+
+                // Accumulate message contents.
                 for msg in event.messages {
+
+                    // A new message starts when the streamed response
+                    // has a different message content type than the
+                    // current message.
                     let new_msg_starts =
                         if let Some(acc_msg) = &accumulated_message {
                             if mem::discriminant(&acc_msg.content) == mem::discriminant(&msg.content) {
@@ -126,6 +140,10 @@ impl Context {
                             true
                         };
 
+                    // If the streamed response has the same content
+                    // type, then accumulate `accumulated_message`.
+                    // Otherwise, save `accumulated_message` to
+                    // `completed_messages` and create a new message.
                     if new_msg_starts {
                         if let Some(complete_msg) = accumulated_message.take() {
                             completed_messages.push(complete_msg);
@@ -164,6 +182,7 @@ impl Context {
 
         let mut res = Response::default();
         res.messages = completed_messages;
+        res.usage = usage;
 
         Ok(res)
     }
