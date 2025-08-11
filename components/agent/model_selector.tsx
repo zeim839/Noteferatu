@@ -31,6 +31,7 @@ function ModelSelector() {
                 value={`${model.provider}/${model.id}`}
                 onSelect={() => {
                   ctx.setSelectedModel(model)
+                  ctx.setTotalTokens(model.contextSize)
                   ctx.setIsModelSelectorOpen(false)
                 }}
               >

@@ -90,6 +90,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
 
   // Fetch messages history for the currently-selected conversation.
   React.useEffect(() => {
+    setTokensUsed(0)
     if (selectedConv === null) {
       setMessages([])
       return

@@ -87,6 +87,7 @@ function Agent() {
           role: 'assistant',
           content: (prev?.content ?? "") + chunk
         }))
+        ctx.setTokensUsed(ctx.tokensUsed + event.data.usage.completionTokens)
       }
     }
 
@@ -99,6 +100,9 @@ function Agent() {
         tools: [],
       }, onEvent)
       .then((res) => {
+        if (res.usage.totalTokens > 0) {
+          ctx.setTokensUsed(res.usage.totalTokens)
+        }
         setLatestRes(res.messages[0])
       })
       .catch((err: AgentError) => {
@@ -117,11 +121,11 @@ function Agent() {
   // current message history.
   const handleSendMessage = () => {
     let conversation = ctx.selectedConv
-    if (inputValue.trim() && conversation !== null) {
+    if (!isStreaming && inputValue.trim() && conversation !== null) {
       sendMessage(conversation.id)
     }
 
-    if (inputValue.trim() && conversation === null) {
+    if (!isStreaming && inputValue.trim() && conversation === null) {
       createConversation("New Conversation")
         .then((conversation) => {
           // (STUPID) HACK: sets a delay of 100ms, allowing the new
@@ -266,7 +270,7 @@ function Agent() {
                   variant="outline"
                   size="icon"
                   tooltip="Stop Message"
-                  className="bg-red-300 text-red-500 hover:bg-red-300 animate-pulse"
+                  className="bg-red-300 text-red-500 hover:bg-red-300 animate-pulse size-6"
                   onClick={() => {
                     const conversation = ctx.selectedConv
                     if (conversation !== null) {
