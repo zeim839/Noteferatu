@@ -48,31 +48,39 @@ impl Context {
         *cancel_guard = Some(tx);
         drop(cancel_guard);
 
-        let mut agent_req_messages = self.list_messages().await?;
-        agent_req_messages.extend(req.messages.clone());
+        // New user message must be saved in case chat completion fails.
+        if req.messages.len() > 0 {
+            let mut conn = self.db.acquire().await?;
+            let mut builder = QueryBuilder::new("INSERT INTO
+        Message(conv_id, object) ");
+            builder.push_values(req.messages.clone(), |mut b, msg| {
+                b.push_bind(self.conv.id)
+                    .push_bind(json!(msg).to_string());
+            });
+            builder.build().execute(&mut *conn).await?;
+            drop(conn);
+        }
+
+        let mut context = self.list_messages().await?;
+        context.extend(req.messages.clone());
 
         let agent = self.agent.read().await;
-        let agent_req = Request { messages: agent_req_messages, ..req.clone() };
+        let req = Request { messages: context, ..req.clone() };
 
         // Wait for either the kill signal or the chat completion to
         // finish. If the kill signal arrives first, the chat
         // completion is dropped.
         let result = tokio::select! {
-            res = agent.completion(agent_req) => res.map(Some),
+            res = agent.completion(req) => res.map(Some),
             _ = rx => Ok(None),
         };
 
         match result {
             Ok(Some(res)) => {
-                let all_new_messages: Vec<Message> = req.messages
-                    .into_iter()
-                    .chain(res.messages.clone().into_iter())
-                    .collect();
-
-                if !all_new_messages.is_empty() {
+                if !res.messages.is_empty() {
                     let mut conn = self.db.acquire().await?;
                     let mut builder = QueryBuilder::new("INSERT INTO Message (conv_id, object) ");
-                    builder.push_values(all_new_messages, |mut b, message| {
+                    builder.push_values(res.messages.clone(), |mut b, message| {
                         b.push_bind(self.conv.id)
                          .push_bind(json!(message).to_string());
                     });
@@ -86,6 +94,9 @@ impl Context {
     }
 
     /// Send a streaming message to the conversation thread.
+    ///
+    /// If `req` is `None`, no new messages are added to the message
+    /// history. This is useful when retrying failed requests.
     pub async fn send_stream_message<F>(&self, req: Request, mut cb: F) -> Result<Response>
     where F: FnMut(Response) {
         let mut cancel_guard = self.cancel.lock().await;
@@ -100,10 +111,23 @@ impl Context {
         *cancel_guard = Some(tx);
         drop(cancel_guard);
 
-        let mut agent_req_messages = self.list_messages().await?;
-        agent_req_messages.extend(req.messages.clone());
+        // New user message must be saved in case chat completion fails.
+        if req.messages.len() > 0 {
+            let mut conn = self.db.acquire().await?;
+            let mut builder = QueryBuilder::new("INSERT INTO
+        Message(conv_id, object) ");
+            builder.push_values(req.messages.clone(), |mut b, msg| {
+                b.push_bind(self.conv.id)
+                    .push_bind(json!(msg).to_string());
+            });
+            builder.build().execute(&mut *conn).await?;
+            drop(conn);
+        }
 
-        let agent_req = Request { messages: agent_req_messages, ..req.clone() };
+        let mut context = self.list_messages().await?;
+        context.extend(req.messages.clone());
+
+        let req = Request { messages: context, ..req.clone() };
         let mut completed_messages: Vec<Message> = Vec::new();
         let mut accumulated_message: Option<Message> = None;
         let mut usage = Usage::default();
@@ -112,8 +136,8 @@ impl Context {
         // Wait for either the kill signal or the chat completion to
         // finish. If the kill signal arrives first, the chat
         // completion is dropped.
-        tokio::select! {
-            res = agent.stream_completion(agent_req, |event| {
+        let final_res = tokio::select! {
+            res = agent.stream_completion(req, |event| {
                 cb(event.clone());
 
                 // Accumulate usage information.
@@ -155,23 +179,19 @@ impl Context {
                         }
                     }
                 }
-            }) => { res? }
-            _ = rx => {}
-        }
+            }) => res.map(Some),
+            _ = rx => { Ok(None) }
+        };
 
         if let Some(last_msg) = accumulated_message.take() {
             completed_messages.push(last_msg);
         }
 
-        let all_new_messages: Vec<Message> = req.messages
-            .into_iter()
-            .chain(completed_messages.clone().into_iter())
-            .collect();
-
-        if !all_new_messages.is_empty() {
+        let messages: Vec<Message> = completed_messages.clone();
+        if !messages.is_empty() {
             let mut conn = self.db.acquire().await?;
             let mut builder = QueryBuilder::new("INSERT INTO Message (conv_id, object) ");
-            builder.push_values(all_new_messages, |mut b, message| {
+            builder.push_values(messages, |mut b, message| {
                 b.push_bind(self.conv.id)
                     .push_bind(json!(message).to_string());
             });
@@ -182,7 +202,11 @@ impl Context {
         res.messages = completed_messages;
         res.usage = usage;
 
-        Ok(res)
+        match final_res {
+            Ok(Some(_)) => Ok(res),
+            Ok(None) => Ok(res),
+            Err(e) => Err(e),
+        }
     }
 
     /// Retrieve all messages in the
@@ -195,6 +219,11 @@ impl Context {
             .await?;
 
         Ok(msgs.into_iter().map(Into::into).collect())
+    }
+
+    /// Replace an existing message, deleting all subsequent messages.
+    pub async fn update_message(&self, id: i64, message: Message) -> Result<()> {
+        unimplemented!();
     }
 }
 
