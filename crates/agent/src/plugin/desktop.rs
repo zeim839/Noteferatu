@@ -74,6 +74,14 @@ impl<R: Runtime> Agent<R> {
                     .collect();
             }
 
+            if provider.to_lowercase() == "openai" {
+                models = models.into_iter()
+                    .filter(|item| item.id.starts_with("chatgpt") ||
+                            item.id.starts_with("gpt") ||
+                            item.id.starts_with("o3") ||
+                            item.id.starts_with("o4"))
+                    .collect();
+            }
         }
         Ok(models)
     }

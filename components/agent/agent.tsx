@@ -241,8 +241,8 @@ function Agent() {
       </div>
 
       {/* Message History */}
-      <div className="flex-1 w-full overflow-y-auto max-h-[calc(100vh-35px-30px-150px)]">
-        {ctx.messages.map((msg, index) => <Message key={index} data={msg}/>)}
+      <div className="flex-1 w-full overflow-y-auto max-h-[calc(100vh-35px-30px-150px)] break-words">
+        {ctx.messages.map((msg, index) => <Message key={index} data={msg} />)}
         {isStreaming && !latestRes && (<MessageLoadingIndicator />)}
         {latestRes && <Message data={latestRes} />}
         <div ref={messagesEndRef} />

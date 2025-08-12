@@ -51,7 +51,7 @@ function ErrorCard({ error, onRetry, className, ...props }: ErrorCardProps) {
           <ChevronRightIcon
             data-is-expanded={isExpanded}
             strokeWidth={2}
-            className="size-4 transition-all data-[is-expanded=true]:rotate-90"
+            className="size-4 min-w-4 min-h-4 transition-all data-[is-expanded=true]:rotate-90"
           />
           <p className="font-bold text-red-900 truncate">{title}</p>
         </div>
@@ -78,7 +78,13 @@ function ErrorCard({ error, onRetry, className, ...props }: ErrorCardProps) {
       </div>
 
       { /* Expandable Error Description */ }
-      {(isExpanded) ? <div className="mt-2"> {description}</div> : null}
+      {(isExpanded) ?
+        <div className="mt-2 wrap-break-word">
+          <p>{title}</p>
+          <br/>
+          <p>{description}</p>
+        </div> : null
+      }
 
     </div>
   )

@@ -1,6 +1,5 @@
 import * as React from "react"
 
-import { CrosshairIcon } from "lucide-react"
 import { Combobox } from "@/components/core/combobox"
 import { Button } from "@/components/core/button"
 import { useAgentContext } from "./context"
@@ -54,9 +53,8 @@ function ModelSelector() {
         <Button
           variant="outline"
           tooltip="Select Model"
-          className="flex h-6 w-min px-1 max-w-30 items-center rounded-sm bg-[#D4D8E1] shadow-xs hover:bg-[#ABB0BE]"
+          className="h-6 w-min px-1 max-w-25 rounded-sm bg-[#D4D8E1] shadow-xs hover:bg-[#ABB0BE]"
         >
-          <CrosshairIcon strokeWidth={1.6} className="flex-shrink-0" />
           <span
             className="overflow-hidden text-ellipsis whitespace-nowrap text-xs"
           >
