@@ -20,9 +20,9 @@ impl Client {
     /// Create a new Ollama API client.
     pub fn new(endpoint: &str) -> Self {
         let client = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(5))
+            .connect_timeout(Duration::from_secs(30))
             // Higher timeout: models may take a while to load.
-            .timeout(Duration::from_secs(120))
+            .read_timeout(Duration::from_secs(120))
             .build().unwrap();
 
         let endpoint = format!("{endpoint}/api");
@@ -74,18 +74,25 @@ impl core::Client for Client {
         let res = self.client.post(format!("{}/chat", self.endpoint))
             .json(&req).send().await?;
 
-        let mut buffer = String::new();
-        let mut stream = res.bytes_stream();
-
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            buffer.push_str(&String::from_utf8_lossy(&chunk));
-            while let Some(event) = Self::parse_event(&mut buffer) {
-                cb(event);
+        if res.status().is_success() {
+            let mut buffer = String::new();
+            let mut stream = res.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk?;
+                buffer.push_str(&String::from_utf8_lossy(&chunk));
+                while let Some(event) = Self::parse_event(&mut buffer) {
+                    cb(event);
+                }
             }
+            return Ok(());
         }
 
-        Ok(())
+        let json: Value = res.json().await?;
+        let err = json.get("error")
+            .ok_or(Error::Json("expected \"error\" field".to_string()))?;
+
+        let err: String = from_value(err.clone())?;
+        return Err(Error::Ollama(err));
     }
 
     /// List available models.

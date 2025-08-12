@@ -1,5 +1,5 @@
-use crate::providers::openai::{Response, OpenAIError};
-use crate::providers::openai::Client as OAI;
+use crate::providers::openai::{Response, Client as OAI};
+use super::error::OpenRouterError;
 use crate::core::{Result, Error};
 use super::request::Request;
 use super::model::Model;
@@ -28,8 +28,8 @@ impl Client {
 
         // Build HTTP client.
         let client = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(30))
+            .connect_timeout(Duration::from_secs(30))
+            .read_timeout(Duration::from_secs(10))
             .default_headers(headers)
             .build().unwrap();
 
@@ -54,7 +54,7 @@ impl core::Client for Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
+            let err: OpenRouterError = from_value(error.clone())?;
             return Err(Error::OpenRouter(err));
         }
 
@@ -70,18 +70,25 @@ impl core::Client for Client {
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req).send().await?;
 
-        let mut buffer = String::new();
-        let mut stream = res.bytes_stream();
-
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            buffer.push_str(&String::from_utf8_lossy(&chunk));
-            while let Some(event) = OAI::parse_event(&mut buffer) {
-                cb(event);
+        if res.status().is_success() {
+            let mut buffer = String::new();
+            let mut stream = res.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk?;
+                buffer.push_str(&String::from_utf8_lossy(&chunk));
+                while let Some(event) = OAI::parse_event(&mut buffer) {
+                    cb(event);
+                }
             }
+            return Ok(());
         }
 
-        Ok(())
+        let json: Value = res.json().await?;
+        let err = json.get("error")
+            .ok_or(Error::Json("expected \"error\" field".to_string()))?;
+
+        let err: OpenRouterError = from_value(err.clone())?;
+        return Err(Error::OpenRouter(err));
     }
 
     /// Fetches a list of models available via the API.
@@ -93,7 +100,7 @@ impl core::Client for Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
+            let err: OpenRouterError = from_value(error.clone())?;
             return Err(Error::OpenRouter(err));
         }
 
@@ -118,7 +125,7 @@ impl core::Client for Client {
 
         let json: Value = res.json().await?;
         if let Some(error) = json.get("error") {
-            let err: OpenAIError = from_value(error.clone())?;
+            let err: OpenRouterError = from_value(error.clone())?;
             return Err(Error::OpenRouter(err));
         }
 

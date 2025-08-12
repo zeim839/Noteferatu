@@ -29,8 +29,8 @@ impl Client {
 
         // Build HTTP client.
         let client = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(10))
+            .connect_timeout(Duration::from_secs(30))
+            .read_timeout(Duration::from_secs(10))
             .default_headers(headers)
             .build().unwrap();
 
@@ -140,7 +140,6 @@ impl core::Client for Client {
 
         let mut buffer = String::new();
         let mut stream = res.bytes_stream();
-
         while let Some(chunk) = stream.next().await {
             let chunk = chunk?;
             buffer.push_str(&String::from_utf8_lossy(&chunk));

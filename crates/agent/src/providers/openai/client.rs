@@ -29,8 +29,8 @@ impl Client {
 
         // Build HTTP client.
         let client = reqwest::Client::builder()
-            .connect_timeout(Duration::from_secs(5))
-            .timeout(Duration::from_secs(10))
+            .connect_timeout(Duration::from_secs(30))
+            .read_timeout(Duration::from_secs(10))
             .default_headers(headers)
             .build().unwrap();
 
@@ -104,18 +104,25 @@ impl core::Client for Client {
         let res = self.0.post(format!("{API_ENDPOINT}/chat/completions"))
             .json(&req).send().await?;
 
-        let mut buffer = String::new();
-        let mut stream = res.bytes_stream();
-
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk?;
-            buffer.push_str(&String::from_utf8_lossy(&chunk));
-            while let Some(event) = Self::parse_event(&mut buffer) {
-                cb(event);
+        if res.status().is_success() {
+            let mut buffer = String::new();
+            let mut stream = res.bytes_stream();
+            while let Some(chunk) = stream.next().await {
+                let chunk = chunk?;
+                buffer.push_str(&String::from_utf8_lossy(&chunk));
+                while let Some(event) = Self::parse_event(&mut buffer) {
+                    cb(event);
+                }
             }
+            return Ok(());
         }
 
-        Ok(())
+        let json: Value = res.json().await?;
+        let err = json.get("error")
+            .ok_or(Error::Json("expected \"error\" field".to_string()))?;
+
+        let err: OpenAIError = from_value(err.clone())?;
+        return Err(Error::OpenAI(err));
     }
 
     /// List and describe the various models available in the API.
