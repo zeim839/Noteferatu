@@ -153,6 +153,8 @@ impl Client for Agent {
                         if let Some(msg) = event.message {
                             role = msg.role;
                             usage.prompt_tokens = msg.usage.input_tokens.unwrap_or(0);
+                            usage.completion_tokens = msg.usage.output_tokens.unwrap_or(0);
+                            usage.total_tokens = usage.prompt_tokens + usage.completion_tokens;
                         }
                     }
                     StreamEventType::ContentBlockStart => {
@@ -188,7 +190,8 @@ impl Client for Agent {
                                             };
                                             cb(Response {
                                                 messages: vec![msg],
-                                                    usage: usage.clone(),
+                                                usage: usage.clone(),
+                                                error: None,
                                             });
                                         }
                                     }
@@ -226,16 +229,33 @@ impl Client for Agent {
                                 cb(Response {
                                     messages: vec![msg],
                                     usage: usage.clone(),
+                                    error: None,
                                 });
                             }
                         }
                     }
                     StreamEventType::MessageDelta => {
                         if let Some(u) = event.usage {
-                            usage.completion_tokens = u.output_tokens.unwrap_or(0);
+                            if let Some(tkns) = u.output_tokens {
+                                usage.completion_tokens = tkns;
+                            }
+
                             usage.total_tokens =
                                 usage.prompt_tokens + usage.completion_tokens;
+
+                            cb(Response {
+                                messages: Vec::new(),
+                                usage: usage.clone(),
+                                error:None,
+                            });
                         }
+                    }
+                    StreamEventType::Error => {
+                        cb(Response {
+                            messages: Vec::new(),
+                            usage: usage.clone(),
+                            error: event.error.map(|err| Error::Anthropic(err)),
+                        });
                     }
                     _ => {}
                 }).await

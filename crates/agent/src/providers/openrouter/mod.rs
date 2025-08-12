@@ -54,3 +54,6 @@ pub use model::*;
 
 mod request;
 pub use request::*;
+
+mod error;
+pub use error::*;

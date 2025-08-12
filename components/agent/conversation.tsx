@@ -58,7 +58,6 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
     if (selectedConv?.id === id) {
       setSelectedConv(null)
     }
-    setIsBeingDeleted(false)
   }
 
   const commitRename = () => {
@@ -100,7 +99,9 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
   // Clicking on a conversation entry sets the selected conversation.
   const handleSelect = () => {
     if (isBeingRenamed) return
-    setSelectedConv({ id, name, createdAt })
+    if (id !== selectedConv?.id) {
+      setSelectedConv({ id, name, createdAt })
+    }
     toggleConvs()
   }
 
@@ -133,7 +134,7 @@ const Entry = ({ id, name, createdAt } : Conversation) => {
         )}
       </div>
 
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 pr-1.5">
         <p
           data-is-visible={!showActions}
           className="text-xs min-w-15 text-right data-[is-visible=false]:hidden"
@@ -220,7 +221,7 @@ const Body = ({ body }: { body: Conversation[] }) => {
     )
   }
   return (
-    <div className="mt-1">
+    <div className="mt-1 overflow-y-auto max-h-[calc(100vh-35px-30px)]">
       {
         body.map((item) =>
           <Entry

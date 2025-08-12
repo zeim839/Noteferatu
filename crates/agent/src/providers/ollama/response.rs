@@ -56,6 +56,7 @@ impl Into<core::Response> for Response {
                 completion_tokens,
                 total_tokens: prompt_tokens + completion_tokens,
             },
+            error: None,
         }
     }
 }

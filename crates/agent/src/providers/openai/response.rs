@@ -83,6 +83,7 @@ impl Into<core::Response> for Response {
         core::Response {
             messages,
             usage: self.usage.unwrap_or_default().into(),
+            error: None,
         }
     }
 }

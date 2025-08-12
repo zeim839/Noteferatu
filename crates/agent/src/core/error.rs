@@ -9,11 +9,14 @@ use crate::providers::google::GoogleError;
 #[cfg(feature = "openai")]
 use crate::providers::openai::OpenAIError;
 
+#[cfg(feature = "openrouter")]
+use crate::providers::openrouter::OpenRouterError;
+
 /// Agent result alias.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Agent error implementation.
-#[derive(thiserror::Error, Debug, Serialize)]
+#[derive(thiserror::Error, Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", rename_all_fields = "camelCase", tag = "type", content = "data")]
 pub enum Error {
 
@@ -44,7 +47,7 @@ pub enum Error {
     /// OpenRouter API error.
     #[cfg(feature = "openrouter")]
     #[error("{0}")]
-    OpenRouter(OpenAIError),
+    OpenRouter(OpenRouterError),
 
     /// A JSON decoding error.
     #[error("json: {0}")]
@@ -80,7 +83,7 @@ pub enum Error {
 }
 
 /// Serializable [reqwest] error type.
-#[derive(Debug, Serialize, Deserialize, thiserror::Error)]
+#[derive(Debug, Clone, Serialize, Deserialize, thiserror::Error)]
 #[serde(rename_all = "camelCase")]
 pub struct ClientError {
 

@@ -113,14 +113,12 @@ impl Context {
         // finish. If the kill signal arrives first, the chat
         // completion is dropped.
         tokio::select! {
-            _ = agent.stream_completion(agent_req, |event| {
+            res = agent.stream_completion(agent_req, |event| {
                 cb(event.clone());
 
                 // Accumulate usage information.
-                if event.usage.prompt_tokens > 0 {
-                    usage.prompt_tokens = event.usage.prompt_tokens;
-                }
-                usage.completion_tokens += event.usage.completion_tokens;
+                usage.prompt_tokens = event.usage.prompt_tokens;
+                usage.completion_tokens = event.usage.completion_tokens;
                 usage.total_tokens = usage.prompt_tokens + usage.completion_tokens;
 
                 // Accumulate message contents.
@@ -157,7 +155,7 @@ impl Context {
                         }
                     }
                 }
-            }) => {}
+            }) => { res? }
             _ = rx => {}
         }
 

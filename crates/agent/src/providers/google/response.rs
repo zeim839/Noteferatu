@@ -1,4 +1,5 @@
 use serde::{Serialize, Deserialize};
+use super::error::GoogleError;
 use super::content::*;
 use crate::core;
 
@@ -9,6 +10,7 @@ use crate::core;
 pub struct Response {
 
     /// Candidate responses from the model.
+    #[serde(default)]
     pub candidates: Vec<Candidate>,
 
     /// Metadata on the generation requests' token usage.
@@ -22,6 +24,10 @@ pub struct Response {
     /// Used to identify each response.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub response_id: Option<String>,
+
+    /// Responses from streaming possibly include errors.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<GoogleError>,
 }
 
 impl From<super::content::Role> for core::Role {
@@ -37,7 +43,6 @@ impl From<super::content::Role> for core::Role {
 impl Into<core::Response> for Response {
     fn into(self) -> core::Response {
         let mut messages = Vec::new();
-
         for candidate in self.candidates {
             let role: core::Role = candidate.content.role.into();
 
@@ -73,7 +78,8 @@ impl Into<core::Response> for Response {
             core::Usage::default()
         };
 
-        core::Response { messages, usage }
+        let error = self.error.map(|err| core::Error::Google(err));
+        core::Response { messages, usage, error }
     }
 }
 

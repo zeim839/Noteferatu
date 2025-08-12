@@ -11,6 +11,7 @@ import { Channel } from "@tauri-apps/api/core"
 import { MessageLoadingIndicator } from "./indicator"
 import { ModelSelector } from "./model_selector"
 import { TokenInfo } from "./token"
+import { ErrorCard } from "./error"
 
 import {
   Message as MessageData,
@@ -47,14 +48,14 @@ function Agent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [ctx.messages, latestRes, isStreaming])
 
-  // When the conversation ID changes, the latest message will be fetched
-  // from the database. This wipes it from the react state.
+  // Erase any errors or uncommitted responses when conversation changes.
   React.useEffect(() => {
     setLatestRes(null)
+    setError(null)
   }, [ctx.selectedConv])
 
   // Sends a chat completion request and listens for streaming events.
-  const sendMessage = async (conversation_id: number) => {
+  const sendMessage = async (conversation_id: number, newMessage?: MessageData) => {
 
     // Add the last response to the message history before
     // sending a new one.
@@ -62,13 +63,11 @@ function Agent() {
       [...ctx.messages, latestRes] :
       ctx.messages
 
-    const newUserMessage = {
-      role: "user",
-      content: inputValue.trim()
-    } as MessageData
-
     // Update component message history state.
-    ctx.setMessages([...allMessages, newUserMessage])
+    if (newMessage) {
+      allMessages.push(newMessage)
+    }
+    ctx.setMessages([...allMessages])
     setLatestRes(null)
 
     // Clear the input field.
@@ -81,13 +80,20 @@ function Agent() {
     const model = ctx.selectedModel
     const onEvent = new Channel<StreamEvent>()
     onEvent.onmessage = (event) => {
-      if (event.event === 'content' && event.data?.messages[0]?.content) {
-        const chunk = event.data.messages[0].content as string
-        setLatestRes(prev => ({
-          role: 'assistant',
-          content: (prev?.content ?? "") + chunk
-        }))
-        ctx.setTokensUsed(ctx.tokensUsed + event.data.usage.completionTokens)
+      if (event.event === 'content') {
+        if (event.data?.messages[0]?.content) {
+          const chunk = event.data.messages[0].content as string
+          setLatestRes(prev => ({
+            role: 'assistant',
+            content: (prev?.content ?? "") + chunk
+          }))
+          if (event.data.usage.totalTokens) {
+            ctx.setTokensUsed(event.data.usage.totalTokens)
+          }
+        }
+        if (event.data?.error) {
+          setError(event.data?.error)
+        }
       }
     }
 
@@ -95,10 +101,10 @@ function Agent() {
     // provide the latest message. Once the stream is finished, the
     // final/accumulated response is returned.
     return sendStreamMessage(conversation_id, {
-        model: `${model?.provider}:${model?.id}`,
-        messages: [newUserMessage],
-        tools: [],
-      }, onEvent)
+      model: `${model?.provider}:${model?.id}`,
+      messages: (newMessage) ? [newMessage] : [],
+      tools: [],
+    }, onEvent)
       .then((res) => {
         if (res.usage.totalTokens > 0) {
           ctx.setTokensUsed(res.usage.totalTokens)
@@ -106,7 +112,6 @@ function Agent() {
         setLatestRes(res.messages[0])
       })
       .catch((err: AgentError) => {
-        console.log(err)
         setError(err)
       })
       .finally(() => {
@@ -120,9 +125,11 @@ function Agent() {
   // to sending the message. Otherwise, the message is added to the
   // current message history.
   const handleSendMessage = () => {
+    setError(null)
     let conversation = ctx.selectedConv
+    const newMessage = { role: "user", content: inputValue.trim() } as MessageData
     if (!isStreaming && inputValue.trim() && conversation !== null) {
-      sendMessage(conversation.id)
+      sendMessage(conversation.id, newMessage)
     }
 
     if (!isStreaming && inputValue.trim() && conversation === null) {
@@ -131,7 +138,7 @@ function Agent() {
           // (STUPID) HACK: sets a delay of 100ms, allowing the new
           // conversation to be created and the component state to update.
           ctx.setSelectedConv(conversation)
-          setTimeout(() => {sendMessage(conversation.id)}, 100)
+          setTimeout(() => {sendMessage(conversation.id, newMessage)}, 100)
         })
     }
   }
@@ -150,6 +157,15 @@ function Agent() {
       ctx.setIsModelSelectorOpen(false)
     }
     ctx.toggleSettings()
+  }
+
+  // Retry sending a failed message.
+  const onRetry = () => {
+    let conversation = ctx.selectedConv
+    if (conversation) {
+      setError(null)
+      sendMessage(conversation.id)
+    }
   }
 
   return (
@@ -232,6 +248,12 @@ function Agent() {
         {latestRes && <Message data={latestRes} />}
         <div ref={messagesEndRef} />
       </div>
+
+      {
+        /* Error Description Card */
+        error !== null ?
+          <ErrorCard onRetry={onRetry} error={error} /> : null
+      }
 
       {/* Message Input Field */}
       <div className="w-full h-[150px] bg-[#EDF0F4] border-t border-[#AEB3C0] p-2 flex flex-col justify-between">

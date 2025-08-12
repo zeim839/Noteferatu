@@ -29,6 +29,7 @@ export type Request = {
 export type Response = {
   messages: Array<Message>
   usage: Usage
+  error?: Error,
 }
 
 // Defines a function-calling tool.
@@ -53,12 +54,12 @@ export type Message = {
 
 // Error response types.
 export type ErrorType = 'client' | 'anthropic' | 'google' | 'ollama' |
- 'openai' | 'openrouter' | 'json' | 'invalidModelId' |
+ 'openAI' | 'openRouter' | 'json' | 'invalidModelId' |
  'providerNotConfigured' | 'sql' | 'io' | 'pluginInvoke' | 'plugin'
 
 // Enumeration of possible error contents.
 export type ErrorDataType = string | AnthropicError |
-GoogleError | OpenAIError | ClientError
+GoogleError | OpenAIError | OpenRouterError | ClientError
 
 // Google AI error response.
 export type GoogleError = {
@@ -84,6 +85,19 @@ export type OpenAIError = {
 
   // Error code.
   code?: string
+}
+
+// OpenRouter error response.
+export type OpenRouterError = {
+
+  // Message describing the error.
+  message: string
+
+  // Error code
+  code: number
+
+  // Provider metadata
+  metadata?: object
 }
 
 // Anthropic error response.

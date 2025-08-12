@@ -63,7 +63,7 @@ impl Into<core::Response> for Response {
                 + self.usage.output_tokens.unwrap_or(0),
         };
 
-        core::Response { messages, usage }
+        core::Response { messages, usage, error: None }
     }
 }
 
