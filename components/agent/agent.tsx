@@ -23,7 +23,6 @@ import {
 } from "@/lib/agent"
 
 import {
-  ChevronDownIcon,
   ChevronRightIcon,
   SlidersHorizontalIcon,
   SendHorizontalIcon,
@@ -178,11 +177,11 @@ function Agent() {
           variant="outline"
           className="p-2 rounded-sm h-6 px-1 flex items-center justify-between pr-2"
         >
-          {ctx.isConvsOpen ? (
-            <ChevronDownIcon strokeWidth={1.6} />
-          ) : (
-            <ChevronRightIcon strokeWidth={1.6} />
-          )}
+          <ChevronRightIcon
+            data-is-open={ctx.isConvsOpen}
+            strokeWidth={1.6}
+            className="data-[is-open=true]:rotate-90 transition-all"
+          />
           <p className="text-xs max-h-[15px] max-w-[150px] text-nowrap text-ellipsis overflow-x-hidden overflow-y-hidden">
             {
               /* Conversation Title */

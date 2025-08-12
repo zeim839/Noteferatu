@@ -5,7 +5,6 @@ import { useExplorerContext, SortFileKey, ViewType } from "./context"
 
 import {
   ChevronRightIcon,
-  ChevronDownIcon,
   ArrowDownWideNarrowIcon,
   BookmarkIcon,
   FilesIcon,
@@ -43,11 +42,11 @@ function ExplorerHeader() {
           withIcon={false} size="sm"
           className="data-[size=sm]:h-6 p-2 px-1 border-none rounded-sm hover:bg-[#D4D8E1] flex items-center shadow-none pr-2"
         >
-          {isSelectDocOpen ? (
-            <ChevronDownIcon strokeWidth={1.6} />
-          ) : (
-            <ChevronRightIcon strokeWidth={1.6} />
-          )}
+          <ChevronRightIcon
+            data-is-open={isSelectDocOpen}
+            strokeWidth={1.6}
+            className="data-[is-open=true]:rotate-90 transition-all"
+          />
           <p className="text-xs max-h-[15px]">
             {explorer.view() === "documents" ? "Documents" : explorer.view() === "tags" ? "Tags" : "Bookmarks"}
           </p>

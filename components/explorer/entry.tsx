@@ -83,9 +83,11 @@ export function Entry({
 
   // Show a chevron for toggling folder expansion.
   const chevronIcon = hasChildren ? (
-    isExpanded ?
-      (<ChevronDownIcon className="size-4" strokeWidth={1.6} />) :
-      (<ChevronRightIcon className="size-4" strokeWidth={1.6} />)
+    <ChevronRightIcon
+      data-is-open={isExpanded}
+      className="size-4 transition-all data-[is-open=true]:rotate-90"
+      strokeWidth={1.6}
+    />
   ) : null
 
   // Comparison function used to implement folder child sorting.
