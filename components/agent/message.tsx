@@ -2,12 +2,13 @@ import * as React from "react"
 import { Message as MessageData } from "@/lib/agent"
 
 interface MessageProps extends React.ComponentProps<"div"> {
-  data: MessageData;
   index: number;
-  onSave: (index: number, content: string) => void;
+  data: MessageData;
+  onEdit: (index: number, content: string) => void;
 }
 
-function Message({ data, index, onSave }: MessageProps) {
+// Message history entry.
+function Message({ data, index, onEdit }: MessageProps) {
   const [isEditing, setIsEditing] = React.useState(false)
   const [editedContent, setEditedContent] = React.useState(data.content)
   const textAreaRef = React.useRef<HTMLTextAreaElement>(null)
@@ -23,7 +24,7 @@ function Message({ data, index, onSave }: MessageProps) {
 
   const handleSave = () => {
     if (editedContent.trim() && editedContent !== data.content) {
-      onSave(index, editedContent)
+      onEdit(index, editedContent)
     }
     setIsEditing(false)
   }
@@ -80,7 +81,7 @@ function Message({ data, index, onSave }: MessageProps) {
 
   if (data.role === "assistant") {
     return (
-      <div className="flex justify-start my-4 mx-2 text-sm">
+      <div className="flex justify-start my-4 mx-3 text-sm">
         <div className="whitespace-pre-wrap cursor-text select-text">{data.content}</div>
       </div>
     )

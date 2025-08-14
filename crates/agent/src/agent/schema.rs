@@ -7,10 +7,11 @@ CREATE TABLE IF NOT EXISTS Conversation (
 );
 
 CREATE TABLE IF NOT EXISTS Message (
-  id      INTEGER PRIMARY KEY AUTOINCREMENT,
+  id      INTEGER NOT NULL,
   conv_id INTEGER NOT NULL,
   object  TEXT    NOT NULL,
 
+  PRIMARY KEY (id, conv_id),
   FOREIGN KEY (conv_id) REFERENCES Conversation(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE

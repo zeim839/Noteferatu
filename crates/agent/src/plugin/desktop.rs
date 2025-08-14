@@ -131,6 +131,12 @@ impl<R: Runtime> Agent<R> {
         Ok(res)
     }
 
+    /// Update a message.
+    pub async fn update_message(&self, message_id: i64, conversation_id: i64, message: Message) -> Result<()> {
+        self.manager.get_conversation(conversation_id).await?
+            .update_message(message_id, message).await
+    }
+
     /// List the messages in the specified conversation.
     pub async fn list_messages(&self, conversation_id: i64) -> Result<Vec<Message>> {
         let messages = self.manager.get_conversation(conversation_id).await?

@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-allow-update-message"
+description = "Enables the allow-update-message command without any pre-configured scope."
+commands.allow = ["allow-update-message"]
+
+[[permission]]
+identifier = "deny-allow-update-message"
+description = "Denies the allow-update-message command without any pre-configured scope."
+commands.deny = ["allow-update-message"]

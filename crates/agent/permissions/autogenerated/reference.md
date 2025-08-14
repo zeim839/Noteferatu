@@ -12,6 +12,7 @@ Default permissions for the plugin
 - `allow-remove-conversation`
 - `allow-send-message`
 - `allow-send-stream-message`
+- `allow-update-message`
 - `allow-list-messages`
 - `allow-stop-messages`
 
@@ -23,6 +24,32 @@ Default permissions for the plugin
 <th>Description</th>
 </tr>
 
+
+<tr>
+<td>
+
+`agent:allow-allow-update-message`
+
+</td>
+<td>
+
+Enables the allow-update-message command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-allow-update-message`
+
+</td>
+<td>
+
+Denies the allow-update-message command without any pre-configured scope.
+
+</td>
+</tr>
 
 <tr>
 <td>
@@ -280,6 +307,32 @@ Enables the try_connect command without any pre-configured scope.
 <td>
 
 Denies the try_connect command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:allow-update-message`
+
+</td>
+<td>
+
+Enables the update_message command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`agent:deny-update-message`
+
+</td>
+<td>
+
+Denies the update_message command without any pre-configured scope.
 
 </td>
 </tr>

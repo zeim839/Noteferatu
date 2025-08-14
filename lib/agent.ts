@@ -193,10 +193,6 @@ export async function removeConversation(id: number): Promise<void> {
   return await invoke("plugin:agent|remove_conversation", { id })
 }
 
-// Fetch conversation messages.
-export async function fetchConversationMessages() {
-}
-
 // Send a message.
 export async function sendMessage(
   conversationId: number,
@@ -218,6 +214,17 @@ export async function sendStreamMessage(
 ): Promise<Response> {
   return await invoke<Response>("plugin:agent|send_stream_message", {
     conversationId, request, channel
+  })
+}
+
+// Updates a message, deleting all messages after it.
+export async function updateMessage(
+  messageId: number,
+  conversationId: number,
+  message: Message
+): Promise<void> {
+  return await invoke("plugin:agent|update_message", {
+    messageId, conversationId, message
   })
 }
 

@@ -74,13 +74,14 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = React.useState<Array<Message>>([])
   const [isModelSelectorOpen, setIsModelSelectorOpen] = React.useState<boolean>(false)
 
+  const fetchConversations = () => {
+    listConversations().then((conversations) => {
+      setConvHistory(conversations)
+    })
+  }
+
   // Fetch conversation history.
   React.useEffect(() => {
-    const fetchConversations = () => {
-      listConversations().then((conversations) => {
-        setConvHistory(conversations)
-      })
-    }
     const convEventPromise = listen("agent-conversations-change",
       () => { fetchConversations() }
     )
@@ -91,6 +92,7 @@ export function AgentProvider({ children }: { children: React.ReactNode }) {
   // Fetch messages history for the currently-selected conversation.
   React.useEffect(() => {
     setTokensUsed(0)
+    fetchConversations()
     if (selectedConv === null) {
       setMessages([])
       return

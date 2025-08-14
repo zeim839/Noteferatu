@@ -78,6 +78,16 @@ pub(crate) async fn send_stream_message<R: Runtime>(
 }
 
 #[command]
+pub(crate) async fn update_message<R: Runtime>(
+    app: AppHandle<R>,
+    message_id: i64,
+    conversation_id: i64,
+    message: Message,
+) -> Result<()> {
+    app.agent().update_message(message_id, conversation_id, message).await
+}
+
+#[command]
 pub(crate) async fn list_messages<R: Runtime>(
     app: AppHandle<R>,
     conversation_id: i64,

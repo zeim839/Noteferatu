@@ -4,9 +4,9 @@ use crate::core::*;
 
 use std::sync::Arc;
 use tokio::sync::{RwLock, oneshot, Mutex};
+use sqlx::{Acquire, QueryBuilder};
 use database::Database;
 use serde_json::json;
-use sqlx::QueryBuilder;
 use std::mem;
 
 /// Exposes an [Agent](super::Agent) handling a conversation thread.
@@ -48,21 +48,24 @@ impl Context {
         *cancel_guard = Some(tx);
         drop(cancel_guard);
 
+        let mut context = self.list_messages().await?;
+        let mut next_id = context.len() as i64;
+        context.extend(req.messages.clone());
+
         // New user message must be saved in case chat completion fails.
         if req.messages.len() > 0 {
             let mut conn = self.db.acquire().await?;
-            let mut builder = QueryBuilder::new("INSERT INTO
-        Message(conv_id, object) ");
+            let mut builder = QueryBuilder::new("INSERT INTO Message ");
             builder.push_values(req.messages.clone(), |mut b, msg| {
-                b.push_bind(self.conv.id)
+                b.push_bind(next_id)
+                    .push_bind(self.conv.id)
                     .push_bind(json!(msg).to_string());
+
+                next_id += 1;
             });
             builder.build().execute(&mut *conn).await?;
             drop(conn);
         }
-
-        let mut context = self.list_messages().await?;
-        context.extend(req.messages.clone());
 
         let agent = self.agent.read().await;
         let req = Request { messages: context, ..req.clone() };
@@ -79,10 +82,13 @@ impl Context {
             Ok(Some(res)) => {
                 if !res.messages.is_empty() {
                     let mut conn = self.db.acquire().await?;
-                    let mut builder = QueryBuilder::new("INSERT INTO Message (conv_id, object) ");
+                    let mut builder = QueryBuilder::new("INSERT INTO Message ");
                     builder.push_values(res.messages.clone(), |mut b, message| {
-                        b.push_bind(self.conv.id)
-                         .push_bind(json!(message).to_string());
+                        b.push_bind(next_id)
+                            .push_bind(self.conv.id)
+                            .push_bind(json!(message).to_string());
+
+                        next_id += 1;
                     });
                     builder.build().execute(&mut *conn).await?;
                 }
@@ -111,21 +117,24 @@ impl Context {
         *cancel_guard = Some(tx);
         drop(cancel_guard);
 
+        let mut context = self.list_messages().await?;
+        let mut next_id = context.len() as i64;
+        context.extend(req.messages.clone());
+
         // New user message must be saved in case chat completion fails.
         if req.messages.len() > 0 {
             let mut conn = self.db.acquire().await?;
-            let mut builder = QueryBuilder::new("INSERT INTO
-        Message(conv_id, object) ");
+            let mut builder = QueryBuilder::new("INSERT INTO Message ");
             builder.push_values(req.messages.clone(), |mut b, msg| {
-                b.push_bind(self.conv.id)
+                b.push_bind(next_id)
+                    .push_bind(self.conv.id)
                     .push_bind(json!(msg).to_string());
+
+                next_id += 1;
             });
             builder.build().execute(&mut *conn).await?;
             drop(conn);
         }
-
-        let mut context = self.list_messages().await?;
-        context.extend(req.messages.clone());
 
         let req = Request { messages: context, ..req.clone() };
         let mut completed_messages: Vec<Message> = Vec::new();
@@ -190,10 +199,13 @@ impl Context {
         let messages: Vec<Message> = completed_messages.clone();
         if !messages.is_empty() {
             let mut conn = self.db.acquire().await?;
-            let mut builder = QueryBuilder::new("INSERT INTO Message (conv_id, object) ");
+            let mut builder = QueryBuilder::new("INSERT INTO Message ");
             builder.push_values(messages, |mut b, message| {
-                b.push_bind(self.conv.id)
+                b.push_bind(next_id)
+                    .push_bind(self.conv.id)
                     .push_bind(json!(message).to_string());
+
+                next_id += 1;
             });
             builder.build().execute(&mut *conn).await?;
         }
@@ -209,21 +221,43 @@ impl Context {
         }
     }
 
+    /// Replace an existing message, deleting all subsequent messages.
+    pub async fn update_message(&self, id: i64, message: Message) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        let mut tx = conn.begin().await?;
+        let res = sqlx::query("UPDATE Message SET object=? WHERE id=?
+    AND conv_id=?")
+            .bind(json!(message).to_string())
+            .bind(id)
+            .bind(self.conv.id)
+            .execute(&mut *tx)
+            .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(Error::Sql(sqlx::Error::RowNotFound.to_string()));
+        }
+
+        sqlx::query("DELETE FROM Message WHERE id > ? AND conv_id=?")
+            .bind(id)
+            .bind(self.conv.id)
+            .execute(&mut *tx)
+            .await?;
+
+        tx.commit().await?;
+        Ok(())
+    }
+
     /// Retrieve all messages in the
     /// [Conversation](super::Conversation).
     pub async fn list_messages(&self)  -> Result<Vec<Message>> {
         let mut conn = self.db.acquire().await?;
-        let msgs: Vec<MessageEntry> = sqlx::query_as("SELECT * FROM Message WHERE conv_id=?")
+        let msgs: Vec<MessageEntry> = sqlx::query_as("SELECT * FROM
+Message WHERE conv_id=? ORDER BY id ASC")
             .bind(self.conv.id)
             .fetch_all(&mut *conn)
             .await?;
 
         Ok(msgs.into_iter().map(Into::into).collect())
-    }
-
-    /// Replace an existing message, deleting all subsequent messages.
-    pub async fn update_message(&self, id: i64, message: Message) -> Result<()> {
-        unimplemented!();
     }
 }
 

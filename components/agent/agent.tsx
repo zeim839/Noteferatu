@@ -20,6 +20,7 @@ import {
   StreamEvent,
   Error as AgentError,
   stopMessages,
+  updateMessage,
 } from "@/lib/agent"
 
 import {
@@ -36,7 +37,6 @@ function Agent() {
   const [isStreaming, setIsStreaming] = React.useState<boolean>(false)
   const [latestRes, setLatestRes] = React.useState<MessageData | null>(null)
   const [error, setError] = React.useState<AgentError | null>(null)
-
   const ctx = useAgentContext()
 
   // Reference to a dummy element that tracks the bottom of the message
@@ -167,6 +167,21 @@ function Agent() {
     }
   }
 
+  // Edit a message.
+  const onEditMessage = (index: number, content: string) => {
+    const conversation = ctx.selectedConv
+    if (conversation !== null) {
+      updateMessage(index, conversation.id, { role: 'user', content })
+        .then(() => {
+          setLatestRes(null)
+          ctx.setMessages(ctx.messages.slice(0, index).concat({
+            role: 'user', content
+          }))
+          setTimeout(() => sendMessage(conversation.id), 100)
+        })
+    }
+  }
+
   return (
     <div className="w-full min-w-70 h-full flex flex-col">
       <Sidebar.Header className="flex flex-row justify-between items-center px-1 w-full min-h-[29px] z-1">
@@ -242,9 +257,9 @@ function Agent() {
 
       {/* Message History */}
       <div className="flex-1 w-full overflow-y-auto max-h-[calc(100vh-35px-30px-150px)] break-words">
-        {ctx.messages.map((msg, index) => <Message key={index} data={msg} />)}
+        {ctx.messages.map((msg, index) => <Message key={index} index={index} data={msg} onEdit={onEditMessage} />)}
         {isStreaming && !latestRes && (<MessageLoadingIndicator />)}
-        {latestRes && <Message data={latestRes} />}
+        {latestRes && <Message index={ctx.messages.length} data={latestRes} onEdit={onEditMessage} />}
         <div ref={messagesEndRef} />
       </div>
 

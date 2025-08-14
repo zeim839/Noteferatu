@@ -47,6 +47,7 @@ pub fn init<R: Runtime>(db: Arc<Database>) -> TauriPlugin<R> {
             commands::remove_conversation,
             commands::send_message,
             commands::send_stream_message,
+            commands::update_message,
             commands::list_messages,
             commands::stop_messages,
         ])
