@@ -54,20 +54,17 @@ function Agent() {
   }, [ctx.selectedConv])
 
   // Sends a chat completion request and listens for streaming events.
-  const sendMessage = async (conversation_id: number, newMessage?: MessageData) => {
+  const sendMessage = async (conversation_id: number, newMessage?: MessageData, messages?: Array<MessageData>) => {
+    setError(null)
 
-    // Add the last response to the message history before
-    // sending a new one.
-    const allMessages = latestRes ?
-      [...ctx.messages, latestRes] :
-      ctx.messages
+    const _messages = (messages) ? messages :  ctx.messages
+    let latestRes: MessageData | null = null
 
     // Update component message history state.
     if (newMessage) {
-      allMessages.push(newMessage)
+      _messages.push(newMessage)
+      ctx.setMessages(_messages)
     }
-    ctx.setMessages([...allMessages])
-    setLatestRes(null)
 
     // Clear the input field.
     setInputValue("")
@@ -82,10 +79,11 @@ function Agent() {
       if (event.event === 'content') {
         if (event.data?.messages[0]?.content) {
           const chunk = event.data.messages[0].content as string
-          setLatestRes(prev => ({
+          latestRes = {
             role: 'assistant',
-            content: (prev?.content ?? "") + chunk
-          }))
+            content: (latestRes?.content ?? "") + chunk
+          }
+          setLatestRes(latestRes)
           if (event.data.usage.totalTokens) {
             ctx.setTokensUsed(event.data.usage.totalTokens)
           }
@@ -108,13 +106,17 @@ function Agent() {
         if (res.usage.totalTokens > 0) {
           ctx.setTokensUsed(res.usage.totalTokens)
         }
-        setLatestRes(res.messages[0])
       })
       .catch((err: AgentError) => {
         setError(err)
       })
       .finally(() => {
         setIsStreaming(false)
+        ctx.setMessages(latestRes ?
+          [..._messages, latestRes] :
+          _messages
+        )
+        setLatestRes(null)
       })
   }
 
@@ -124,7 +126,6 @@ function Agent() {
   // to sending the message. Otherwise, the message is added to the
   // current message history.
   const handleSendMessage = () => {
-    setError(null)
     let conversation = ctx.selectedConv
     const newMessage = { role: "user", content: inputValue.trim() } as MessageData
     if (!isStreaming && inputValue.trim() && conversation !== null) {
@@ -171,13 +172,12 @@ function Agent() {
   const onEditMessage = (index: number, content: string) => {
     const conversation = ctx.selectedConv
     if (conversation !== null) {
-      updateMessage(index, conversation.id, { role: 'user', content })
+      const newMessage: MessageData = { role: 'user', content }
+      updateMessage(index, conversation.id, newMessage)
         .then(() => {
           setLatestRes(null)
-          ctx.setMessages(ctx.messages.slice(0, index).concat({
-            role: 'user', content
-          }))
-          setTimeout(() => sendMessage(conversation.id), 100)
+          ctx.setMessages(ctx.messages.slice(0, index))
+          sendMessage(conversation.id, newMessage, ctx.messages.slice(0, index))
         })
     }
   }
