@@ -1,6 +1,5 @@
-use crate::local::{LocalFS, LocalFile, Tag, TagWithFiles};
-use crate::filesystem::Filesystem;
-use super::error::Result;
+use crate::local::{Client, LocalFile, Tag, TagWithFiles};
+use crate::core::{FileSystem, Result};
 
 use std::sync::Arc;
 use tauri::{plugin::PluginApi, AppHandle, Runtime};
@@ -14,14 +13,14 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 ) -> super::Result<Helsync<R>> {
     Ok(Helsync {
         _app: app.clone(),
-        local: Arc::new(LocalFS::new(db)),
+        local: Arc::new(Client::new(db)),
     })
 }
 
 /// Access to the helsync APIs.
 pub struct Helsync<R: Runtime> {
     _app: AppHandle<R>,
-    local: Arc<LocalFS>,
+    local: Arc<Client>,
 }
 
 impl<R: Runtime> Helsync<R> {

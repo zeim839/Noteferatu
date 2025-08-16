@@ -1,8 +1,8 @@
-use crate::filesystem::{Delta, File};
 use serde::{Serialize, Deserialize};
+use crate::core::File;
 use sqlx::FromRow;
 
-/// LocalFile is a [LocalFS](super::LocalFS) SQLite file.
+/// LocalFile is a local [FileSystem](crate::core::FileSystem) file.
 #[derive(Debug, FromRow, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct LocalFile {
@@ -21,45 +21,14 @@ pub struct LocalFile {
     pub is_bookmarked: bool,
 }
 
-impl File for LocalFile {
-    fn id(&self) -> String {
-        self.id.to_string()
-    }
-
-    fn modified_at(&self) -> i64 {
-        self.modified_at
-    }
-
-    fn created_at(&self) -> i64 {
-        self.created_at
-    }
-
-    fn is_folder(&self) -> bool {
-        self.is_folder
-    }
-
-    fn parent(&self) -> Option<String> {
-        self.parent.map(|p| p.to_string())
-    }
-}
-
-impl Delta for LocalFile {
-    fn id(&self) -> String {
-        self.remote_id.clone().unwrap_or(self.id.to_string())
-    }
-
-    fn is_removed(&self) -> bool {
-        self.is_deleted
-    }
-
-    fn is_modified(&self) -> bool {
-        if let Some(synced_at) = self.synced_at {
-            return !self.is_deleted && synced_at > self.modified_at;
+impl Into<File> for LocalFile {
+    fn into(self) -> File {
+        File {
+            id: self.id.to_string(),
+            modified_at: self.modified_at,
+            created_at: self.created_at,
+            parent_id: self.parent.map(|p| p.to_string()),
+            is_folder: self.is_folder,
         }
-        return false;
-    }
-
-    fn modified_at(&self) -> i64 {
-        self.modified_at
     }
 }

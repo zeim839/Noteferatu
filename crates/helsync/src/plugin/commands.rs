@@ -1,6 +1,6 @@
 use crate::local::{Tag, TagWithFiles, LocalFile};
+use crate::core::Result;
 use super::HelsyncExt;
-use super::Result;
 
 use tauri::{AppHandle, command, Runtime, Emitter};
 

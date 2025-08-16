@@ -1,4 +1,4 @@
-use crate::errors::Result;
+use crate::core::Result;
 use super::Config;
 
 use std::time::{SystemTime, UNIX_EPOCH};

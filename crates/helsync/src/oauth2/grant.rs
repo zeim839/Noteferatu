@@ -1,17 +1,17 @@
-use super::pkce::PKCE;
 use super::token::{Token, TokenResponse};
+use crate::core::{Error, Result};
+use super::pkce::PKCE;
 use super::Config;
-use crate::errors::{Error, Result};
 
-use std::collections::HashMap;
-use std::process::Command as CMD;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-use reqwest::header::{CONTENT_TYPE, ACCEPT};
+use std::process::Command as CMD;
+use std::collections::HashMap;
 
 use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufStream};
 use tokio::net::TcpListener;
 use tokio::sync::mpsc;
+
+use reqwest::header::{CONTENT_TYPE, ACCEPT};
 
 /// An OAuth2 authorization grant, which can be exchanged for an API
 /// access token.
@@ -76,7 +76,7 @@ impl Grant {
         let pkce = PKCE::new();
         request_auth_grant(&pkce, &config)?;
         let grant = rx.recv().await
-            .ok_or(Error::Other("failed to capture authorization grant".to_string()))?;
+            .ok_or(Error::OAuth2("failed to capture authorization grant".to_string()))?;
 
         Ok(Self {code: grant, pkce, config: config.clone()})
     }
@@ -205,14 +205,14 @@ async fn parse_request(
 
     let mut parts = line_buffer.split_whitespace();
     let method = parts.next()
-        .ok_or(Error::Other("oauth2: missing method".to_string()))?;
+        .ok_or(Error::OAuth2("missing method".to_string()))?;
 
     if method != "GET" {
-        return Err(Error::Other(format!("oauth2: unsupported method: {}", method)));
+        return Err(Error::OAuth2(format!("unsupported method: {}", method)));
     }
 
     let path: String = parts.next()
-        .ok_or(Error::Other("oauth2: missing path".to_string()))
+        .ok_or(Error::OAuth2("missing path".to_string()))
         .map(Into::into)?;
 
     Ok(extract_query_params(&path))

@@ -1,4 +1,9 @@
-//! [Tauri](tauri) plugin implementation.
+//! [Tauri](tauri) plugin.
+//!
+//! The plugin module implements a [tauri] plugin that exposes the
+//! Helsync crate functionality to Desktop and Mobile apps.
+
+pub use crate::core::{Error, Result};
 
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime};
@@ -7,7 +12,6 @@ use database::Database;
 use std::sync::Arc;
 
 mod commands;
-mod error;
 
 #[cfg(desktop)]
 mod desktop;
@@ -18,8 +22,6 @@ use desktop::Helsync;
 mod mobile;
 #[cfg(mobile)]
 use mobile::Helsync;
-
-pub use error::{Error, Result};
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and
 /// [`tauri::Window`] to access the helsync APIs.

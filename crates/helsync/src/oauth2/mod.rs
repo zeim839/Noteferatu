@@ -1,4 +1,4 @@
-//! OAuth2 Authentication for cloud APIs.
+//! OAuth2 authentication for cloud APIs.
 //!
 //! It exposes [Grant] and [Token], which abstract each step
 //! in the PKCE authorization flow in a composable functional

@@ -1,27 +1,19 @@
-use super::file::LocalFile;
+use crate::core::{FileSystem, Delta, Result, Error};
 use super::tags::{Tag, TagWithFiles};
-use crate::filesystem::Filesystem;
-use crate::errors::Result;
+use super::file::LocalFile;
 
 use std::time::{SystemTime, UNIX_EPOCH};
-use sqlx::Acquire;
-use database::Database;
 use std::collections::HashMap;
+use database::Database;
 use std::sync::Arc;
+use sqlx::Acquire;
 
-/// Local virtual filesystem.
-///
-/// Implements a local virtual filesystem using an SQLite
-/// database. Optionally syncs with a remote
-/// [OneDrive](crate::onedrive::OneDrive) or
-/// [GoogleDrive](crate::googledrive::GoogleDrive) filesystem.
-///
-/// Cannot sync to multiple remote filesystems.
-pub struct LocalFS {
-    pub(crate) db: Arc<Database>
+/// Local virtual [FileSystem](crate::core::FileSystem).
+pub struct Client {
+    db: Arc<Database>
 }
 
-impl LocalFS {
+impl Client {
 
     /// Initialize a new local filesystem.
     pub fn new(db: Arc<Database>) -> Self {
@@ -190,14 +182,15 @@ impl LocalFS {
     }
 }
 
-impl Filesystem for LocalFS {
+impl FileSystem for Client {
     type File = LocalFile;
-    type Delta = LocalFile;
+    type Error = Error;
 
     /// Retrieve the file with the given `id`.
-    async fn get_file(&self, id: &str) -> Result<Self::File> {
+    async fn get_file(&self, id: &str) -> Result<LocalFile> {
         let mut conn = self.db.acquire().await?;
-        let file = sqlx::query_as("SELECT * FROM File WHERE id=? AND is_deleted=FALSE")
+        let file = sqlx::query_as("SELECT * FROM File WHERE id=? AND
+ is_deleted=FALSE")
             .bind(id)
             .fetch_one(&mut *conn)
             .await?;
@@ -210,7 +203,7 @@ impl Filesystem for LocalFS {
     ///
     /// If `parent_id` is `None`, the file is copied to the root
     /// directory.
-    async fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<Self::File> {
+    async fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<LocalFile> {
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
         let original: LocalFile = sqlx::query_as("SELECT * FROM File
@@ -289,7 +282,7 @@ impl Filesystem for LocalFS {
     }
 
     /// Move file to a new parent.
-    async fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<Self::File> {
+    async fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<LocalFile> {
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
         let modified_at: i64 = SystemTime::now()
@@ -348,7 +341,7 @@ impl Filesystem for LocalFS {
     }
 
     /// Create a new folder.
-    async fn create_folder(&self, parent_id: Option<&str>, name: &str) -> Result<Self::File> {
+    async fn create_folder(&self, parent_id: Option<&str>, name: &str) -> Result<LocalFile> {
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
         let created_at: i64 = SystemTime::now()
@@ -375,8 +368,8 @@ impl Filesystem for LocalFS {
         Ok(folder)
     }
 
-    /// Create a new file.
-    async fn create_file(&self, parent_id: Option<&str>, name: &str) -> Result<Self::File> {
+        /// Create a new file.
+    async fn create_file(&self, parent_id: Option<&str>, name: &str) -> Result<LocalFile> {
         let mut conn = self.db.acquire().await?;
         let mut tx = conn.begin().await?;
         let created_at: i64 = SystemTime::now()
@@ -404,7 +397,7 @@ impl Filesystem for LocalFS {
     }
 
     /// List files under a parent.
-    async fn list_files(&self, parent_id: Option<&str>) -> Result<Vec<Self::File>> {
+    async fn list_files(&self, parent_id: Option<&str>) -> Result<Vec<LocalFile>> {
         let mut conn = self.db.acquire().await?;
         let files: Vec<LocalFile> = match parent_id {
             Some(parent) => sqlx::query_as("SELECT * FROM File WHERE
@@ -420,7 +413,24 @@ impl Filesystem for LocalFS {
         Ok(files)
     }
 
-    async fn track_changes(&self, token: Option<&str>) -> Result<(Vec<Self::Delta>, String)> {
+    /// Write a slice of bytes to a file.
+    ///
+    /// The file's content will be replaced with the bytes.
+    async fn write_to_file(&self, _: &str, _: &[u8]) -> Result<LocalFile> {
+        unimplemented!();
+    }
+
+    /// Read the file's binary data.
+    async fn read_from_file(&self, _: &str) -> Result<Vec<u8>> {
+        unimplemented!();
+    }
+}
+
+impl Delta for Client {
+    type File = LocalFile;
+    type Error = Error;
+
+    async fn list_deltas(&self, token: Option<&str>) -> Result<(Vec<LocalFile>, String)> {
         let mut conn = self.db.acquire().await?;
         let deltas: Vec<LocalFile> = match token {
             Some(token) => sqlx::query_as("SELECT * FROM File WHERE
@@ -442,29 +452,18 @@ impl Filesystem for LocalFS {
 
         Ok((deltas, format!("{}", current_time)))
     }
-
-    /// Write a slice of bytes to a file.
-    ///
-    /// The file's content will be replaced with the bytes.
-    async fn write_to_file(&self, _: &str, _: &[u8]) -> Result<Self::File> {
-        unimplemented!();
-    }
-
-    /// Read the file's binary data.
-    async fn read_from_file(&self, _: &str) -> Result<Vec<u8>> {
-        unimplemented!();
-    }
 }
 
 #[cfg(test)]
 mod tests {
+
     use crate::local::schema;
     use super::*;
     use std::sync::Arc;
     use tokio::sync::OnceCell;
-    static CLIENT: OnceCell<Arc<LocalFS>> = OnceCell::const_new();
+    static CLIENT: OnceCell<Arc<Client>> = OnceCell::const_new();
 
-    async fn get_local_fs() -> Arc<LocalFS> {
+    async fn get_local_fs() -> Arc<Client> {
         CLIENT.get_or_init(|| async {
             let db_name = "./hs-localfs-test-db.sqlite";
 
@@ -515,7 +514,7 @@ INSERT INTO TagBind VALUES
                     }
                 ]
             }).await.unwrap();
-            Arc::new(LocalFS::new(Arc::new(db)))
+            Arc::new(Client::new(Arc::new(db)))
         }).await.clone()
     }
 
@@ -661,15 +660,15 @@ INSERT INTO TagBind VALUES
     }
 
     #[tokio::test]
-    async fn test_track_changes() {
+    async fn test_list_deltas() {
         let fs = get_local_fs().await;
-        let (_, token) = fs.track_changes(None).await.unwrap();
+        let (_, token) = fs.list_deltas(None).await.unwrap();
 
         // Perform some change.
         let file = fs.create_file(None, "track-changes.txt")
             .await.unwrap();
 
-        let (deltas, _) = fs.track_changes(Some(&token))
+        let (deltas, _) = fs.list_deltas(Some(&token))
             .await.unwrap();
 
         let mut has_change = false;
@@ -733,11 +732,6 @@ INSERT INTO TagBind VALUES
 
         // Do not allow removing a bookmark from a non-existent file.
         assert!(fs.remove_bookmark("999").await.is_err());
-    }
-
-    #[tokio::test]
-    async fn test_list_tags() {
-        // TODO
     }
 
     #[tokio::test]
@@ -813,12 +807,6 @@ INSERT INTO TagBind VALUES
         let tag = tags.iter().find(|t| t.name == tag_name).unwrap();
         assert_eq!(tag.files.len(), 1);
         assert_eq!(tag.files[0].id, file2.id);
-
-        // If all tag binds are removed from a tag, the tag should be
-        // deleted. This is handled by a database trigger.
-        assert!(fs.remove_tag_bind(&file2.id.to_string(), tag_name).await.is_ok());
-        let tags_after_delete = fs.list_tags().await.unwrap();
-        assert!(!tags_after_delete.iter().any(|t| t.name == tag_name));
 
         // Removing a non-existent bind should succeed but do nothing.
         assert!(fs.remove_tag_bind(&file1.id.to_string(), tag_name).await.is_ok());

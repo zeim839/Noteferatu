@@ -1,11 +1,8 @@
-use crate::client::Client;
-use crate::errors::{Error, Result};
-use crate::filesystem::Filesystem;
-use crate::oauth2::{Config, Token};
-use crate::utils::extract_query_params;
-
-use super::item::DriveItem;
+use crate::core::{Result, Error, FileSystem, Delta, extract_query_params};
 use super::status::{JobStatus, StatusReport};
+use crate::oauth2::{Config, Token};
+use super::error::OneDriveError;
+use super::file::DriveItem;
 
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use serde_json::{from_value, Value};
@@ -15,18 +12,18 @@ use std::sync::Arc;
 pub const API_ENDPOINT: &str = "https://graph.microsoft.com/v1.0/me/drive";
 
 /// Implements a OneDrive API client.
-pub struct OneDrive {
-    client: Client,
+pub struct Client {
+    client: crate::core::Client,
     req: Arc<reqwest::Client>,
     root: String,
 }
 
-impl OneDrive {
+impl Client {
 
     /// Instantiate new OneDrive client.
     pub fn new(root: Option<&str>, token: &Token, config: &Config) -> Self {
         Self {
-            client: Client::new(token, config),
+            client: crate::core::Client::new(token, config),
             req: Arc::new(reqwest::Client::new()),
             root: root.unwrap_or("helsync").to_string(),
         }
@@ -65,7 +62,10 @@ impl OneDrive {
 
         let session_json: Value = res.json().await?;
         let upload_url = session_json["uploadUrl"].as_str()
-            .ok_or(Error::Other("onedrive: no uploadUrl in session response".to_string()))?;
+            .ok_or(OneDriveError {
+                code: "UPLOAD_LARGE_FILE_ERR".to_string(),
+                message: "no uploadUrl in session response".to_string(),
+            })?;
 
         // Upload file in chunks.
         let chunk_size = 320 * 1024; // 320 KB chunks.
@@ -93,16 +93,16 @@ impl OneDrive {
             offset = end;
         }
 
-        Err(Error::Other(
-            "onedrive: upload completed but no response received"
-                .to_string(),
-        ))
+        Err(OneDriveError {
+            code: "UPLOAD_LARGE_FILE_ERR".to_string(),
+            message: "upload completed but no response received".to_string(),
+        }.into())
     }
 }
 
-impl Filesystem for OneDrive {
+impl FileSystem for Client {
     type File = DriveItem;
-    type Delta = DriveItem;
+    type Error = Error;
 
     /// Retrieve the metadata for a [DriveItem] in a Drive by id.
     ///
@@ -158,10 +158,15 @@ impl Filesystem for OneDrive {
 
         // Extract the location header to monitor status.
         let location_header = res.headers().get("location")
-            .ok_or(Error::Other("onedrive: request did not respond with location header".to_string()))?;
+            .ok_or(OneDriveError {
+                code: "COPY_FILE_ERR".to_string(),
+                message: "request did not respond with location header".to_string(),
+            })?;
 
-        let location = location_header.to_str()
-            .map_err(|_| Error::Other("onedrive: invalid location header".to_string()))?;
+        let location = location_header.to_str().map_err(|_| OneDriveError {
+            code: "COPY_FILE_ERR".to_string(),
+            message: "onedrive: invalid location header".to_string(),
+        })?;
 
         let res = self.req.clone().get(location)
             .send().await?.error_for_status()?;
@@ -172,7 +177,10 @@ impl Filesystem for OneDrive {
         while status.status != StatusReport::Completed {
             match status.status {
                 StatusReport::Failed | StatusReport::CancelPending | StatusReport::Cancelled => {
-                    return Err(Error::Other("onedrive: operation was not completed".to_string()));
+                    return Err(OneDriveError {
+                        code: "COPY_FILE_ERR".to_string(),
+                        message: "operation was not completed".to_string()
+                    }.into());
                 }
                 StatusReport::Completed => break,
                 _ => {
@@ -335,60 +343,6 @@ impl Filesystem for OneDrive {
         Ok(items)
     }
 
-    /// Track changes for a Drive.
-    ///
-    /// Setting `id` to `None` returns the changes relative to the
-    /// root directory. `delta` specifies a token for fast-forwarding
-    /// to the latest changes.
-    ///
-    /// API Reference: [Sync Changes](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_delta?view=odsp-graph-online)
-    async fn track_changes(&self, delta: Option<&str>) -> Result<(Vec<DriveItem>, String)> {
-        // Paginated endpoint: initial request.
-        let mut changes: Vec<DriveItem> = Vec::new();
-        let url = format!("{}/root:/{}:/delta", API_ENDPOINT, self.root);
-
-        // Applying a delta omits changes that have already been viewed.
-        let url = match delta {
-            Some(p) => format!("{}?token={}", url, p),
-            None => url,
-        };
-
-        let req = self.req.clone().get(&url)
-            .header(AUTHORIZATION, self.client.bearer().await?);
-
-        let res = self.client.execute_with_retry(req).await?
-            .error_for_status()?;
-
-        let mut json: Value = res.json().await?;
-        let mut items: Vec<DriveItem> = from_value(json["value"].clone())?;
-        changes.append(&mut items);
-
-        // Subsequent pages.
-        while let Some(url) = json.get("@odata.nextLink") {
-            let url_str = url.as_str().ok_or(Error::Other(
-                "onedrive: invalid URL in @odata.nextLink".to_string(),
-            ))?;
-
-            let req = self.req.clone().get(url_str)
-                .header(AUTHORIZATION, self.client.bearer().await?);
-
-            let res = self.client.execute_with_retry(req).await?
-                .error_for_status()?;
-
-            json = res.json().await?;
-            let mut items: Vec<DriveItem> = from_value(json["value"].clone())?;
-            changes.append(&mut items);
-        }
-
-        let next_delta = json["@odata.deltaLink"].as_str().unwrap_or_default();
-        let next_delta = extract_query_params(next_delta)
-            .get("token")
-            .cloned()
-            .unwrap_or_default();
-
-        Ok((changes, next_delta))
-    }
-
     /// Upload or replace the contents of a [DriveItem].
     ///
     /// API Reference: [Upload](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_createuploadsession?view=odsp-graph-online)
@@ -416,8 +370,69 @@ impl Filesystem for OneDrive {
     }
 }
 
+impl Delta for Client {
+    type File = DriveItem;
+    type Error = Error;
+
+    /// Track changes for a Drive.
+    ///
+    /// `delta` specifies a token for fast-forwarding to the latest
+    /// changes.
+    ///
+    /// API Reference: [Sync Changes](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_delta?view=odsp-graph-online)
+    async fn list_deltas(&self, delta: Option<&str>) -> Result<(Vec<DriveItem>, String)> {
+
+        // Paginated endpoint: initial request.
+        let mut changes: Vec<DriveItem> = Vec::new();
+        let url = format!("{}/root:/{}:/delta", API_ENDPOINT, self.root);
+
+        // Applying a delta omits changes that have already been viewed.
+        let url = match delta {
+            Some(p) => format!("{}?token={}", url, p),
+            None => url,
+        };
+
+        let req = self.req.clone().get(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?);
+
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
+
+        let mut json: Value = res.json().await?;
+        let mut items: Vec<DriveItem> = from_value(json["value"].clone())?;
+        changes.append(&mut items);
+
+        // Subsequent pages.
+        while let Some(url) = json.get("@odata.nextLink") {
+            let url_str = url.as_str().ok_or(OneDriveError {
+                code: "TRACK_CHANGES_ERR".to_string(),
+                message: "invalid URL in @odata.nextLink".to_string(),
+            })?;
+
+            let req = self.req.clone().get(url_str)
+                .header(AUTHORIZATION, self.client.bearer().await?);
+
+            let res = self.client.execute_with_retry(req).await?
+                .error_for_status()?;
+
+            json = res.json().await?;
+            let mut items: Vec<DriveItem> = from_value(json["value"].clone())?;
+            changes.append(&mut items);
+        }
+
+        let next_delta = json["@odata.deltaLink"].as_str().unwrap_or_default();
+        let next_delta = extract_query_params(next_delta)
+            .get("token")
+            .cloned()
+            .unwrap_or_default();
+
+        Ok((changes, next_delta))
+    }
+}
+
 #[cfg(test)]
 mod tests {
+
     use super::*;
     use crate::oauth2;
     use dotenv::dotenv;
@@ -426,7 +441,7 @@ mod tests {
     use tokio::sync::OnceCell;
     static TOKEN: OnceCell<Arc<oauth2::Token>> = OnceCell::const_new();
 
-    async fn get_test_client() -> OneDrive {
+    async fn get_test_client() -> Client {
         dotenv().ok();
         let client_id = env::var("ONEDRIVE_CLIENT_ID")
             .expect("missing ONEDRIVE_CLIENT_ID env variable");
@@ -443,7 +458,7 @@ mod tests {
             Arc::new(token)
         }).await.clone();
 
-        OneDrive::new(Some("helsync-test"), &token, &app_config)
+        Client::new(Some("helsync-test"), &token, &app_config)
     }
 
     #[tokio::test]
@@ -520,23 +535,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_track_changes() {
-        let client = get_test_client().await;
-        let (_, token) = client.track_changes(Some("latest"))
-            .await.unwrap();
-
-        // Make a change.
-        let file = client.create_file(None, "helsync-track-changes.txt")
-            .await.unwrap();
-
-        let (changes, _) = client.track_changes(Some(&token)).await.unwrap();
-        let find = changes.iter().find(|f| f.id == file.id);
-        assert!(find.is_some());
-
-        client.remove_file(&file.id).await.unwrap();
-    }
-
-    #[tokio::test]
     async fn test_read_write_small() {
         let client = get_test_client().await;
         let file = client.create_file(None, "helsync-write-small.txt")
@@ -568,6 +566,23 @@ mod tests {
             .await.unwrap();
 
         assert!(file.name.unwrap() == "helsync-write-large.txt");
+        client.remove_file(&file.id).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_list_deltas() {
+        let client = get_test_client().await;
+        let (_, token) = client.list_deltas(Some("latest"))
+            .await.unwrap();
+
+        // Make a change.
+        let file = client.create_file(None, "helsync-track-changes.txt")
+            .await.unwrap();
+
+        let (changes, _) = client.list_deltas(Some(&token)).await.unwrap();
+        let find = changes.iter().find(|f| f.id == file.id);
+        assert!(find.is_some());
+
         client.remove_file(&file.id).await.unwrap();
     }
 }

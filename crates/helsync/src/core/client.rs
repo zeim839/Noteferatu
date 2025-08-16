@@ -1,10 +1,10 @@
 use crate::oauth2::{Config, Token};
-use crate::errors::Result;
-
-use std::sync::{Arc, RwLock};
-use std::time::Duration;
+use crate::core::Result;
 
 use reqwest::{Response, RequestBuilder};
+use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
+use std::time::Duration;
 use tokio::time::sleep;
 
 pub(crate) struct Client {
@@ -69,12 +69,12 @@ impl Client {
                             continue;
                         }
                     } else {
-                        return Err(crate::Error::from(err));
+                        return Err(err.into());
                     }
                 }
             }
         }
-        return Err(crate::Error::from(last_error.unwrap()));
+        return Err(last_error.unwrap().into());
     }
 
     /// Acquires a Bearer authentication string, refreshing the
@@ -107,4 +107,20 @@ fn should_retry_error(error: &reqwest::Error) -> bool {
     error.is_timeout() ||
         error.is_connect() ||
         error.is_request()
+}
+
+/// Extract query parameters from a URL string
+pub(crate) fn extract_query_params(url: &str) -> HashMap<String, String> {
+    let mut params = HashMap::new();
+    if let Some(query_start) = url.find('?') {
+        let query = &url[query_start + 1..];
+        for pair in query.split('&') {
+            if let Some(eq_pos) = pair.find('=') {
+                let key = pair[..eq_pos].to_string();
+                let value = pair[eq_pos + 1..].to_string();
+                params.insert(key, value);
+            }
+        }
+    }
+    params
 }

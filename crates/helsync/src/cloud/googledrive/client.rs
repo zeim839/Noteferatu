@@ -1,7 +1,6 @@
-use crate::client::Client;
-use crate::errors::{Error, Result};
-use crate::filesystem::Filesystem;
-use crate::oauth2::{Config, Token};
+use crate::core::{FileSystem, Delta, Result, Error};
+use crate::oauth2::{Token, Config};
+use super::error::GoogleDriveError;
 use super::change::DriveChange;
 use super::file::DriveFile;
 
@@ -14,17 +13,17 @@ use std::sync::Arc;
 pub const API_ENDPOINT: &str = "https://www.googleapis.com/drive/v3";
 
 /// Implements a Google Drive API client.
-pub struct GoogleDrive {
-    client: Client,
+pub struct Client {
+    client: crate::core::Client,
     req: Arc<reqwest::Client>,
 }
 
-impl GoogleDrive {
+impl Client {
 
     /// Instantiate new Google Drive client.
     pub fn new(token: &Token, config: &Config) -> Self {
         Self {
-            client: Client::new(token, config),
+            client: crate::core::Client::new(token, config),
             req: Arc::new(reqwest::Client::new()),
         }
     }
@@ -43,10 +42,10 @@ impl GoogleDrive {
 
         let upload_url = res.headers().get("location")
             .and_then(|h| h.to_str().ok())
-            .ok_or(Error::Other(
-                "No location header in resumable upload response"
-                    .to_string(),
-            ))?;
+            .ok_or(GoogleDriveError {
+                code: 400,
+                message: "No location header in resumable upload response".to_string(),
+            })?;
 
         // Upload in chunks
         let chunk_size = 256 * 1024; // 256KB chunks.
@@ -75,10 +74,10 @@ impl GoogleDrive {
             offset = end;
         }
 
-        Err(Error::Other(
-            "googledrive: upload completed but no response received"
-                .to_string(),
-        ))
+        Err(GoogleDriveError {
+            code: 400,
+            message: "upload completed but no response received".to_string(),
+        }.into())
     }
 
     /// Upload small files (< 5MB) directly
@@ -115,9 +114,9 @@ impl GoogleDrive {
     }
 }
 
-impl Filesystem for GoogleDrive {
+impl FileSystem for Client {
     type File = DriveFile;
-    type Delta = DriveChange;
+    type Error = Error;
 
     /// Gets a file's metadata or content by ID.
     ///
@@ -125,13 +124,15 @@ impl Filesystem for GoogleDrive {
     async fn get_file(&self, id: &str) -> Result<DriveFile> {
         let url = format!("{}/files/{}", API_ENDPOINT, id);
         let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
-        let res = self.client.execute_with_retry(req).await?
-            .error_for_status()?;
+        let res = self.client.execute_with_retry(req).await?;
 
         let json: Value = res.json().await?;
-        let file: DriveFile = from_value(json)?;
+        if let Some(error) = json.get("error") {
+            let err: GoogleDriveError = from_value(error.clone())?;
+            return Err(Error::GoogleDrive(err));
+        }
 
-        Ok(file)
+        Ok(from_value(json)?)
     }
 
     /// Creates a copy of a file and applies any requested updates
@@ -153,13 +154,14 @@ impl Filesystem for GoogleDrive {
             .header(AUTHORIZATION, self.client.bearer().await?)
             .json(&body);
 
-        let res = self.client.execute_with_retry(req).await?
-            .error_for_status()?;
-
+        let res = self.client.execute_with_retry(req).await?;
         let json: Value = res.json().await?;
-        let file: DriveFile = from_value(json)?;
+        if let Some(error) = json.get("error") {
+            let err: GoogleDriveError = from_value(error.clone())?;
+            return Err(Error::GoogleDrive(err));
+        }
 
-        Ok(file)
+        Ok(from_value(json)?)
     }
 
     /// Updates the file metadata to move the file under a new parent.
@@ -198,13 +200,15 @@ impl Filesystem for GoogleDrive {
             .header(AUTHORIZATION, self.client.bearer().await?)
             .json(&body);
 
-        let res = self.client.execute_with_retry(req).await?
-            .error_for_status()?;
-
+        let res = self.client.execute_with_retry(req).await?;
         let json: Value = res.json().await?;
-        let file: DriveFile = from_value(json)?;
 
-        Ok(file)
+        if let Some(error) = json.get("error") {
+            let err: GoogleDriveError = from_value(error.clone())?;
+            return Err(Error::GoogleDrive(err));
+        }
+
+        Ok(from_value(json)?)
     }
 
     /// Permanently deletes a file owned by the user without moving it
@@ -217,10 +221,15 @@ impl Filesystem for GoogleDrive {
         let req = self.req.clone().delete(&url)
             .header(AUTHORIZATION, self.client.bearer().await?);
 
-        self.client.execute_with_retry(req).await?
-            .error_for_status()?;
-
-        Ok(())
+        let res = self.client.execute_with_retry(req).await?;
+        let json: std::result::Result<Value, reqwest::Error> = res.json().await;
+        match json {
+            Ok(json) => if let Some(error) = json.get("error") {
+                let err: GoogleDriveError = from_value(error.clone())?;
+                return Err(Error::GoogleDrive(err));
+            } else { Ok(()) },
+            Err(_) => Ok(()),
+        }
     }
 
     /// Creates a new folder.
@@ -238,10 +247,14 @@ impl Filesystem for GoogleDrive {
             .header(AUTHORIZATION, self.client.bearer().await?)
             .json(&body);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
-        let drive_file: DriveFile = res.json().await?;
+        let res = self.client.execute_with_retry(req).await?;
+        let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: GoogleDriveError = from_value(error.clone())?;
+            return Err(Error::GoogleDrive(err));
+        }
 
-        Ok(drive_file)
+        Ok(from_value(json)?)
     }
 
     /// Creates a new file.
@@ -258,10 +271,14 @@ impl Filesystem for GoogleDrive {
             .header(AUTHORIZATION, self.client.bearer().await?)
             .json(&body);
 
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
-        let drive_file: DriveFile = res.json().await?;
+        let res = self.client.execute_with_retry(req).await?;
+        let json: Value = res.json().await?;
+        if let Some(error) = json.get("error") {
+            let err: GoogleDriveError = from_value(error.clone())?;
+            return Err(Error::GoogleDrive(err));
+        }
 
-        Ok(drive_file)
+        Ok(from_value(json)?)
     }
 
     /// Lists the user's files.
@@ -278,19 +295,56 @@ impl Filesystem for GoogleDrive {
         }
 
         let req = self.req.clone().get(&url).header(AUTHORIZATION, self.client.bearer().await?);
-        let res = self.client.execute_with_retry(req).await?.error_for_status()?;
-
+        let res = self.client.execute_with_retry(req).await?;
         let json: Value = res.json().await?;
-        let files: Vec<DriveFile> = from_value(json["files"].clone())?;
+        if let Some(error) = json.get("error") {
+            let err: GoogleDriveError = from_value(error.clone())?;
+            return Err(Error::GoogleDrive(err));
+        }
 
-        Ok(files)
+        Ok(from_value(json["files"].clone())?)
     }
 
+    /// Updates the contents of a file, otherwise creating it if it
+    /// doesn't exist.
+    ///
+    /// This method supports an /upload URI and accepts uploaded
+    /// media.
+    ///
+    /// Documentation: [Upload File Data](https://developers.google.com/workspace/drive/api/guides/manage-uploads)
+    /// API Reference: [Create](https://developers.google.com/workspace/drive/api/reference/rest/v3/files/create)
+    async fn write_to_file(&self, id: &str, buf: &[u8]) -> Result<DriveFile> {
+        if buf.len() > 5 * 1024 * 1024 {
+            self.upload_large_file(id, buf).await
+        } else {
+            self.upload_small_file(id, buf).await
+        }
+    }
+
+    /// Downloads content of a file. Operations are valid for 24 hours
+    /// from the time of creation.
+    ///
+    /// API Reference: [Download](https://developers.google.com/workspace/drive/api/reference/rest/v3/files/download)
+    async fn read_from_file(&self, id: &str) -> Result<Vec<u8>> {
+        let url = format!("{}/files/{}?alt=media", API_ENDPOINT, id);
+        let req = self.req.clone().get(&url)
+            .header(AUTHORIZATION, self.client.bearer().await?);
+
+        let res = self.client.execute_with_retry(req).await?
+            .error_for_status()?;
+
+        let bytes = res.bytes().await?;
+        Ok(bytes.to_vec())
+    }
+}
+
+impl Delta for Client {
+    type File = DriveChange;
+    type Error = Error;
+
     /// Report file changes.
-    async fn track_changes(&self, token: Option<&str>) -> Result<(Vec<DriveChange>, String)> {
-        let mut url = format!(
-            "{}/changes?{}",
-            API_ENDPOINT,
+    async fn list_deltas(&self, token: Option<&str>) -> Result<(Vec<DriveChange>, String)> {
+        let mut url = format!("{}/changes?{}", API_ENDPOINT,
             form_urlencoded::Serializer::new(String::new())
                 .append_pair("includeRemoved", "true")
                 .append_pair("restrictToMyDrive", "true")
@@ -308,7 +362,10 @@ impl Filesystem for GoogleDrive {
             let res = self.client.execute_with_retry(req).await?.error_for_status()?;
             let json: Value = res.json().await?;
             let start_token = json["startPageToken"].as_str()
-                .ok_or(Error::Other("googledrive: not startPageToken in response".to_string()))?;
+                .ok_or(GoogleDriveError {
+                    code: 400,
+                    message: "not startPageToken in response".to_string()
+                })?;
 
             url.push_str(&format!("&pageToken={}", start_token));
         }
@@ -348,38 +405,6 @@ impl Filesystem for GoogleDrive {
 
         Ok((changes, next_page_token))
     }
-
-    /// Updates the contents of a file, otherwise creating it if it
-    /// doesn't exist.
-    ///
-    /// This method supports an /upload URI and accepts uploaded
-    /// media.
-    ///
-    /// Documentation: [Upload File Data](https://developers.google.com/workspace/drive/api/guides/manage-uploads)
-    /// API Reference: [Create](https://developers.google.com/workspace/drive/api/reference/rest/v3/files/create)
-    async fn write_to_file(&self, id: &str, buf: &[u8]) -> Result<DriveFile> {
-        if buf.len() > 5 * 1024 * 1024 {
-            self.upload_large_file(id, buf).await
-        } else {
-            self.upload_small_file(id, buf).await
-        }
-    }
-
-    /// Downloads content of a file. Operations are valid for 24 hours
-    /// from the time of creation.
-    ///
-    /// API Reference: [Download](https://developers.google.com/workspace/drive/api/reference/rest/v3/files/download)
-    async fn read_from_file(&self, id: &str) -> Result<Vec<u8>> {
-        let url = format!("{}/files/{}?alt=media", API_ENDPOINT, id);
-        let req = self.req.clone().get(&url)
-            .header(AUTHORIZATION, self.client.bearer().await?);
-
-        let res = self.client.execute_with_retry(req).await?
-            .error_for_status()?;
-
-        let bytes = res.bytes().await?;
-        Ok(bytes.to_vec())
-    }
 }
 
 #[cfg(test)]
@@ -394,7 +419,7 @@ mod tests {
     use tokio::sync::OnceCell;
     static TOKEN: OnceCell<Arc<oauth2::Token>> = OnceCell::const_new();
 
-    async fn get_test_client() -> GoogleDrive {
+    async fn get_test_client() -> Client {
         dotenv().ok();
 
         let client_id =
@@ -419,7 +444,7 @@ mod tests {
                 Arc::new(token)
             }).await.clone();
 
-        GoogleDrive::new(&token, &app_config)
+        Client::new(&token, &app_config)
     }
 
     #[tokio::test]
@@ -492,16 +517,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_track_changes() {
+    async fn test_list_deltas() {
         let client = get_test_client().await;
-        let (_, token) = client.track_changes(None).await.unwrap();
+        let (_, token) = client.list_deltas(None).await.unwrap();
 
         // Changes propagate slowly, especially when a lot of tests
         // are simultaneously committing changes. Adding significant
         // delays allows the changes to accumulate.
-
-        // Add a small delay to ensure the token is "committed".
-        //tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
 
         // Make a change.
         let file = client.create_file(None, "helsync-track-changes.txt")
@@ -510,10 +532,8 @@ mod tests {
         // Wait a bit for the change to propagate.
         tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
 
-        let (changes, _) = client.track_changes(Some(&token)).await.unwrap();
+        let (changes, _) = client.list_deltas(Some(&token)).await.unwrap();
         changes.iter().for_each(|item| println!("{:?}", item));
-        // let find = changes.iter().find(|f| f.file_id == file.id);
-        // assert!(find.is_some());
 
         client.remove_file(&file.id).await.unwrap();
     }

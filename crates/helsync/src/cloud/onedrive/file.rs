@@ -1,12 +1,14 @@
-use crate::filesystem::{File, Delta};
-use serde::{Deserialize, Serialize};
+use crate::core::File;
+use serde::{Serialize, Deserialize};
 use chrono::{DateTime, FixedOffset};
 use serde_json::Value;
 
 /// The driveItem resource represents a file, folder, or other item
-/// stored in a drive. All file system objects in OneDrive and
-/// SharePoint are returned as driveItem resources.
-#[derive(Debug, Serialize, Deserialize)]
+/// stored in a drive.
+///
+/// All file system objects in OneDrive and SharePoint are returned as
+/// driveItem resources.
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveItem {
 
@@ -44,7 +46,7 @@ pub struct DriveItem {
 
 /// The DeletedMetadata resource indicates that the item has been
 /// deleted.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeletedMetadata {
 
     /// Represents the state of the deleted item.
@@ -53,7 +55,7 @@ pub struct DeletedMetadata {
 
 /// The FileMetadata resource groups file-related data items into a
 /// single structure.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FileMetadata {
 
@@ -66,7 +68,7 @@ pub struct FileMetadata {
 /// The Folder resource groups folder-related data on an item into a
 /// single structure. [DriveItems](DriveItem) with a non-null folder
 /// facet are containers for other [DriveItems](DriveItem).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct FolderMetadata {
 
@@ -77,9 +79,10 @@ pub struct FolderMetadata {
 
 /// The ItemReference resource provides information necessary to
 /// address a DriveItem via the API.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ItemReference {
+
     /// Identifier of the drive instance that contains the
     /// item. Read-only.
     pub drive_id: String,
@@ -97,59 +100,31 @@ pub struct ItemReference {
     pub path: Option<String>,
 }
 
-impl File for DriveItem {
-    fn id(&self) -> String {
-        self.id.clone()
-    }
+impl Into<File> for DriveItem {
+    fn into(self) -> File {
+        let modified_at = match self.last_modified_date_time {
+            Some(ts) => DateTime::<FixedOffset>::parse_from_rfc3339(&ts)
+                .map(|dt| dt.timestamp())
+                .unwrap_or(0),
+            None => 0,
+        };
 
-    fn modified_at(&self) -> i64 {
-        if let Some(ts) = &self.last_modified_date_time {
-            let dt = DateTime::<FixedOffset>::parse_from_rfc3339(ts);
-            if let Ok(dt) = dt {
-                return dt.timestamp();
-            }
+        let created_at = match self.created_date_time {
+            Some(ts) => DateTime::<FixedOffset>::parse_from_rfc3339(&ts)
+                .map(|dt| dt.timestamp())
+                .unwrap_or(0),
+            None => 0,
+        };
+
+        let parent_id = self.parent_reference.map(|file| file.id)
+            .unwrap_or(None);
+
+        File {
+            id: self.id,
+            modified_at,
+            created_at,
+            parent_id,
+            is_folder: self.folder.is_some(),
         }
-        return 0;
-    }
-
-    fn created_at(&self) -> i64 {
-        if let Some(ts) = &self.created_date_time {
-            let dt = DateTime::<FixedOffset>::parse_from_rfc3339(ts);
-            if let Ok(dt) = dt {
-                return dt.timestamp();
-            }
-        }
-        return 0;
-    }
-
-    fn is_folder(&self) -> bool {
-        self.folder.is_some()
-    }
-
-    fn parent(&self) -> Option<String> {
-        if let Some(parent) = &self.parent_reference {
-            if let Some(id) = &parent.id {
-                return Some(id.clone());
-            }
-        }
-        return None;
-    }
-}
-
-impl Delta for DriveItem {
-    fn id(&self) -> String {
-        self.id.clone()
-    }
-
-    fn is_removed(&self) -> bool {
-        self.deleted.is_some()
-    }
-
-    fn is_modified(&self) -> bool {
-        !self.is_removed()
-    }
-
-    fn modified_at(&self) -> i64 {
-        File::modified_at(self)
     }
 }

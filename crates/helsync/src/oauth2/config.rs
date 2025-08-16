@@ -1,6 +1,6 @@
 use super::utils::*;
 use super::grant::Grant;
-use crate::errors::Result;
+use crate::core::Result;
 
 /// An OAuth2 app configuration.
 ///

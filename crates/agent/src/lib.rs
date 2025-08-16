@@ -3,8 +3,8 @@
 //!
 //! Support both static and streaming responses.
 
-pub mod core;
 pub mod providers;
+pub mod core;
 
 #[cfg(feature = "agent")]
 pub mod agent;

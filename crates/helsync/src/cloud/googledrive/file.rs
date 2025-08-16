@@ -1,11 +1,11 @@
 use serde::{Deserialize, Serialize};
-use super::super::filesystem::File;
+use crate::core::File;
 use chrono::DateTime;
 
 /// The metadata for a file.
 ///
 /// Reference: [Files Resource](https://developers.google.com/workspace/drive/api/reference/rest/v3/files)
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveFile {
 
@@ -94,42 +94,36 @@ pub struct DriveFile {
     pub sha256_checksum: Option<String>,
 }
 
-impl File for DriveFile {
-    fn id(&self) -> String {
-        self.id.clone()
-    }
+impl Into<File> for DriveFile {
+    fn into(self) -> File {
+        let modified_at = match self.modified_time {
+            Some(ts) => DateTime::parse_from_rfc3339(&ts)
+                .map(|dt| dt.timestamp())
+                .unwrap_or(0),
+            None => 0,
+        };
 
-    fn modified_at(&self) -> i64 {
-        if let Some(ts) = &self.modified_time {
-            let dt = DateTime::parse_from_rfc3339(ts);
-            if let Ok(dt) = dt {
-                return dt.timestamp();
-            }
-        }
-        return 0;
-    }
+        let created_at = match self.created_time {
+            Some(ts) => DateTime::parse_from_rfc3339(&ts)
+                .map(|dt| dt.timestamp())
+                .unwrap_or(0),
+            None => 0,
+        };
 
-    fn created_at(&self) -> i64 {
-        if let Some(ts) = &self.created_time {
-            let dt = DateTime::parse_from_rfc3339(ts);
-            if let Ok(dt) = dt {
-                return dt.timestamp();
-            }
-        }
-        return 0;
-    }
+        let parent_id = self.parents
+            .map(|p| p.get(0).map(|t| t.clone()))
+            .unwrap_or(None);
 
-    fn is_folder(&self) -> bool {
-        if let Some(m) = &self.mime_type {
-            return m == "application/vnd.google-apps.folder";
-        }
-        return false;
-    }
+        let is_folder = self.mime_type
+            .map(|m| m == "application/vnd.google-apps.folder")
+            .unwrap_or(false);
 
-    fn parent(&self) -> Option<String> {
-        if let Some(p) = &self.parents {
-            return p.get(0).map(|t| t.clone());
+        File {
+            id: self.id,
+            modified_at,
+            created_at,
+            parent_id,
+            is_folder,
         }
-        return None;
     }
 }
