@@ -176,8 +176,8 @@ function Agent() {
       updateMessage(index, conversation.id, newMessage)
         .then(() => {
           setLatestRes(null)
-          ctx.setMessages(ctx.messages.slice(0, index))
-          sendMessage(conversation.id, newMessage, ctx.messages.slice(0, index))
+          ctx.setMessages(ctx.messages.slice(0, index+1))
+          sendMessage(conversation.id, undefined, ctx.messages.slice(0, index+1))
         })
     }
   }
