@@ -15,17 +15,15 @@ pub const API_ENDPOINT: &str = "https://graph.microsoft.com/v1.0/me/drive";
 pub struct Client {
     client: crate::core::Client,
     req: Arc<reqwest::Client>,
-    root: String,
 }
 
 impl Client {
 
     /// Instantiate new OneDrive client.
-    pub fn new(root: Option<&str>, token: &Token, config: &Config) -> Self {
+    pub fn new(token: &Token, config: &Config) -> Self {
         Self {
             client: crate::core::Client::new(token, config),
             req: Arc::new(reqwest::Client::new()),
-            root: root.unwrap_or("helsync").to_string(),
         }
     }
 
@@ -131,18 +129,12 @@ impl FileSystem for Client {
     /// API Reference: [Copy a DriveItem](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_copy?view=odsp-graph-online)
     async fn copy_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<DriveItem> {
         let url = format!("{}/items/{}/copy", API_ENDPOINT, source_id);
-        let mut body = match parent_id {
-            Some(parent) => serde_json::json!({
-                "parentReference": {
-                    "id": parent,
-                }
-            }),
-            None => serde_json::json!({
-                "parentReference": {
-                    "path": self.root,
-                }
-            })
-        };
+        let mut body = serde_json::json!({});
+        if let Some(parent_id) = parent_id {
+            body["parentReference"] = serde_json::json!({
+                "id": parent_id,
+            });
+        }
 
         if let Some(name) = name {
             body["name"] = serde_json::Value::String(name.to_string());
@@ -205,18 +197,12 @@ impl FileSystem for Client {
     /// API Reference: [Move](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_move?view=odsp-graph-online)
     async fn move_file(&self, source_id: &str, parent_id: Option<&str>, name: Option<&str>) -> Result<DriveItem> {
         let url = format!("{}/items/{}", API_ENDPOINT, source_id);
-        let mut body = match parent_id {
-            Some(parent) => serde_json::json!({
-                "parentReference": {
-                    "id": parent,
-                }
-            }),
-            None => serde_json::json!({
-                "parentReference": {
-                    "path": self.root,
-                }
-            })
-        };
+        let mut body = serde_json::json!({});
+        if let Some(parent_id) = parent_id {
+            body["parentReference"] = serde_json::json!({
+                "id": parent_id,
+            });
+        }
 
         if let Some(new_name) = name {
             body["name"] = serde_json::Value::String(new_name.to_string());
@@ -262,7 +248,7 @@ impl FileSystem for Client {
     async fn create_folder(&self, parent_id: Option<&str>, name: &str) -> Result<DriveItem> {
         let url = match parent_id {
             Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
-            None => format!("{}/root:/{}:/children", API_ENDPOINT, self.root),
+            None => format!("{}/root/children", API_ENDPOINT),
         };
 
         let items = serde_json::json!({
@@ -292,8 +278,8 @@ impl FileSystem for Client {
     /// API Reference: [Create folder](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_post_children?view=odsp-graph-online)
     async fn create_file(&self, parent_id: Option<&str>, name: &str) -> Result<Self::File> {
         let url = match parent_id {
-            Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
-            None => format!("{}/root:/{}:/children", API_ENDPOINT, self.root),
+            Some(p) => format!("{API_ENDPOINT}/items/{p}/children"),
+            None => format!("{API_ENDPOINT}/root/children"),
         };
 
         let items = serde_json::json!({
@@ -327,8 +313,8 @@ impl FileSystem for Client {
     /// API Reference: [List Children](https://learn.microsoft.com/en-us/onedrive/developer/rest-api/api/driveitem_list_children?view=odsp-graph-online)
     async fn list_files(&self, id: Option<&str>) -> Result<Vec<DriveItem>> {
         let url = match id {
-            Some(p) => format!("{}/items/{}/children", API_ENDPOINT, p),
-            None => format!("{}/root:/{}:/children", API_ENDPOINT, self.root),
+            Some(p) => format!("{API_ENDPOINT}/items/{p}/children"),
+            None => format!("{API_ENDPOINT}/root/children"),
         };
 
         let req = self.req.clone().get(&url)
@@ -372,7 +358,6 @@ impl FileSystem for Client {
 
 impl Delta for Client {
     type File = DriveItem;
-    type Error = Error;
 
     /// Track changes for a Drive.
     ///
@@ -384,7 +369,7 @@ impl Delta for Client {
 
         // Paginated endpoint: initial request.
         let mut changes: Vec<DriveItem> = Vec::new();
-        let url = format!("{}/root:/{}:/delta", API_ENDPOINT, self.root);
+        let url = format!("{API_ENDPOINT}/root/delta");
 
         // Applying a delta omits changes that have already been viewed.
         let url = match delta {

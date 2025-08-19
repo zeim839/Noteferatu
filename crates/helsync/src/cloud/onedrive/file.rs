@@ -121,10 +121,12 @@ impl Into<File> for DriveItem {
 
         File {
             id: self.id,
+            name: self.name.unwrap_or("Untitled".to_string()),
             modified_at,
             created_at,
             parent_id,
             is_folder: self.folder.is_some(),
+            is_deleted: self.deleted.is_some(),
         }
     }
 }

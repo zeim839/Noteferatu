@@ -120,10 +120,12 @@ impl Into<File> for DriveFile {
 
         File {
             id: self.id,
+            name: self.name,
             modified_at,
             created_at,
             parent_id,
             is_folder,
+            is_deleted: self.trashed.is_some_and(|b| b),
         }
     }
 }

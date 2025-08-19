@@ -8,6 +8,9 @@ pub struct File {
     /// A unique identifier for the file.
     pub id: String,
 
+    /// The file's name.
+    pub name: String,
+
     /// Unix timestamp of the last known modification.
     pub modified_at: i64,
 
@@ -21,4 +24,7 @@ pub struct File {
 
     /// Whether the file object is a folder.
     pub is_folder: bool,
+
+    /// Whether the file/delta has been deleted.
+    pub is_deleted: bool,
 }

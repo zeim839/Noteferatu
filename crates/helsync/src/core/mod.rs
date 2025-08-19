@@ -1,3 +1,5 @@
+//! Core Primitives
+
 mod client;
 pub(crate) use client::*;
 

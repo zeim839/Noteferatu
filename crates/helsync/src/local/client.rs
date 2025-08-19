@@ -20,6 +20,29 @@ impl Client {
         Self { db }
     }
 
+    /// Fetch a file using its remote ID.
+    pub(crate) async fn get_remote_file(&self, remote_id: &str) -> Result<Option<LocalFile>> {
+        let mut conn = self.db.acquire().await?;
+        let file = sqlx::query_as("SELECT * FROM File WHERE remote_id=?")
+            .bind(remote_id)
+            .fetch_optional(&mut *conn)
+            .await?;
+
+        Ok(file)
+    }
+
+    /// Sets a file's remote id.
+    pub(crate) async fn set_remote_id(&self, local_id: i64, remote_id: &str) -> Result<()> {
+        let mut conn = self.db.acquire().await?;
+        sqlx::query("UPDATE File SET remote_id=? WHERE id=?")
+            .bind(remote_id)
+            .bind(local_id)
+            .execute(&mut *conn)
+            .await?;
+
+        Ok(())
+    }
+
     /// Fetch all bookmarked files.
     pub async fn list_bookmarks(&self) -> Result<Vec<LocalFile>> {
         let mut conn = self.db.acquire().await?;
@@ -428,7 +451,6 @@ impl FileSystem for Client {
 
 impl Delta for Client {
     type File = LocalFile;
-    type Error = Error;
 
     async fn list_deltas(&self, token: Option<&str>) -> Result<(Vec<LocalFile>, String)> {
         let mut conn = self.db.acquire().await?;

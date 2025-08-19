@@ -340,7 +340,6 @@ impl FileSystem for Client {
 
 impl Delta for Client {
     type File = DriveChange;
-    type Error = Error;
 
     /// Report file changes.
     async fn list_deltas(&self, token: Option<&str>) -> Result<(Vec<DriveChange>, String)> {

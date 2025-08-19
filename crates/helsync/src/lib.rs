@@ -4,6 +4,7 @@ pub mod cloud;
 pub mod core;
 pub mod oauth2;
 pub mod local;
+pub mod sync;
 
 #[cfg(feature = "plugin")]
 pub mod plugin;

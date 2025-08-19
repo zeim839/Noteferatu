@@ -25,10 +25,12 @@ impl Into<File> for LocalFile {
     fn into(self) -> File {
         File {
             id: self.id.to_string(),
+            name: self.name,
             modified_at: self.modified_at,
             created_at: self.created_at,
             parent_id: self.parent.map(|p| p.to_string()),
             is_folder: self.is_folder,
+            is_deleted: self.is_deleted,
         }
     }
 }

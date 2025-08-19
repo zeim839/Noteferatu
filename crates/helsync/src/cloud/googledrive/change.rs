@@ -56,12 +56,17 @@ impl Into<File> for DriveChange {
             .map(|m| m == "application/vnd.google-apps.folder")
             .unwrap_or(false);
 
+        let name = self.file.clone().map(|file| file.name)
+            .unwrap_or("Untitled".to_string());
+
         File {
             id: self.file_id,
+            name,
             modified_at,
             created_at,
             parent_id,
             is_folder,
+            is_deleted: self.removed,
         }
     }
 }
