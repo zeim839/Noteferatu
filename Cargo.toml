@@ -6,6 +6,7 @@ members = [
         "crates/macwindow",
         "crates/database",
         "src-tauri",
+        "crates/mkdn",
 ]
 
 [profile.release]
