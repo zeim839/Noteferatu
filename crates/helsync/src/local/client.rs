@@ -439,13 +439,36 @@ impl FileSystem for Client {
     /// Write a slice of bytes to a file.
     ///
     /// The file's content will be replaced with the bytes.
-    async fn write_to_file(&self, _: &str, _: &[u8]) -> Result<LocalFile> {
-        unimplemented!();
+    async fn write_to_file(&self, id: &str, content: &[u8]) -> Result<LocalFile> {
+        let mut conn = self.db.acquire().await?;
+        sqlx::query("INSERT INTO FileData (id, content) VALUES (?, ?)
+    ON CONFLICT (id) DO UPDATE SET content = excluded.content")
+            .bind(id)
+            .bind(content)
+            .execute(&mut *conn)
+            .await?;
+
+        let file: LocalFile = sqlx::query_as("SELECT * FROM File WHERE id=?")
+            .bind(id)
+            .fetch_one(&mut *conn)
+            .await?;
+
+        Ok(file)
     }
 
     /// Read the file's binary data.
-    async fn read_from_file(&self, _: &str) -> Result<Vec<u8>> {
-        unimplemented!();
+    async fn read_from_file(&self, id: &str) -> Result<Vec<u8>> {
+        let mut conn = self.db.acquire().await?;
+        let content: Option<Vec<u8>> = sqlx::query_scalar("SELECT content
+    FROM FileData WHERE id=?")
+            .bind(id)
+            .fetch_optional(&mut *conn)
+            .await?;
+
+        match content {
+            Some(content) => Ok(content),
+            None => Ok(Vec::new()),
+        }
     }
 }
 

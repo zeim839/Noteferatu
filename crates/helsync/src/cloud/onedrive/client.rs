@@ -443,7 +443,7 @@ mod tests {
             Arc::new(token)
         }).await.clone();
 
-        Client::new(Some("helsync-test"), &token, &app_config)
+        Client::new(&token, &app_config)
     }
 
     #[tokio::test]

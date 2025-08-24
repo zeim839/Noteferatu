@@ -1,9 +1,0 @@
-[package]
-name = "mkdn"
-version = "0.1.0"
-authors = [ "NoteFeratu" ]
-edition = "2024"
-description = ""
-links = "mkdn"
-
-[dependencies]

@@ -13,6 +13,7 @@ clap = { version = "4.5.40", features = ["derive"], optional = true }
 console = { version = "0.16.0", optional = true }
 dirs = { version = "6.0.0", optional = true }
 anyhow = { version = "1.0.98", optional = true }
+markdown = { version = "1.0.0", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["macros", "runtime-tokio", "sqlite"] }
 tokio = { version = "1.45.1", features = ["full"] }
@@ -34,7 +35,7 @@ dotenv = "0.15.0"
 
 [features]
 binary = ["dep:clap", "dep:console", "dep:dirs", "dep:anyhow"]
-plugin = ["dep:tauri", "dep:tauri-plugin"]
+plugin = ["dep:tauri", "dep:tauri-plugin", "dep:markdown"]
 
 [[bin]]
 name = "helsync"

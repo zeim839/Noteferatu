@@ -97,8 +97,8 @@ impl<R: Runtime> Helsync<R> {
     }
 
     /// Read the file's binary data.
-    pub async fn read_from_file(&self) -> Result<()> {
-        unimplemented!();
+    pub async fn read_from_file(&self, id: &str) -> Result<Vec<u8>> {
+        Ok(self.local.read_from_file(id).await?)
     }
 
     /// Fetch all bookmarked files.
