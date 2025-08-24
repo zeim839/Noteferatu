@@ -1,6 +1,7 @@
 import * as React from "react"
 import { TabRecord } from "./tabs"
 import { Header } from "./header"
+import { MDMode } from "@/components/mdmode/mdmode"
 
 function BufferNode({onSplit, onClose}: {
   onSplit: (orientation: "vertical" | "horizontal" | null) => void,
@@ -64,7 +65,7 @@ function BufferNode({onSplit, onClose}: {
         onCloseTab={handleCloseTab}
         onCloseBuffer={() => onClose?.()}
       />
-      <div className="w-full h-full bg-[#EFF1F5]" />
+      <MDMode />
     </div>
   )
 }
