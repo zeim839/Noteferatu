@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core"
+import { Node } from "./markdown"
 
 // A Helsync virtual file. Can be either a document or folder.
 export type File = {
@@ -108,6 +109,11 @@ export async function writeToFile(name: string, contents: Uint8Array, parentId?:
   return await invoke<File>("plugin:helsync|write_to_file", {
     parentId, name, contents: Array.from(contents),
   })
+}
+
+// Read from a file in the filesystem.
+export async function readFromFile(id: string): Promise<Node> {
+  return await invoke<Node>("plugin:helsync|read_from_file", {id})
 }
 
 // Fetch all bookmarked files.

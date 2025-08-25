@@ -24,6 +24,9 @@ CREATE TABLE IF NOT EXISTS FileData (
     ON DELETE CASCADE
 );
 
+INSERT INTO File VALUES (0, \"Untitled\", NULL, NULL, FALSE, 0, 0, NULL, FALSE, FALSE);
+INSERT INTO FileData VALUES (0, \"# Introduction\\n Hello World!\");
+
 CREATE TABLE IF NOT EXISTS Tag (
   name       TEXT       PRIMARY KEY,
   color      VARCHAR(6) NOT NULL     DEFAULT \"000000\",

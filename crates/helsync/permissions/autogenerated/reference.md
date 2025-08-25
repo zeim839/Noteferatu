@@ -11,6 +11,8 @@ Default permissions for the plugin
 - `allow-create-folder`
 - `allow-create-file`
 - `allow-list-files`
+- `allow-write-to-file`
+- `allow-read-from-file`
 - `allow-list-bookmarks`
 - `allow-create-bookmark`
 - `allow-remove-bookmark`
@@ -473,6 +475,32 @@ Denies the ping command without any pre-configured scope.
 <tr>
 <td>
 
+`helsync:allow-read-from-file`
+
+</td>
+<td>
+
+Enables the read_from_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-read-from-file`
+
+</td>
+<td>
+
+Denies the read_from_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `helsync:allow-remove-file`
 
 </td>
@@ -570,6 +598,32 @@ Enables the remove_tag_bind command without any pre-configured scope.
 <td>
 
 Denies the remove_tag_bind command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:allow-write-to-file`
+
+</td>
+<td>
+
+Enables the write_to_file command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`helsync:deny-write-to-file`
+
+</td>
+<td>
+
+Denies the write_to_file command without any pre-configured scope.
 
 </td>
 </tr>

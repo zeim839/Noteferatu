@@ -82,6 +82,14 @@ pub(crate) async fn write_to_file<R: Runtime>(
 }
 
 #[command]
+pub(crate) async fn read_from_file<R: Runtime>(
+    app: AppHandle<R>,
+    id: &str,
+) -> Result<markdown::mdast::Node> {
+    app.helsync().read_from_file(id).await
+}
+
+#[command]
 pub(crate) async fn list_bookmarks<R: Runtime>(
     app: AppHandle<R>,
 ) -> Result<Vec<LocalFile>> {

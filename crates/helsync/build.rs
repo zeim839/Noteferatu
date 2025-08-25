@@ -7,6 +7,8 @@ const COMMANDS: &[&str] = &[
     "create_folder",
     "create_file",
     "list_files",
+    "write_to_file",
+    "read_from_file",
     "list_bookmarks",
     "create_bookmark",
     "remove_bookmark",

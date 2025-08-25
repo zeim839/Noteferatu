@@ -1,10 +1,11 @@
 use crate::local::{Client, LocalFile, Tag, TagWithFiles};
 use crate::core::{FileSystem, Result};
 
-use std::sync::Arc;
 use tauri::{plugin::PluginApi, AppHandle, Runtime};
 use serde::de::DeserializeOwned;
+use markdown::mdast::Node;
 use database::Database;
+use std::sync::Arc;
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
@@ -97,8 +98,10 @@ impl<R: Runtime> Helsync<R> {
     }
 
     /// Read the file's binary data.
-    pub async fn read_from_file(&self, id: &str) -> Result<Vec<u8>> {
-        Ok(self.local.read_from_file(id).await?)
+    pub async fn read_from_file(&self, id: &str) -> Result<Node> {
+        let contents = String::from_utf8(self.local.read_from_file(id).await?).unwrap();
+        let node = markdown::to_mdast(&contents, &markdown::ParseOptions::gfm()).unwrap();
+        Ok(node)
     }
 
     /// Fetch all bookmarked files.

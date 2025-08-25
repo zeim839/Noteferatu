@@ -47,6 +47,7 @@ pub fn init<R: Runtime>(db: Arc<Database>) -> TauriPlugin<R> {
             commands::create_file,
             commands::list_files,
             commands::write_to_file,
+            commands::read_from_file,
             commands::list_bookmarks,
             commands::create_bookmark,
             commands::remove_bookmark,
