@@ -1,13 +1,19 @@
 import * as React from "react"
+
 import { TabRecord } from "./tabs"
 import { Header } from "./header"
-import { MDMode } from "@/components/mdmode/mdmode"
+
+import { readFromFile } from "@/lib/helsync"
+import { Node } from "@/lib/markdown"
+import { Editor } from "@/components/editor/editor"
+import { EditorProvider } from "@/components/editor/context"
 
 function BufferNode({onSplit, onClose}: {
   onSplit: (orientation: "vertical" | "horizontal" | null) => void,
   onClose?: () => void
 }) {
   const [active, setActive] = React.useState<number>(0)
+  const [node, setNode] = React.useState<Node | null>(null)
   const [tabs, setTabs] = React.useState<Array<TabRecord>>([
     {
       prev: null,
@@ -37,8 +43,16 @@ function BufferNode({onSplit, onClose}: {
       type: "",
       path: "",
     },
-
   ])
+
+
+  // Load demo file data into the buffer.
+  React.useEffect(() => {
+    readFromFile("0").then((node) => {
+      console.log(node)
+      setNode(node)
+    })
+  }, [])
 
   const handleCloseTab = (i: number) => {
     // If this is the last tab, close the entire buffer.
@@ -65,7 +79,9 @@ function BufferNode({onSplit, onClose}: {
         onCloseTab={handleCloseTab}
         onCloseBuffer={() => onClose?.()}
       />
-      <MDMode />
+      <EditorProvider>
+        { (node !== null) ? <Editor node={node} /> : null }
+      </EditorProvider>
     </div>
   )
 }
