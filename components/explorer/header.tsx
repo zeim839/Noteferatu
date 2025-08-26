@@ -29,7 +29,6 @@ import {
 function ExplorerHeader() {
   const [isSelectDocOpen, setIsSelectDocOpen] = React.useState<boolean>(false)
   const explorer = useExplorerContext()
-
   return (
     <Sidebar.Header className="flex flex-row justify-between items-center px-1 min-h-[29px]">
       <Select
@@ -73,13 +72,13 @@ function ExplorerHeader() {
               <ArrowDownWideNarrowIcon strokeWidth={1.6} />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-30 p-0 flex flex-col">
+          <PopoverContent className="w-28 p-0 flex flex-col">
             <Select
               value={explorer.sortFileKey() as string}
               onValueChange={(value) => explorer.setSortFileKey(value as SortFileKey)}
             >
               <SelectTrigger className="w-full text-xs shadow-none border-none py-0.5 px-2" size="sm">
-                <ArrowDownAZIcon className="size-3" />
+                <ArrowDownAZIcon className="size-4" />
                 <span>Sort by</span>
               </SelectTrigger>
               <SelectContent className="bg-[#EDF0F4]" side="right">
@@ -93,7 +92,7 @@ function ExplorerHeader() {
               onValueChange={(value) => explorer.setSortFileAsc(value === "asc")}
             >
               <SelectTrigger className="w-full text-xs shadow-none border-none py-0.5 px-2" size="sm">
-                <ListOrderedIcon className="size-3" />
+                <ListOrderedIcon className="size-4" />
                 <span>Order by</span>
               </SelectTrigger>
               <SelectContent className="bg-[#EDF0F4]" side="right">
