@@ -45,7 +45,6 @@ function BufferNode({onSplit, onClose}: {
     },
   ])
 
-
   // Load demo file data into the buffer.
   React.useEffect(() => {
     readFromFile("0").then((node) => {

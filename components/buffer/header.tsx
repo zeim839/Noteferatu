@@ -37,7 +37,7 @@ function Header({ tabs, active, setActive, onSplit, onCloseTab, onCloseBuffer } 
   // outline/border to the header ruins the effect.
   return (
     <div className="h-[30px] bg-[#DCE0E8] flex flex-row">
-      <div className="h-full w-[60px] flex items-center justify-between border-b border-r border-[#AEB3C0] px-1.5">
+      <div className="h-full w-[60px] flex items-center justify-between border-b border-r border-[#AEB3C0] px-1">
         <Button variant="ghost" size="icon" disabled={tabs[active].prev === null}>
           <ArrowLeftIcon strokeWidth={1.6} />
         </Button>
