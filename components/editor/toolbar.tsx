@@ -10,7 +10,14 @@ import {
   EllipsisVerticalIcon,
 } from "lucide-react"
 
-function Toolbar() {
+interface ToolbarProps extends React.ComponentProps<"div"> {
+  onUndo: () => void
+  onRedo: () => void
+  undoDepth: number
+  redoDepth: number
+}
+
+function Toolbar({ onUndo, onRedo, undoDepth, redoDepth }: ToolbarProps) {
   const ctx = useEditorContext()
   const toggleView = () => {
     ctx.setView(ctx.view === 'document' ? 'graph' : 'document')
@@ -18,10 +25,22 @@ function Toolbar() {
   return (
     <div className="flex justify-between items-center min-h-8 h-8 w-full border-[#ABB0BE] border-b px-1">
       <div>
-        <Button variant="outline" size="icon" tooltip="Undo">
+        <Button
+          variant="outline"
+          size="icon"
+          tooltip="Undo"
+          onClick={onUndo}
+          disabled={undoDepth <= 0}
+        >
           <Undo2Icon strokeWidth={1.6} />
         </Button>
-        <Button variant="outline" size="icon" tooltip="Redo">
+        <Button
+          variant="outline"
+          size="icon"
+          tooltip="Redo"
+          onClick={onRedo}
+          disabled={redoDepth <= 0}
+        >
           <Redo2Icon strokeWidth={1.6} />
         </Button>
       </div>

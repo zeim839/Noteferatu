@@ -10,6 +10,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@codemirror/commands": "^6.8.1",
     "@codemirror/view": "^6.38.2",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-context-menu": "^2.2.15",
