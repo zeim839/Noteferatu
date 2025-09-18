@@ -53,7 +53,7 @@ function Message({ data, index, onEdit }: MessageProps) {
 
   if (data.role === "user") {
     return (
-      <div className="flex my-6 mx-2 text-sm">
+      <div className="flex my-6 mx-2">
         <div className={`p-2 w-full border rounded-sm shadow-xs select-text bg-[#EDF0F4] ${isEditing ? "border-blue-500" : "border-[#AEB3C0]"}`}>
           {isEditing ? (
             <div>
@@ -63,7 +63,7 @@ function Message({ data, index, onEdit }: MessageProps) {
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 onBlur={handleSave}
-                className="w-full p-0 m-0 text-sm resize-none bg-inherit focus:outline-none overflow-y-hidden"
+                className="w-full p-0 m-0 resize-none bg-inherit focus:outline-none overflow-y-hidden"
               />
               <div className="text-right text-xs text-gray-500 opacity-75">
                 press enter to save ⏎
@@ -81,7 +81,7 @@ function Message({ data, index, onEdit }: MessageProps) {
 
   if (data.role === "assistant") {
     return (
-      <div className="flex justify-start my-4 mx-3 text-sm">
+      <div className="flex justify-start my-4 mx-3">
         <div className="whitespace-pre-wrap cursor-text select-text">{data.content}</div>
       </div>
     )
