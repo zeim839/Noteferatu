@@ -1,53 +1,17 @@
 import * as React from "react"
 
+import { Graph } from "@/components/graph/graph"
+
 import { Toolbar } from "./toolbar"
 import { useEditorContext } from "./context"
-
-import { Node } from "@/lib/markdown"
-import { Graph } from "@/components/graph/graph"
+import { markdownPlugin } from "./markdown"
+import { markdownTheme } from "./theme"
 
 import * as Commands from "@codemirror/commands"
 import * as View from "@codemirror/view"
-import * as State from "@codemirror/state"
-
-const titleDecoration = View.Decoration.mark({
-  attributes: {
-    class: "cm-title",
-    style: "font-size: 2rem; font-weight: bold; line-height: 1.2; margin: 0.5rem 0;"
-  }
-})
-
-const titleField = State.StateField.define<View.DecorationSet>({
-  create() {
-    return View.Decoration.none
-  },
-  update(decorations, tr) {
-    decorations = decorations.map(tr.changes)
-
-    // Find lines that start with "# " (markdown h1) and decorate them
-    const newDecorations: Range<View.Decoration>[] = []
-
-    for (let i = 1; i <= tr.state.doc.lines; i++) {
-      const line = tr.state.doc.line(i)
-      const lineText = line.text
-
-      // Check if line starts with "# " (title marker)
-      if (lineText.startsWith("# ")) {
-        // Decorate from after "# " to end of line
-        const from = line.from + 2
-        const to = line.to
-        if (from < to) {
-          newDecorations.push(titleDecoration.range(from, to))
-        }
-      }
-    }
-    return View.Decoration.set(newDecorations)
-  },
-  provide: f => View.EditorView.decorations.from(f),
-})
 
 // Editor is the markdown-mode editor.
-function Editor({ node }: { node: Node }) {
+function Editor() {
   const [undoDepth, setUndoDepth] = React.useState<number>(0)
   const [redoDepth, setRedoDepth] = React.useState<number>(0)
 
@@ -90,22 +54,17 @@ function Editor({ node }: { node: Node }) {
       const view = new View.EditorView({
         parent: editorRef.current,
         extensions: [
+          markdownPlugin,
+          markdownTheme,
           Commands.history(),
+          View.highlightSpecialChars(),
+          View.highlightTrailingWhitespace(),
           View.EditorView.lineWrapping,
           View.EditorView.updateListener.of(onUpdate),
-          titleField,
-          View.EditorView.theme({
-            "&": {
-              fontFamily: "'Iosevka Comfy', monospace",
-            },
-            ".cm-content": {
-              fontFamily: "'Iosevka Comfy', monospace",
-            },
-            "&.cm-focused": {
-              outline: "none",
-            }
-          }),
-          View.keymap.of([...Commands.historyKeymap]),
+          View.keymap.of([
+            ...Commands.historyKeymap,
+            ...Commands.defaultKeymap,
+          ]),
         ],
       })
       viewRef.current = view
