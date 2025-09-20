@@ -11,6 +11,21 @@ const markdownTheme = View.EditorView.theme({
   "&.cm-focused": {
     outline: "none",
   },
+  ".cm-codeblock": {
+    backgroundColor: "#818b981f",
+    borderRadius: "5px",
+  },
+  ".cm-fencedcode": {
+    backgroundColor: "#818b981f",
+    borderRadius: "5px",
+  },
+  ".cm-blockquote": {
+    backgroundColor: "#818b981f",
+    borderRadius: "5px",
+  },
+  ".cm-listitem": {
+    paddingLeft: "2em",
+  },
   ".cm-atxheading1": {
     fontSize: "2em",
     lineHeight: "1.25rem"
@@ -34,7 +49,6 @@ const markdownTheme = View.EditorView.theme({
   },
   ".cm-headermark": {
     opacity: "70%",
-    fontSize: "15px"
   },
   ".cm-emphasis": {
     fontStyle: "italic"
