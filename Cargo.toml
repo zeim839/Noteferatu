@@ -5,6 +5,7 @@ members = [
         "crates/helsync",
         "crates/macwindow",
         "crates/database",
+        "crates/renfield",
         "src-tauri",
 ]
 
