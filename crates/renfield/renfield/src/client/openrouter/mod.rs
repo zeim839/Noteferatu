@@ -1,0 +1,1 @@
+//! OpenRouter API client.
