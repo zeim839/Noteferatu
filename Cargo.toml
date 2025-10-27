@@ -6,6 +6,7 @@ members = [
         "crates/macwindow",
         "crates/database",
         "crates/renfield",
+        "crates/codegen",
         "src-tauri",
 ]
 
