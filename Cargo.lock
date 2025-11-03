@@ -3799,13 +3799,16 @@ dependencies = [
 name = "renfield"
 version = "0.2.0"
 dependencies = [
+ "base64 0.22.1",
  "codegen",
+ "dotenv",
  "macros",
  "reqwest",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
  "tokio",
+ "tokio-stream",
 ]
 
 [[package]]
