@@ -28,10 +28,12 @@ pub fn generate(input: syn::DeriveInput) -> syn::Result<TokenStream> {
             #vis fn as_openai_tool() -> serde_json::Value {
                 serde_json::json!({
                     "type": "function",
-                    "name": #tool_name,
-                    "parameters": <#ident_name as renfield::tools::Schema>::schema(),
-                    #strict
-                    #desc
+                    "function": {
+                        "name": #tool_name,
+                        "parameters": <#ident_name as renfield::tools::Schema>::schema(),
+                        #strict
+                        #desc
+                    },
                 })
             }
 

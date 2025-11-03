@@ -49,22 +49,24 @@
 //! // Example: generate an OpenAI tool schema for GetWeather.
 //! assert_eq!(GetWeather::as_openai_tool(), serde_json::json!({
 //!     "type": "function",
-//!     "name": "get_weather",
-//!     "description": "Retrieves the current weather for the given location.",
-//!     "parameters": {
-//!         "type": "object",
+//!     "function": {
+//!         "name": "get_weather",
 //!         "description": "Retrieves the current weather for the given location.",
-//!         "properties": {
-//!             "location": {
-//!                 "type": "string",
-//!                 "description": "City and country e.g. Bogotá, Colombia",
+//!         "parameters": {
+//!             "type": "object",
+//!             "description": "Retrieves the current weather for the given location.",
+//!             "properties": {
+//!                 "location": {
+//!                     "type": "string",
+//!                     "description": "City and country e.g. Bogotá, Colombia",
+//!                 },
+//!                 "units": {
+//!                     "enum": ["celsius", "fahrenheit"],
+//!                     "description": "Units the temperature will be returned in.",
+//!                 },
 //!             },
-//!             "units": {
-//!                 "enum": ["celsius", "fahrenheit"],
-//!                 "description": "Units the temperature will be returned in.",
-//!             },
+//!             "required": ["location", "units"]
 //!         },
-//!         "required": ["location", "units"]
 //!     },
 //! }));
 //! ```
