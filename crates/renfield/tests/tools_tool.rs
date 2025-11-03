@@ -54,17 +54,19 @@ fn test_openai_tools() {
         GetHoroscope::as_openai_tool(),
         serde_json::json!({
             "type": "function",
-            "name": "get_horoscope",
-            "description": "Get today's horoscope for an astrological sign.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "sign": {
-                        "type": "string",
-                        "description": "An astrological sign like Taurus or Aquarius",
+            "function": {
+                "name": "get_horoscope",
+                "description": "Get today's horoscope for an astrological sign.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "sign": {
+                            "type": "string",
+                            "description": "An astrological sign like Taurus or Aquarius",
+                        },
                     },
+                    "required": ["sign"],
                 },
-                "required": ["sign"],
             },
         })
     );
@@ -90,23 +92,25 @@ fn test_openai_tools() {
         GetWeather::as_openai_tool(),
         serde_json::json!({
             "type": "function",
-            "name": "get_weather",
-            "description": "Retrieves current weather for the given location.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "location": {
-                        "type": "string",
-                        "description": "City and country e.g. Bogotá, Colombia"
+            "function": {
+                "name": "get_weather",
+                "description": "Retrieves current weather for the given location.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "location": {
+                            "type": "string",
+                            "description": "City and country e.g. Bogotá, Colombia"
+                        },
+                        "units": {
+                            "enum": ["celsius", "fahrenheit"],
+                            "description": "Units the temperature will be returned in.",
+                        }
                     },
-                    "units": {
-                        "enum": ["celsius", "fahrenheit"],
-                        "description": "Units the temperature will be returned in.",
-                    }
+                    "required": ["location", "units"],
                 },
-                "required": ["location", "units"],
+                "strict": true
             },
-            "strict": true
         })
     );
 }
