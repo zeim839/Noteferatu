@@ -2555,6 +2555,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 
 [[package]]
+name = "macros"
+version = "0.1.0"
+
+[[package]]
 name = "macwindow"
 version = "0.1.0"
 dependencies = [
@@ -3793,9 +3797,11 @@ dependencies = [
 
 [[package]]
 name = "renfield"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "codegen",
+ "macros",
+ "reqwest",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
@@ -3804,9 +3810,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.12.22"
+version = "0.12.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbc931937e6ca3a06e3b6c0aa7841849b160a90351d6ab467a8b9b9959767531"
+checksum = "9d0946410b9f7b082a427e4ef5c8ff541a88b357bc6c637c40db3a68ac70a36f"
 dependencies = [
  "base64 0.22.1",
  "bytes",

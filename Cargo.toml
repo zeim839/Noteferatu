@@ -8,6 +8,7 @@ members = [
         "crates/renfield",
         "crates/codegen",
         "src-tauri",
+        "crates/macros",
 ]
 
 [profile.release]
