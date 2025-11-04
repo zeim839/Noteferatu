@@ -165,20 +165,17 @@ mod tests {
     use crate::client::openai::*;
     use std::env;
     use dotenv::dotenv;
-    use tokio::sync::OnceCell;
+    use once_cell::sync::Lazy;
 
-    static CLIENT: OnceCell<OpenAI> = OnceCell::const_new();
-    async fn get_test_client() -> &'static OpenAI {
-        CLIENT.get_or_init(|| async {
-            dotenv().ok();
-            let token = env::var("OPENAI_API_KEY")
-                .expect("missing OPENAI_API_KEY");
+    static CLIENT: Lazy<OpenAI> = Lazy::new(|| {
+        dotenv().ok();
+        let token = env::var("OPENAI_API_KEY")
+            .expect("missing OPENAI_API_KEY");
 
-            OpenAI::from_token(&token)
-        }).await
-    }
+        OpenAI::from_token(&token)
+    });
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_api_error() {
         let res = OpenAI::from_token("bad-token").list_models().await;
         assert!(res.is_err());
@@ -194,14 +191,13 @@ mod tests {
         }
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_chat_completion() {
         let req = Request::from_model("gpt-4.1-mini")
             .push_message(msg!("user", "hello"))
             .max_completion_tokens(10);
 
-        let client = get_test_client().await;
-        let res = client.chat_completion(&req)
+        let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -209,7 +205,7 @@ mod tests {
         assert!(matches!(res.choices[0].clone().message.unwrap(), Message::Assistant{ .. }));
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_audio_output_completion() {
         let req = Request::from_model("gpt-4o-audio-preview")
             .append_modalities(&mut vec![Modality::Text, Modality::Audio])
@@ -217,8 +213,7 @@ mod tests {
             .push_message(msg!("user", "say hello!"))
             .max_completion_tokens(50);
 
-        let client = get_test_client().await;
-        let res = client.chat_completion(&req)
+        let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -231,7 +226,7 @@ mod tests {
         panic!("no audio response returned");
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_audio_input_completion() {
 
         use base64::Engine;
@@ -252,8 +247,7 @@ mod tests {
             ))
             .max_completion_tokens(10);
 
-        let client = get_test_client().await;
-        let res = client.chat_completion(&req)
+        let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -266,15 +260,14 @@ mod tests {
         panic!("unexpected response");
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_image_input_completion() {
         let url = "https://upload.wikimedia.org/wikipedia/commons/5/57/Pelium_Man%C5%93uvre.jpg";
         let req = Request::from_model("gpt-4o")
             .push_message(msg!("user", "what's in this image?", ImageInput::from_url(url)))
             .max_completion_tokens(10);
 
-        let client = get_test_client().await;
-        let res = client.chat_completion(&req)
+        let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -287,15 +280,14 @@ mod tests {
         panic!("unexpected response");
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_file_input_completion() {
         let base64 = "data:application/pdf;base64,SGVsbG8sIFdvcmxkIQ==";
         let req = Request::from_model("gpt-4o-mini")
             .push_message(msg!("user", "what's in this file?", FileInput::from_file_data("my-file.pdf", &base64)))
             .max_completion_tokens(10);
 
-        let client = get_test_client().await;
-        let res = client.chat_completion(&req)
+        let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -308,7 +300,7 @@ mod tests {
         panic!("unexpected response");
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_function_tool_call_completion() {
 
         use crate::tools::{Tool, tool, schema};
@@ -328,8 +320,7 @@ mod tests {
             .push_tool(GetWeather::as_openai_tool())
             .max_completion_tokens(50);
 
-        let client = get_test_client().await;
-        let res = client.chat_completion(&req)
+        let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -346,7 +337,7 @@ mod tests {
         panic!("unexpected response");
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_stream_completion() {
         let req = Request::from_model("gpt-4.1-mini")
             .push_message(msg!("user", "hello"))
@@ -356,7 +347,7 @@ mod tests {
 
         let (tx, mut rx) = tokio::sync::mpsc::channel::<Response>(4);
         let handle = tokio::spawn(async move {
-            get_test_client().await.stream_chat_completion(&req, tx).await.unwrap();
+            CLIENT.stream_chat_completion(&req, tx).await.unwrap();
         });
 
         let mut completion_tokens = 0;
@@ -370,20 +361,18 @@ mod tests {
         assert!(completion_tokens > 0);
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_list_models() {
-        let client = get_test_client().await;
-        let models = client.list_models().await.unwrap();
+        let models = CLIENT.list_models().await.unwrap();
         assert!(models.len() > 0);
     }
 
-    #[tokio::test]
+    #[tokio_shared_rt::test(shared)]
     async fn test_get_model() {
-        let client = get_test_client().await;
-        let models = client.list_models().await.unwrap();
+        let models = CLIENT.list_models().await.unwrap();
         assert!(models.len() > 0);
 
-        let model = client.get_model(&models[0].id).await.unwrap();
+        let model = CLIENT.get_model(&models[0].id).await.unwrap();
         assert!(model.id == models[0].id);
     }
 }

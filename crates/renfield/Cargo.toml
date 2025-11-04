@@ -16,3 +16,5 @@ tokio-stream = "0.1.17"
 [dev-dependencies]
 dotenv = "0.15.0"
 base64 = "0.22.1"
+once_cell = "1.21.3"
+tokio-shared-rt = "0.1.0"
