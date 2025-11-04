@@ -53,5 +53,36 @@ macro_rules! oai_msg {
 
 #[macro_export]
 macro_rules! ollama_msg {
-    () => {};
+    ("system", $text:expr) => {
+        renfield::client::ollama::Message::System {
+            content: String::from($text),
+        }
+    };
+    ("user", $text:expr) => {
+        renfield::client::ollama::Message::User {
+            content: String::from($text),
+            images: Vec::new(),
+        }
+    };
+    ("user", $text:expr, ($($img:expr),+)) => {
+        renfield::client::ollama::Message::User {
+            content: String::from($text),
+            images: vec![
+                $( String::from($img), )*
+            ],
+        }
+    };
+    ("assistant", $text:expr) => {
+        renfield::client::ollama::Message::Assistant {
+            content: String::from($text),
+            tool_calls: None,
+            thinking: None,
+            images: None,
+        }
+    };
+    ("tool", $text:expr) => {
+        renfield::client::ollama::Message::Tool {
+            content: String::from($text),
+        }
+    };
 }
