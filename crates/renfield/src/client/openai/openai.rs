@@ -165,13 +165,17 @@ mod tests {
     use crate::client::openai::*;
     use std::env;
     use dotenv::dotenv;
+    use tokio::sync::OnceCell;
 
-    fn get_test_client() -> OpenAI {
-        dotenv().ok();
-        let token = env::var("OPENAI_API_KEY")
-            .expect("missing OPENAI_API_KEY");
+    static CLIENT: OnceCell<OpenAI> = OnceCell::const_new();
+    async fn get_test_client() -> &'static OpenAI {
+        CLIENT.get_or_init(|| async {
+            dotenv().ok();
+            let token = env::var("OPENAI_API_KEY")
+                .expect("missing OPENAI_API_KEY");
 
-        OpenAI::from_token(&token)
+            OpenAI::from_token(&token)
+        }).await
     }
 
     #[tokio::test]
@@ -196,7 +200,8 @@ mod tests {
             .push_message(msg!("user", "hello"))
             .max_completion_tokens(10);
 
-        let res = get_test_client().chat_completion(&req)
+        let client = get_test_client().await;
+        let res = client.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -212,7 +217,8 @@ mod tests {
             .push_message(msg!("user", "say hello!"))
             .max_completion_tokens(50);
 
-        let res = get_test_client().chat_completion(&req)
+        let client = get_test_client().await;
+        let res = client.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -246,7 +252,8 @@ mod tests {
             ))
             .max_completion_tokens(10);
 
-        let res = get_test_client().chat_completion(&req)
+        let client = get_test_client().await;
+        let res = client.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -266,7 +273,8 @@ mod tests {
             .push_message(msg!("user", "what's in this image?", ImageInput::from_url(url)))
             .max_completion_tokens(10);
 
-        let res = get_test_client().chat_completion(&req)
+        let client = get_test_client().await;
+        let res = client.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -286,7 +294,8 @@ mod tests {
             .push_message(msg!("user", "what's in this file?", FileInput::from_file_data("my-file.pdf", &base64)))
             .max_completion_tokens(10);
 
-        let res = get_test_client().chat_completion(&req)
+        let client = get_test_client().await;
+        let res = client.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -319,7 +328,8 @@ mod tests {
             .push_tool(GetWeather::as_openai_tool())
             .max_completion_tokens(50);
 
-        let res = get_test_client().chat_completion(&req)
+        let client = get_test_client().await;
+        let res = client.chat_completion(&req)
             .await.unwrap();
 
         assert!(res.choices.len() > 0);
@@ -346,7 +356,7 @@ mod tests {
 
         let (tx, mut rx) = tokio::sync::mpsc::channel::<Response>(4);
         let handle = tokio::spawn(async move {
-            get_test_client().stream_chat_completion(&req, tx).await.unwrap();
+            get_test_client().await.stream_chat_completion(&req, tx).await.unwrap();
         });
 
         let mut completion_tokens = 0;
@@ -362,13 +372,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_models() {
-        let models = get_test_client().list_models().await.unwrap();
+        let client = get_test_client().await;
+        let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
     }
 
     #[tokio::test]
     async fn test_get_model() {
-        let client = get_test_client();
+        let client = get_test_client().await;
         let models = client.list_models().await.unwrap();
         assert!(models.len() > 0);
 
