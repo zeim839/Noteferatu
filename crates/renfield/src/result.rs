@@ -1,6 +1,7 @@
 use crate::client::Error as ClientError;
 
 use crate::client::openai::Error as OpenAIError;
+use crate::client::ollama::Error as OllamaError;
 
 /// Result alias.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -28,6 +29,12 @@ pub enum Error {
 
 impl From<OpenAIError> for Error {
     fn from(value: OpenAIError) -> Self {
+        crate::client::Error::from(value).into()
+    }
+}
+
+impl From<OllamaError> for Error {
+    fn from(value: OllamaError) -> Self {
         crate::client::Error::from(value).into()
     }
 }
