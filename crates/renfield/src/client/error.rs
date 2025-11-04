@@ -1,6 +1,7 @@
 use serde::Serialize;
 
 use super::openai::Error as OpenAIError;
+use super::ollama::Error as OllamaError;
 
 /// Error enumerates the API error responses of different LLM clients.
 ///
@@ -19,4 +20,8 @@ pub enum Error {
     /// An [OpenAI](super::openai) error response object.
     #[error("{0}")]
     OpenAI(#[from] OpenAIError),
+
+    /// An [Ollama](super::ollama) error response object.
+    #[error("{0}")]
+    Ollama(#[from] OllamaError),
 }

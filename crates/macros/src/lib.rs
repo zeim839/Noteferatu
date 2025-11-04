@@ -50,3 +50,8 @@ macro_rules! oai_msg {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! ollama_msg {
+    () => {};
+}
