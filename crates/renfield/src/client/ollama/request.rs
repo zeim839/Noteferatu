@@ -28,8 +28,7 @@ pub struct Request {
     pub options: Option<Options>,
 
     /// Whether to stream the response.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stream: Option<bool>,
+    pub stream: bool,
 
     /// When true, returns separate thinking output in addition to
     /// content
@@ -86,7 +85,7 @@ impl Request {
 
     /// Enable/disable response streaming.
     pub fn stream(self, stream: bool) -> Self {
-        Self { stream: Some(stream), ..self }
+        Self { stream: stream, ..self }
     }
 
     /// Enable/disable extended reasoning (when available).
