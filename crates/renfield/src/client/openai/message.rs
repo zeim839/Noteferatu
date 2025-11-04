@@ -58,7 +58,7 @@ use serde::{Serialize, Deserialize};
 
 use super::request::AudioFormat;
 
-/// Conveniently construct an [OpenAI](super::OpenAI) message.
+/// Conveniently construct an OpenAI [Message].
 ///
 /// The [`msg`] macro takes a role string and a series of content
 /// parts and constructs an OpenAI [`Message`].
@@ -244,6 +244,8 @@ pub enum Message {
         #[serde(skip_serializing_if = "Option::is_none")]
         tool_calls: Option<Vec<ToolCall>>,
     },
+
+    /// Tool call outputs.
     Tool {
 
         /// The contents of the tool message.

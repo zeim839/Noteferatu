@@ -1,4 +1,62 @@
 //! Chat completion request.
+//!
+//! The [Request] struct implements an OpenAI chat completion
+//! request. The struct is designed to be composed in functional style
+//! (see examples below).
+//!
+//! # Streaming
+//!
+//! When generating streaming responses, the [stream](Request::stream)
+//! field must be set to `Some(true)`. This can be conveniently set
+//! using the [`stream`](Request::stream()) function. Likewise, if you wish to
+//! inspect token usage as responses are being streamed, you must make
+//! sure to enable `include_usage` in [stream_options](Request::stream_options).
+//!
+//! # Examples
+//!
+//! ## Basic Text Request
+//!
+//! ```
+//! use renfield::client::openai::{Request, msg};
+//!
+//! Request::from_model("gpt-4o-mini")
+//!     .push_message(msg!("developer", "You are a helpful assistant"))
+//!     .push_message(msg!("user", "Hello, what is your name?"))
+//!     .max_completion_tokens(20);
+//!
+//! ```
+//!
+//! ## File & Image Inputs
+//!
+//! ```
+//! use renfield::client::openai::{Request, ImageInput, msg};
+//!
+//! let img_url = "https://upload.wikimedia.org/wikipedia/commons/5/57/Pelium_Man%C5%93uvre.jpg";
+//! Request::from_model("gpt-4o-mini")
+//!     .push_message(msg!("user", "What's in this image?", ImageInput::from_url(img_url)))
+//!     .max_completion_tokens(20);
+//!
+//! ```
+//!
+//! ## Audio Generation
+//!
+//! To generate speech, set the model to `gpt-4o-audio-preview`,
+//! specify `Audio` as an output modality, and attach a
+//! [`AudioConfig`] object.
+//!
+//! Use the [`AudioConfig`] struct to configure the model's voice and
+//! output file format.
+//!
+//! ```
+//! use renfield::client::openai::{Request, AudioConfig, Modality, msg};
+//!
+//! Request::from_model("gpt-4o-audio-preview")
+//!     .append_modalities(&mut vec![Modality::Text, Modality::Audio])
+//!     .audio(AudioConfig::default())
+//!     .push_message(msg!("user", "say hello!"))
+//!     .max_completion_tokens(50);
+//! ```
+//!
 
 use serde::{Serialize, Deserialize};
 
@@ -38,7 +96,7 @@ pub struct Request {
     /// for a completion, including visible output tokens and
     /// reasoning tokens.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_completion_tokens: Option<i64>,
+    pub max_completion_tokens: Option<u64>,
 
     /// Output types that you would like the model to generate.
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -50,7 +108,7 @@ pub struct Request {
     /// Note that you will be charged based on the number of generated
     /// tokens across all of the choices.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub n: Option<i64>,
+    pub n: Option<u64>,
 
     /// Whether to enable parallel function calling during tool use.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -147,7 +205,7 @@ impl Request {
     }
 
     /// Set the maximum completion tokens.
-    pub fn max_completion_tokens(self, tokens: i64) -> Self {
+    pub fn max_completion_tokens(self, tokens: u64) -> Self {
         Self { max_completion_tokens: Some(tokens), ..self }
     }
 
@@ -166,7 +224,7 @@ impl Request {
     }
 
     /// Configure how many chat completions to generate per request.
-    pub fn n(self, n: i64) -> Self {
+    pub fn n(self, n: u64) -> Self {
         Self { n: Some(n), ..self }
     }
 
