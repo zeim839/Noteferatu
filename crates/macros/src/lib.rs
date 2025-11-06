@@ -86,3 +86,56 @@ macro_rules! ollama_msg {
         }
     };
 }
+
+#[macro_export]
+macro_rules! openrouter_msg {
+    ("system", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::openrouter::Content::from($first);
+        $(
+            let other = renfield::client::openrouter::Content::from($rest);
+            content = content.combine(other);
+        )*;
+        renfield::client::openrouter::Message::System{name: None, content}
+    }};
+    ("user", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::openrouter::Content::from($first);
+        $(
+            let other = renfield::client::openrouter::Content::from($rest);
+            content = content.combine(other);
+        )*;
+        renfield::client::openrouter::Message::User{name: None, content}
+    }};
+    ("developer", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::openrouter::Content::from($first);
+        $(
+            let other = renfield::client::openrouter::Content::from($rest);
+            content = content.combine(other);
+        )*;
+        renfield::client::openrouter::Message::Developer{name: None, content}
+    }};
+    ("assistant", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::openrouter::Content::from($first);
+        $(
+            let other = renfield::client::openrouter::Content::from($rest);
+            content = content.combine(other);
+        )*;
+        renfield::client::openrouter::Message::Assistant {
+            content: Some(content),
+            name: None,
+            tool_calls: None,
+            refusal: None,
+            reasoning: None,
+        }
+    }};
+    ("tool", $id:expr, $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::openrouter::Content::From($first);
+        $(
+            let other = renfield::client::openrouter::Content::From($rest);
+            content = content.combine(other);
+        )*;
+        renfield::client::openrouter::Message::Tool{
+            tool_call_id: id,
+            content,
+        }
+    }};
+}
