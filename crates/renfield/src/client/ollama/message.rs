@@ -1,6 +1,7 @@
 //! Conversation messages.
 
 use serde::{Serialize, Deserialize};
+use super::tools::ToolCall;
 
 /// Conveniently construct an Ollama [Message].
 pub use macros::ollama_msg as msg;
@@ -58,30 +59,6 @@ pub enum Message {
         /// Message text content.
         content: String,
     },
-}
-
-/// Tool call requested by the assistant.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ToolCall {
-
-    /// The function to call.
-    pub function: FunctionCall,
-}
-
-/// Function call requested by the assistant.
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct FunctionCall {
-
-    /// Name of the function to call.
-    pub name: String,
-
-    /// What the function does.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-
-    /// JSON object of arguments to pass to the function.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub arguments: Option<serde_json::Value>,
 }
 
 #[cfg(test)]
