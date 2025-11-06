@@ -102,6 +102,7 @@ impl Ollama {
     }
 
     /// Parses an Ollama SSE event.
+    #[inline]
     fn parse_event(buffer: &mut String) -> Option<Response> {
         while let Some(newline_pos) = buffer.find("\n") {
             let event_block = buffer[..newline_pos].to_string();
