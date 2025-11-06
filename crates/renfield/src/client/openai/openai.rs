@@ -126,7 +126,8 @@ impl OpenAI {
     }
 
     /// Parses an OpenAI SSE event.
-    pub(crate) fn parse_event(buffer: &mut String) -> Option<Response> {
+    #[inline]
+    fn parse_event(buffer: &mut String) -> Option<Response> {
         while let Some(double_newline_pos) = buffer.find("\n\n") {
             let event_block = buffer[..double_newline_pos].to_string();
             buffer.drain(..=double_newline_pos + 1);
@@ -302,6 +303,9 @@ mod tests {
 
     #[tokio_shared_rt::test(shared)]
     async fn test_function_tool_call_completion() {
+
+        // Ignore "unused fields" warnings.
+        #![allow(dead_code)]
 
         use crate::tools::{Tool, tool, schema};
 

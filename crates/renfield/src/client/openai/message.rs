@@ -44,8 +44,8 @@
 //! ```
 //! use renfield::client::openai::*;
 //!
-//! let image = ContentPart::from_image(ImageInput::from_url("data"));
-//! let file = ContentPart::from_file(FileInput::from_file_data("my-file.txt", "data"));
+//! let image = ContentPart::from(ImageInput::from_url("data"));
+//! let file = ContentPart::from(FileInput::from_file_data("my-file.txt", "data"));
 //!
 //! let my_message = msg!("user", "Describe this image and file", image, file);
 //! ```
@@ -274,7 +274,7 @@ impl Content {
         let mut new_parts = Vec::new();
         match self {
             Content::Text(text) => {
-                new_parts.push(ContentPart::from_text(&text));
+                new_parts.push(ContentPart::from(text));
             },
             Content::ContentParts(mut parts) => {
                 new_parts.append(&mut parts);
@@ -282,7 +282,7 @@ impl Content {
         }
         match other {
             Content::Text(text) => {
-                new_parts.push(ContentPart::from_text(&text));
+                new_parts.push(ContentPart::from(text));
             },
             Content::ContentParts(mut parts) => {
                 new_parts.append(&mut parts);
@@ -306,19 +306,19 @@ impl From<String> for Content {
 
 impl From<AudioInput> for Content {
     fn from(value: AudioInput) -> Self {
-        Self::ContentParts(vec![ContentPart::from_audio(value)])
+        Self::ContentParts(vec![ContentPart::from(value)])
     }
 }
 
 impl From<FileInput> for Content {
     fn from(value: FileInput) -> Self {
-        Self::ContentParts(vec![ContentPart::from_file(value)])
+        Self::ContentParts(vec![ContentPart::from(value)])
     }
 }
 
 impl From<ImageInput> for Content {
     fn from(value: ImageInput) -> Self {
-        Self::ContentParts(vec![ContentPart::from_image(value)])
+        Self::ContentParts(vec![ContentPart::from(value)])
     }
 }
 
@@ -375,31 +375,33 @@ pub enum ContentPart {
     },
 }
 
-impl ContentPart {
-
-    /// Create a text [ContentPart].
-    pub fn from_text(text: &str) -> Self {
-        Self::Text { text: text.to_string() }
+impl From<&str> for ContentPart {
+    fn from(value: &str) -> Self {
+        Self::Text { text: value.to_string() }
     }
+}
 
-    /// Create a refusal [ContentPart].
-    pub fn from_refusal(refusal: &str) -> Self {
-        Self::Refusal { refusal: refusal.to_string() }
+impl From<String> for ContentPart {
+    fn from(text: String) -> Self {
+        Self::Text { text }
     }
+}
 
-    /// Create an image [ContentPart].
-    pub fn from_image(image: ImageInput) -> Self {
-        Self::ImageUrl { image_url: image }
+impl From<ImageInput> for ContentPart {
+    fn from(image_url: ImageInput) -> Self {
+        Self::ImageUrl { image_url }
     }
+}
 
-    /// Create an audio [ContentPart].
-    pub fn from_audio(audio: AudioInput) -> Self {
-        Self::InputAudio { input_audio: audio }
+impl From<AudioInput> for ContentPart {
+    fn from(input_audio: AudioInput) -> Self {
+        Self::InputAudio { input_audio }
     }
+}
 
-    /// Create a file [ContentPart].
-    pub fn from_file(file: FileInput) -> Self {
-        Self::File{ file }
+impl From<FileInput> for ContentPart {
+    fn from(file: FileInput) -> Self {
+        Self::File { file }
     }
 }
 
