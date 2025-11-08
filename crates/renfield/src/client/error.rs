@@ -3,6 +3,7 @@ use serde::Serialize;
 use super::openai::Error as OpenAIError;
 use super::ollama::Error as OllamaError;
 use super::openrouter::Error as OpenRouterError;
+use super::gemini::Error as GeminiError;
 
 /// Error enumerates the API error responses of different LLM clients.
 ///
@@ -29,4 +30,8 @@ pub enum Error {
     /// An [OpenRouter](super::openrouter) error response object.
     #[error("{0}")]
     OpenRouter(#[from] OpenRouterError),
+
+    /// A [Gemini](super::gemini) error response object.
+    #[error("{0}")]
+    Gemini(#[from] GeminiError),
 }
