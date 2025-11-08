@@ -128,14 +128,45 @@ macro_rules! openrouter_msg {
         }
     }};
     ("tool", $id:expr, $first:expr $(, $rest:expr)*) => {{
-        let mut content = renfield::client::openrouter::Content::From($first);
+        let id: String = String::from($id);
+        let mut content = renfield::client::openrouter::Content::from($first);
         $(
-            let other = renfield::client::openrouter::Content::From($rest);
+            let other = renfield::client::openrouter::Content::from($rest);
             content = content.combine(other);
         )*;
         renfield::client::openrouter::Message::Tool{
             tool_call_id: id,
             content,
         }
+    }};
+}
+
+#[macro_export]
+macro_rules! gemini_msg {
+    ("user", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::gemini::Content::from(
+            renfield::client::gemini::Part::from($first)
+        );
+        $(
+            let mut other = renfield::client::gemini::Content::from(
+                renfield::client::gemini::Part::from($rest)
+            );
+            content = content.combine(other);
+        )*;
+        content.role = Some(renfield::client::gemini::Role::User);
+        content
+    }};
+    ("model", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::gemini::Content::from(
+            renfield::client::gemini::Part::from($first)
+        );
+        $(
+            let mut other = renfield::client::gemini::Content::from(
+                renfield::client::gemini::Part::from($rest)
+            );
+            content = content.combine(other);
+        )*;
+        content.role = Some(renfield::client::gemini::Role::Model);
+        content
     }};
 }
