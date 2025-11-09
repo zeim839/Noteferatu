@@ -148,6 +148,12 @@ impl From<AudioInput> for Content {
     }
 }
 
+impl From<VideoInput> for Content {
+    fn from(value: VideoInput) -> Self {
+        Self::ContentParts(vec![ContentPart::from(value)])
+    }
+}
+
 impl From<Vec<ContentPart>> for Content {
     fn from(value: Vec<ContentPart>) -> Self {
         Self::ContentParts(value)
@@ -177,6 +183,13 @@ pub enum ContentPart {
         /// Audio input data.
         input_audio: AudioInput,
     },
+
+    /// Video content type.
+    InputVideo {
+
+        /// Video input data.
+        video_url: VideoInput,
+    },
 }
 
 impl From<&str> for ContentPart {
@@ -200,6 +213,12 @@ impl From<ImageInput> for ContentPart {
 impl From<AudioInput> for ContentPart {
     fn from(value: AudioInput) -> Self {
         Self::InputAudio { input_audio: value }
+    }
+}
+
+impl From<VideoInput> for ContentPart {
+    fn from(value: VideoInput) -> Self {
+        Self::InputVideo { video_url: value }
     }
 }
 
@@ -245,6 +264,22 @@ impl AudioInput {
     }
 }
 
+/// Video input [ContentPart].
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct VideoInput {
+
+    /// Video url.
+    pub url: String,
+}
+
+impl VideoInput {
+
+    /// Create a new [VideoInput] instance from a url.
+    pub fn new(url: &str) -> Self {
+        Self { url: url.to_string() }
+    }
+}
+
 /// The format of encoded audio data.
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "lowercase")]
@@ -256,4 +291,124 @@ pub enum AudioFormat {
     Ogg,
     Pcm16,
     Pcm24,
+}
+
+#[cfg(test)]
+mod tests {
+    use crate as renfield;
+    use serde_json::{to_value, json};
+    use crate::client::openrouter::*;
+
+    #[test]
+    fn test_msg_text() {
+        let msg = msg!("user", "plain text");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": "plain text",
+        }));
+
+        let msg = msg!("user", "msg0", "msg1");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "msg0",
+                },
+                {
+                    "type": "text",
+                    "text": "msg1",
+                },
+            ],
+        }));
+
+        let string = String::from("msggg");
+        let msg = msg!("system", "static pointer", string);
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "system",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "static pointer",
+                },
+                {
+                    "type": "text",
+                    "text": "msggg",
+                },
+            ],
+        }));
+    }
+
+    #[test]
+    fn test_msg_tool_id() {
+        let msg = msg!("tool", "my-tool-id", "foo");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "tool",
+            "tool_call_id": "my-tool-id",
+            "content": "foo",
+        }));
+    }
+
+    #[test]
+    fn test_msg_image() {
+        let msg = msg!("assistant", "what's in this image?", ImageInput::from_url("base64data"));
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "what's in this image?",
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "base64data",
+                    },
+                },
+            ],
+        }));
+    }
+
+    #[test]
+    fn test_msg_audio() {
+        let audio = AudioInput::new("base64data", AudioFormat::Wav);
+        let msg = msg!("developer", "summarize this audio", audio);
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "developer",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "summarize this audio",
+                },
+                {
+                    "type": "input_audio",
+                    "input_audio": {
+                        "data": "base64data",
+                        "format": "wav",
+                    }
+                },
+            ],
+        }));
+    }
+
+    #[test]
+    fn test_msg_video() {
+        let video = VideoInput::new("video.url");
+        let msg = msg!("assistant", "summarize this video", video);
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "summarize this video",
+                },
+                {
+                    "type": "input_video",
+                    "video_url": {
+                        "url": "video.url",
+                    },
+                }
+            ],
+        }));
+    }
 }
