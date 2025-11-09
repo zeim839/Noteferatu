@@ -1,3 +1,5 @@
+//! Tool and function call definitions.
+
 use serde::{Serialize, Deserialize};
 
 /// Tool call requested by the assistant.

@@ -1,4 +1,55 @@
 //! Chat generation request.
+//!
+//! The [Request] struct implements an Ollama API chat completion
+//! request. The struct is designed to be composed in functional
+//! programming style.
+//!
+//! The [`stream`](Request::stream) field must be set to `true` for
+//! streaming completions.
+//!
+//! # Examples
+//!
+//! ## Basic Text Request
+//!
+//! ```
+//! use renfield::client::ollama::{Request, msg};
+//!
+//! Request::from_model("qwen3:0.6b")
+//!     .push_message(msg!("system", "You are a helpful assistant"))
+//!     .push_message(msg!("user", "what is 5+7?"))
+//!     .num_predict(20); // max output tokens.
+//! ```
+//!
+//! ## Sampling Parameters
+//!
+//! ```
+//! use renfield::client::ollama::{Request, msg};
+//!
+//! Request::from_model("qwen3:0.6b")
+//!     .push_message(msg!("user", "Hello, world!"))
+//!     .push_stop_sequence("[STOP]")
+//!     .temperature(1.5)
+//!     .top_k(5)
+//!     .top_p(0.1);
+//! ```
+//!
+//! ## Streaming & Reasoning
+//!
+//! Streaming is supported by all models and may be enabled by setting
+//! the [`stream`](Request::stream) field to `true`. Reasoning (or
+//! "thinking") capabilities vary across models; when available,
+//! reasoning can be enabled by toggling the [`think`](Request::think)
+//! field.
+//!
+//! ```
+//! use renfield::client::ollama::{Request, msg};
+//!
+//! Request::from_model("qwen3:0.6b")
+//!     .push_message(msg!("user", "Hello, world!"))
+//!     .stream(true)
+//!     .think(true);
+//! ```
+//!
 
 use serde::Serialize;
 use super::message::Message;
@@ -157,10 +208,10 @@ impl Request {
     }
 
     /// Push a stop sequence that will halt generation.
-    pub fn push_stop_sequence(self, stop: String) -> Self {
+    pub fn push_stop_sequence(self, stop: &str) -> Self {
         let mut req = self;
-        req.options = Some(req.options.map(|opts| opts.push_stop_sequence(stop.clone()))
-            .unwrap_or(Options::default().push_stop_sequence(stop)));
+        req.options = Some(req.options.map(|opts| opts.push_stop_sequence(stop.to_string()))
+            .unwrap_or(Options::default().push_stop_sequence(stop.to_string())));
 
         req
     }
