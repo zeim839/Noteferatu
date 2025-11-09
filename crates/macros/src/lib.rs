@@ -80,6 +80,16 @@ macro_rules! ollama_msg {
             images: None,
         }
     };
+    ("assistant", $text:expr, ($($img:expr),+)) => {
+        renfield::client::ollama::Message::Assistant {
+            content: String::from($text),
+            tool_calls: None,
+            thinking: None,
+            images: Some(vec![
+                $( String::from($img), )*
+            ]),
+        }
+    };
     ("tool", $text:expr) => {
         renfield::client::ollama::Message::Tool {
             content: String::from($text),
