@@ -95,16 +95,15 @@ impl Request {
 
     /// Create a [Request] by specifying a model to use.
     pub fn from_model(model: &str) -> Self {
-        let mut req = Self::default();
-        req.model = Some(model.to_string());
-        req
+        Self { model: Some(model.to_string()), ..Self::default() }
     }
 
     /// Create a [Request] by specifying a list of models to use.
     pub fn from_models(models: Vec<&str>) -> Self {
-        let mut req = Self::default();
-        req.models = models.into_iter().map(|v| v.to_string()).collect();
-        req
+        Self {
+            models: models.into_iter().map(|v| v.to_string()).collect(),
+            ..Self::default()
+        }
     }
 
     /// Push a model to the [Request]s model choices.

@@ -70,7 +70,7 @@ impl OpenAI {
                 buffer.push_str(&String::from_utf8_lossy(&chunk));
                 while let Some(event) = Self::parse_event(&mut buffer) {
                     // Pipe was most likely intentionally closed.
-                    if let Err(_) = pipe.send(event).await {
+                    if pipe.send(event).await.is_err() {
                         return Ok(());
                     }
                 }
@@ -83,7 +83,7 @@ impl OpenAI {
             .map(|value| from_value::<OpenAIError>(value.clone()).unwrap_or_default())
             .unwrap_or_default();
 
-        return Err(err.into());
+        Err(err.into())
     }
 
     /// List the currently available models.
@@ -164,13 +164,11 @@ impl OpenAI {
 mod tests {
     use crate as renfield;
     use crate::client::openai::*;
-    use std::env;
-    use dotenv::dotenv;
     use once_cell::sync::Lazy;
 
     static CLIENT: Lazy<OpenAI> = Lazy::new(|| {
-        dotenv().ok();
-        let token = env::var("OPENAI_API_KEY")
+        dotenv::dotenv().ok();
+        let token = std::env::var("OPENAI_API_KEY")
             .expect("missing OPENAI_API_KEY");
 
         OpenAI::from_token(&token)
@@ -201,8 +199,8 @@ mod tests {
         let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
-        assert!(res.choices.len() > 0);
-        assert!(res.usage.unwrap().completion_tokens > 0);
+        assert!(!res.choices.is_empty());
+        assert_ne!(res.usage.unwrap().completion_tokens, 0);
         assert!(matches!(res.choices[0].clone().message.unwrap(), Message::Assistant{ .. }));
     }
 
@@ -217,8 +215,8 @@ mod tests {
         let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
-        assert!(res.choices.len() > 0);
-        assert!(res.usage.unwrap().completion_tokens > 0);
+        assert!(!res.choices.is_empty());
+        assert_ne!(res.usage.unwrap().completion_tokens, 0);
         if let Message::Assistant{ audio, .. } = res.choices[0].clone().message.unwrap() {
             assert!(audio.is_some());
             return;
@@ -251,8 +249,8 @@ mod tests {
         let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
-        assert!(res.choices.len() > 0);
-        assert!(res.usage.unwrap().completion_tokens > 0);
+        assert!(!res.choices.is_empty());
+        assert_ne!(res.usage.unwrap().completion_tokens, 0);
         if let Message::Assistant { content, .. } = res.choices[0].clone().message.unwrap() {
             assert!(content.is_some());
             return;
@@ -271,8 +269,8 @@ mod tests {
         let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
-        assert!(res.choices.len() > 0);
-        assert!(res.usage.unwrap().completion_tokens > 0);
+        assert!(!res.choices.is_empty());
+        assert_ne!(res.usage.unwrap().completion_tokens, 0);
         if let Message::Assistant { content, .. } = res.choices[0].clone().message.unwrap() {
             assert!(content.is_some());
             return;
@@ -291,8 +289,8 @@ mod tests {
         let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
-        assert!(res.choices.len() > 0);
-        assert!(res.usage.unwrap().completion_tokens > 0);
+        assert!(!res.choices.is_empty());
+        assert_ne!(res.usage.unwrap().completion_tokens, 0);
         if let Message::Assistant { content, .. } = res.choices[0].clone().message.unwrap() {
             assert!(content.is_some());
             return;
@@ -327,8 +325,8 @@ mod tests {
         let res = CLIENT.chat_completion(&req)
             .await.unwrap();
 
-        assert!(res.choices.len() > 0);
-        assert!(res.usage.unwrap().completion_tokens > 0);
+        assert!(!res.choices.is_empty());
+        assert_ne!(res.usage.unwrap().completion_tokens, 0);
         if let Message::Assistant { tool_calls, .. } = res.choices[0].clone().message.unwrap() {
             if let Some(tool_calls) = tool_calls {
                 if let ToolCall::Function { function, .. } = &tool_calls[0] {
@@ -362,13 +360,13 @@ mod tests {
         }
 
         assert!(handle.await.is_ok());
-        assert!(completion_tokens > 0);
+        assert_ne!(completion_tokens, 0);
     }
 
     #[tokio_shared_rt::test(shared)]
     async fn test_list_models() {
         let models = CLIENT.list_models().await.unwrap();
-        assert!(models.len() > 0);
+        assert!(!models.is_empty());
     }
 
     #[tokio_shared_rt::test(shared)]
@@ -377,6 +375,6 @@ mod tests {
         assert!(models.len() > 0);
 
         let model = CLIENT.get_model(&models[0].id).await.unwrap();
-        assert!(model.id == models[0].id);
+        assert_eq!(model.id, models[0].id);
     }
 }

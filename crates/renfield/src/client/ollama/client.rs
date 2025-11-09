@@ -87,7 +87,7 @@ impl Ollama {
                 buffer.push_str(&String::from_utf8_lossy(&chunk));
                 while let Some(event) = Self::parse_event(&mut buffer) {
                     // Pipe probably closed.
-                    if let Err(_) = pipe.send(event).await {
+                    if pipe.send(event).await.is_err() {
                         return Ok(());
                     }
                 }
@@ -98,7 +98,7 @@ impl Ollama {
         let json: Value = res.json().await?;
         let err = json.get("error").unwrap_or_default();
         let err: String = from_value(err.clone())?;
-        return Err(OllamaError::from(err).into());
+        Err(OllamaError::from(err).into())
     }
 
     /// Parses an Ollama SSE event.
@@ -107,7 +107,7 @@ impl Ollama {
         while let Some(newline_pos) = buffer.find("\n") {
             let event_block = buffer[..newline_pos].to_string();
             buffer.drain(..=newline_pos);
-            for line in event_block.lines() {
+            if let Some(line) = event_block.lines().next() {
                 match serde_json::from_str::<Response>(line.trim()) {
                     Ok(response) => return Some(response),
                     Err(_) => return None,

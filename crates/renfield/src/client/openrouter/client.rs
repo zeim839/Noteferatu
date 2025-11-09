@@ -68,7 +68,7 @@ impl OpenRouter {
                 buffer.push_str(&String::from_utf8_lossy(&chunk));
                 while let Some(event) = Self::parse_event(&mut buffer) {
                     // Pipe was most likely intentionally closed.
-                    if let Err(_) = pipe.send(event).await {
+                    if pipe.send(event).await.is_err() {
                         return Ok(());
                     }
                 }
@@ -81,7 +81,7 @@ impl OpenRouter {
             .map(|value| from_value::<OpenRouterError>(value.clone()).unwrap_or_default())
             .unwrap_or_default();
 
-        return Err(err.into());
+        Err(err.into())
     }
 
     /// Fetches a list of models available via the API.

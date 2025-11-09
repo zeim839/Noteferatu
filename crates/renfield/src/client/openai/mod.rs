@@ -123,9 +123,6 @@ pub use message::*;
 mod model;
 pub use model::*;
 
-mod openai;
-pub use openai::*;
-
 pub mod request;
 pub use request::*;
 
