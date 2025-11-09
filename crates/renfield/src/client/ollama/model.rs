@@ -1,3 +1,15 @@
+//! Model information.
+//!
+//! [`Model`] is a struct specifying information about an Ollama large
+//! language models, as returned by the
+//! [`list_models`](super::Ollama::list_models) API route. It contains
+//! a [`details`](Model::details) field with additional model
+//! information (of type [`ModelDetails`].
+//!
+//! The [`show_model_details`](super::Ollama::show_model_details) API
+//! route can be used to return even more detail about a specific
+//! model. This information is returned as a [`ModelMetadata`] struct.
+
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -47,14 +59,11 @@ pub struct ModelDetails {
     pub quantization_level: String,
 }
 
-/// Even more model details.
+/// Additional model details.
 ///
 /// This is the metadata object returned by the Ollama [Show Model
 /// Details](https://docs.ollama.com/api-reference/show-model-details)
 /// route.
-///
-/// There is no real consistency in [ModelMetadata]. Field values vary
-/// from model to model. I wish the Ollama API was better...
 #[derive(Deserialize, Debug, Clone)]
 pub struct ModelMetadata {
 
