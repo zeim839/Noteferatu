@@ -1,7 +1,13 @@
 //! OpenRouter API client.
 
-mod openrouter;
-pub use openrouter::*;
+mod client;
+pub use client::*;
+
+mod error;
+pub use error::*;
+
+pub mod message;
+pub use message::*;
 
 pub mod model;
 pub use model::*;
@@ -11,12 +17,6 @@ pub use request::*;
 
 pub mod response;
 pub use response::*;
-
-pub mod message;
-pub use message::*;
-
-mod error;
-pub use error::*;
 
 pub mod tools;
 pub use tools::*;

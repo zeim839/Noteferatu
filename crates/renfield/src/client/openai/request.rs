@@ -172,9 +172,7 @@ impl Request {
 
     /// Create a new request by specifying a model.
     pub fn from_model(model: &str) -> Self {
-        let mut req = Request::default();
-        req.model = String::from(model);
-        req
+        Self { model: model.to_string(), ..Self::default() }
     }
 
     /// Push a message to the [Request]'s message vector.

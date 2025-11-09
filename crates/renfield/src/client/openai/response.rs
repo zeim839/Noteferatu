@@ -33,8 +33,8 @@ pub struct Response {
     pub usage: Option<Usage>,
 }
 
-impl Into<crate::client::Response> for Response {
-    fn into(self) -> crate::client::Response {
+impl From<Response> for crate::client::Response {
+    fn from(_value: Response) -> Self {
         todo!();
     }
 }

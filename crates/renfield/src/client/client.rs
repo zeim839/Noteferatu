@@ -1,7 +1,7 @@
-use crate::{Result, Error};
 use super::request::Request;
 use super::response::Response;
 use super::model::Model;
+use crate::Result;
 
 use std::sync::mpsc::Sender;
 use std::future::Future;

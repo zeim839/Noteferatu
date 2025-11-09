@@ -13,26 +13,26 @@
 //! # Getting Started
 //!
 //! * See the individual client implementations if you intend to
-//! interact with **only a single API**.
+//!   interact with **only a single API**.
 //!   - E.g. [anthropic], [gemini], [openai], [openrouter], [ollama].
 //! * See the [Examples](#examples) section to get started with the
-//! **unified** [`Client`] API.
+//!   **unified** [`Client`] API.
 //!   - The [Request] documentation shows you how to build client
-//!   requests in functional programming style.
+//!     requests in functional programming style.
 //!   - The [Response] documentation explains how to read client responses.
 //!
 //! # Features
 //!
 //! * Chat completion clients for OpenAI, Anthropic, OpenRouter,
-//! Google Gemini, and Ollama.
+//!   Google Gemini, and Ollama.
 //! * Streaming & static responses.
 //! * First-in-class tool calling support using
-//! [tools](renfield::tools) module.
+//!   [tools](renfield::tools) module.
 //! * Provider-dependent APIs as well as a unified API under the
-//! [Client] trait.
+//!   [Client] trait.
 //! * Audio, video, text, file input/output (depending on model support).
 //! * Generic [Request] and [Response] types that are recognized by
-//! all clients.
+//!   all clients.
 //!
 //! # Examples
 //!
@@ -157,22 +157,25 @@
 //! ```
 
 pub mod anthropic;
+
+#[allow(clippy::module_inception)]
+mod client;
+pub use client::*;
+
+mod error;
+pub use error::*;
+
 pub mod gemini;
+
+mod model;
+pub use model::*;
+
 pub mod ollama;
 pub mod openai;
 pub mod openrouter;
-
-mod client;
-pub use client::*;
 
 mod request;
 pub use request::*;
 
 mod response;
 pub use response::*;
-
-mod model;
-pub use model::*;
-
-mod error;
-pub use error::*;

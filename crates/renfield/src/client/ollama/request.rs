@@ -97,9 +97,7 @@ impl Request {
 
     /// Create a new [Request] by specifying the model to use.
     pub fn from_model(model: &str) -> Self {
-        let mut req = Request::default();
-        req.model = model.to_string();
-        req
+        Self { model: model.to_string(), ..Self::default() }
     }
 
     /// Push a message to the [Request]'s list of messages.
@@ -136,7 +134,7 @@ impl Request {
 
     /// Enable/disable response streaming.
     pub fn stream(self, stream: bool) -> Self {
-        Self { stream: stream, ..self }
+        Self { stream, ..self }
     }
 
     /// Enable/disable extended reasoning (when available).
