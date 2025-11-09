@@ -4,6 +4,7 @@ use super::openai::Error as OpenAIError;
 use super::ollama::Error as OllamaError;
 use super::openrouter::Error as OpenRouterError;
 use super::gemini::Error as GeminiError;
+use super::anthropic::Error as AnthropicError;
 
 /// Error enumerates the API error responses of different LLM clients.
 ///
@@ -34,4 +35,8 @@ pub enum Error {
     /// A [Gemini](super::gemini) error response object.
     #[error("{0}")]
     Gemini(#[from] GeminiError),
+
+    /// An [Anthropic](super::anthropic) error response object.
+    #[error("{0}")]
+    Anthropic(#[from] AnthropicError),
 }

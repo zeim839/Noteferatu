@@ -4,6 +4,7 @@ use crate::client::openai::Error as OpenAIError;
 use crate::client::ollama::Error as OllamaError;
 use crate::client::openrouter::Error as OpenRouterError;
 use crate::client::gemini::Error as GeminiError;
+use crate::client::anthropic::Error as AnthropicError;
 
 /// Result alias.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -49,6 +50,12 @@ impl From<OpenRouterError> for Error {
 
 impl From<GeminiError> for Error {
     fn from(value: GeminiError) -> Self {
+        crate::client::Error::from(value).into()
+    }
+}
+
+impl From<AnthropicError> for Error {
+    fn from(value: AnthropicError) -> Self {
         crate::client::Error::from(value).into()
     }
 }
