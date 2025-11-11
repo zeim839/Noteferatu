@@ -174,7 +174,7 @@ mod tests {
 
     #[tokio_shared_rt::test(shared)]
     async fn test_chat_completion() {
-        let req = Request::from_model("qwen/qwen3-coder:free")
+        let req = Request::from_model("openai/gpt-oss-20b:free")
             .push_message(msg!("user", "hello"))
             .max_completion_tokens(10);
 
@@ -253,7 +253,7 @@ mod tests {
             location: String,
         }
 
-        let req = Request::from_model("minimax/minimax-m2:free")
+        let req = Request::from_model("openai/gpt-oss-20b:free")
             .push_message(msg!("user", "what's the weather in Paris, France?"))
             .push_tool(GetWeather::as_openrouter_tool())
             .reasoning_effort(ReasoningEffort::Minimal)
@@ -293,7 +293,7 @@ mod tests {
 
     #[tokio_shared_rt::test(shared)]
     async fn test_completion_reasoning() {
-        let req = Request::from_model("qwen/qwen3-coder:free")
+        let req = Request::from_model("openai/gpt-oss-20b:free")
             .push_message(msg!("user", "hello"))
             .max_completion_tokens(10)
             .reasoning_effort(ReasoningEffort::Minimal);
@@ -309,7 +309,7 @@ mod tests {
 
     #[tokio_shared_rt::test(shared)]
     async fn test_stream_chat_completion() {
-        let req = Request::from_model("qwen/qwen3-coder:free")
+        let req = Request::from_model("openai/gpt-oss-20b:free")
             .push_message(msg!("user", "hello"))
             .max_completion_tokens(10)
             .stream(true);
