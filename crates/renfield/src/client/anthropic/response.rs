@@ -80,8 +80,10 @@ pub enum StopReason {
 pub struct Usage {
 
     /// The number of input tokens which were used.
+    #[serde(default)]
     pub input_tokens: u64,
 
     /// The number of output tokens which were used.
+    #[serde(default)]
     pub output_tokens: u64,
 }
