@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 /// Anthropic API error response.
-#[derive(thiserror::Error, Debug, Serialize, Deserialize, Default)]
+#[derive(thiserror::Error, Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Error {
 
     /// Message describing the error.

@@ -87,7 +87,7 @@ pub enum ContentPart {
     WebFetchToolResult(WebFetchToolResult),
     CodeExecutionToolResult(CodeExecutionToolResult),
     BashCodeExecutionToolResult(BashCodeExecutionToolResult),
-    TextEditorExecutionToolResult(TextEditorExecutionToolResult),
+    TextEditorCodeExecutionToolResult(TextEditorCodeExecutionToolResult),
     McpToolUse(McpToolUse),
     McpToolResult(McpToolResult),
 }
@@ -182,9 +182,9 @@ impl From<BashCodeExecutionToolResult> for ContentPart {
     }
 }
 
-impl From<TextEditorExecutionToolResult> for ContentPart {
-    fn from(value: TextEditorExecutionToolResult) -> Self {
-        Self::TextEditorExecutionToolResult(value)
+impl From<TextEditorCodeExecutionToolResult> for ContentPart {
+    fn from(value: TextEditorCodeExecutionToolResult) -> Self {
+        Self::TextEditorCodeExecutionToolResult(value)
     }
 }
 
@@ -419,15 +419,29 @@ impl Document {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SearchResult {
     pub content: Text,
+    pub source: String,
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
 }
 
+impl SearchResult {
+
+    /// Create a new [SearchResult].
+    pub fn new<T: Into<Text>>(title: &str, source: &str, content: T) -> Self {
+        Self {
+            title: title.to_string(),
+            source: source.to_string(),
+            content: content.into(),
+            cache_control: None,
+        }
+    }
+}
+
 /// Thinking [ContentPart].
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Thinking {
-    pub signature: String,
+    pub signature: Option<String>,
     pub thinking: String,
 }
 

@@ -57,7 +57,7 @@ pub struct Request {
     /// When enabled, responses include thinking content blocks
     /// showing Claude's thinking process before the final
     /// answer. Requires a minimum budget of 1,024 tokens and counts
-    /// towards your [`max_tokens`] limit.
+    /// towards your [`max_tokens`](Self::max_tokens) limit.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub thinking: Option<ThinkingConfig>,
 
@@ -89,6 +89,10 @@ pub struct Request {
     /// Required range: `0 <= x <= 1`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub top_p: Option<f64>,
+
+    /// Set the "anthropic-beta" header value.
+    #[serde(skip_serializing)]
+    pub beta_header: Option<String>,
 }
 
 // Unlike other clients, Anthropic `max_tokens` field is REQUIRED.
@@ -110,6 +114,7 @@ impl Default for Request {
             tools: Vec::default(),
             top_k: None,
             top_p: None,
+            beta_header: None,
         }
     }
 }
@@ -226,6 +231,11 @@ impl Request {
     /// Set the `top_p` nucleus sampling parameter.
     pub fn top_p(self, top_p: f64) -> Self {
         Self { top_p: Some(top_p), ..self }
+    }
+
+    /// Set the "anthropic-beta" header value.
+    pub fn beta_header(self, value: &str) -> Self {
+        Self { beta_header: Some(value.to_string()), ..self }
     }
 }
 

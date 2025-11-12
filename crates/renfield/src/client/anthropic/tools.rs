@@ -180,7 +180,7 @@ pub enum WebFetchToolResultBlock {
 pub enum WebFetchResultContent {
     Document {
         source: Document,
-        title: String,
+        title: Option<String>,
     },
 }
 
@@ -231,8 +231,8 @@ pub enum BashCodeExecutionToolResultBlock {
     BashCodeExecutionToolResultError {
         error_code: String,
     },
-    BashCodeExecutionOutput {
-        content: BashCodeExecutionOutputBlock,
+    BashCodeExecutionResult {
+        content: Vec<BashCodeExecutionOutputBlock>,
         return_code: u64,
         stderr: String,
         stdout: String,
@@ -248,17 +248,17 @@ pub enum BashCodeExecutionOutputBlock {
 
 /// Text editor execution tool result [ContentPart](super::message::ContentPart).
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TextEditorExecutionToolResult {
+pub struct TextEditorCodeExecutionToolResult {
     pub tool_use_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cache_control: Option<CacheControl>,
-    pub content: TextEditorExecutionToolResultBlock,
+    pub content: TextEditorCodeExecutionToolResultBlock,
 }
 
-/// [TextEditorExecutionToolResult] content block.
+/// [TextEditorCodeExecutionToolResult] content block.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type", rename_all = "snake_case")]
-pub enum TextEditorExecutionToolResultBlock {
+pub enum TextEditorCodeExecutionToolResultBlock {
     TextEditorCodeExecutionToolResultError {
         error_code: String,
         #[serde(skip_serializing_if = "Option::is_none")]
