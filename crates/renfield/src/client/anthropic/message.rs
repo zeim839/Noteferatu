@@ -453,89 +453,175 @@ pub struct RedactedThinking {
 
 #[cfg(test)]
 mod tests {
+    use crate as renfield;
+    use serde_json::{to_value, json};
+    use crate::client::anthropic::*;
 
     #[test]
     fn test_msg_plain_text() {
-        todo!();
+        let msg = msg!("user", "plain text");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [{
+                "type": "text",
+                "text": "plain text",
+            }],
+        }));
+        let msg = msg!("assistant", "plain text");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [{
+                "type": "text",
+                "text": "plain text",
+            }],
+        }));
     }
 
     #[test]
     fn test_msg_multipart_text() {
-        todo!();
+        let msg = msg!("user", "message 0", "message 1");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [{
+                "type": "text",
+                "text": "message 0",
+            }, {
+                "type": "text",
+                "text": "message 1",
+            }],
+        }));
+        let msg = msg!("assistant", "message 0", "message 1");
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [{
+                "type": "text",
+                "text": "message 0",
+            }, {
+                "type": "text",
+                "text": "message 1",
+            }],
+        }));
     }
 
     #[test]
     fn test_msg_image() {
-        todo!();
+        let msg = msg!("user", Image::base64("some data", MediaType::Jpeg));
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [{
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "data": "some data",
+                    "media_type": "image/jpeg",
+                },
+            }]
+        }));
+        let msg = msg!("assistant", Image::base64("some data", MediaType::Jpeg));
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [{
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "data": "some data",
+                    "media_type": "image/jpeg",
+                },
+            }]
+        }));
     }
 
     #[test]
     fn test_msg_document() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_search_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_thinking() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_redacted_thinking() {
-        todo!();
+        let msg = msg!("user", Document::base64("some data", MediaType::Pdf));
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [{
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "data": "some data",
+                    "media_type": "application/pdf",
+                }
+            }],
+        }));
+        let msg = msg!("assistant", Document::base64("some data", MediaType::Pdf));
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [{
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "data": "some data",
+                    "media_type": "application/pdf",
+                }
+            }],
+        }));
     }
 
     #[test]
     fn test_msg_tool_use() {
-        todo!();
+        let tool_use = ToolUse{
+            id: "foo".to_string(),
+            input: json!(42),
+            name: "bar".to_string(),
+            cache_control: None,
+        };
+        let msg = msg!("user", tool_use.clone());
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [{
+                "type": "tool_use",
+                "id": "foo",
+                "input": 42,
+                "name": "bar",
+            }],
+        }));
+        let msg = msg!("assistant", tool_use);
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [{
+                "type": "tool_use",
+                "id": "foo",
+                "input": 42,
+                "name": "bar",
+            }],
+        }));
     }
 
     #[test]
     fn test_msg_tool_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_server_tool_use() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_web_search_tool_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_web_fetch_tool_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_code_execution_tool_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_bash_code_execution_tool_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_text_editor_execution_tool_result() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_mcp_tool_use() {
-        todo!();
-    }
-
-    #[test]
-    fn test_msg_mcp_tool_result() {
-        todo!();
+        let tool_result = ToolResult {
+            tool_use_id: "some-id".to_string(),
+            cache_control: None,
+            content: Some(Content::from("hello")),
+            is_error: Some(false),
+        };
+        let msg = msg!("user", tool_result);
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "user",
+            "content": [{
+                "type": "tool_result",
+                "tool_use_id": "some-id",
+                "content": "hello",
+                "is_error": false,
+            }],
+        }));
+        let tool_result = ToolResult {
+            tool_use_id: "some-id".to_string(),
+            cache_control: None,
+            content: Some(Content::from("hello")),
+            is_error: Some(false),
+        };
+        let msg = msg!("assistant", tool_result);
+        assert_eq!(to_value(msg).unwrap(), json!({
+            "role": "assistant",
+            "content": [{
+                "type": "tool_result",
+                "tool_use_id": "some-id",
+                "content": "hello",
+                "is_error": false,
+            }],
+        }));
     }
 }
