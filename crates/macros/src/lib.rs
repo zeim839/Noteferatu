@@ -180,3 +180,31 @@ macro_rules! gemini_msg {
         content
     }};
 }
+
+#[macro_export]
+macro_rules! anthropic_msg {
+    ("user", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::anthropic::Content::from(
+            renfield::client::anthropic::ContentPart::from($first)
+        );
+        $(
+            let mut other = renfield::client::anthropic::Content::from(
+                renfield::client::anthropic::ContentPart::from($rest)
+            );
+            content = content.combine(other);
+        )*;
+        renfield::client::anthropic::Message::User{content}
+    }};
+    ("assistant", $first:expr $(, $rest:expr)*) => {{
+        let mut content = renfield::client::anthropic::Content::from(
+            renfield::client::anthropic::ContentPart::from($first)
+        );
+        $(
+            let mut other = renfield::client::anthropic::Content::from(
+                renfield::client::anthropic::ContentPart::from($rest)
+            );
+            content = content.combine(other);
+        )*;
+        renfield::client::anthropic::Message::Assistant{content}
+    }};
+}
