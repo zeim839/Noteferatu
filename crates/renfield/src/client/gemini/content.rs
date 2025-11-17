@@ -153,7 +153,7 @@ pub enum Data {
     /// Inline media bytes.
     InlineData(Blob),
 
-    /// A predicted [FunctionCall](super::tools::FunctionCall)
+    /// A predicted [FunctionCall]
     /// returned from the model that contains a string representing
     /// the FunctionDeclaration.name with the arguments and their
     /// values.
@@ -162,7 +162,7 @@ pub enum Data {
     /// Function response.
     ///
     /// The result output of a
-    /// [FunctionCall](super::tools::FunctionCall).
+    /// [FunctionCall].
     FunctionResponse(FunctionResponse),
 
     /// URI-based data.
